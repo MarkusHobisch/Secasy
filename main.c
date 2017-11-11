@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 #include "BlockOne.h"
+#include <glib.h>
 
 char input_filename_[FILENAME_LEN];
 unsigned long rounds_ = 10000;
@@ -9,6 +11,8 @@ unsigned long prime_index_ = 16000000;
 
 int main(int argc, char **argv)
 {
+    clock_t tStart = clock();
+
     if (argc < 2) // no arguments were passed
     {
         printf("No input file found!");
@@ -19,10 +23,10 @@ int main(int argc, char **argv)
     {
         if (i == 1) // the first passed argument: file name
         {
-            size_t inputSize = strlen(argv[i]) + 1;
-            if (inputSize > 100)
+            size_t input_len = strlen(argv[i]) + 1;
+            if (input_len > 100)
             {
-                printf("Error: file size is too big! [1..100]\n");
+                printf("Error: filename is too long! [1..100 signs]\n");
                 return -1;
             }
             strncpy(input_filename_, argv[i], 100);
@@ -59,6 +63,35 @@ int main(int argc, char **argv)
     // Todo some calculations...
     generateField();
     // printAllPrimes();
+
+
+
+    // THIS IS SOME LIST STUFF FOR TESTING
+    // Notice that these are initialized to the empty list.
+    GList *string_list = NULL, *number_list = NULL;
+
+    // This is a list of strings.
+    string_list = g_list_prepend(string_list, "first");
+    string_list = g_list_prepend(string_list, "second");
+
+    // This is a list of integers.
+    number_list = g_list_prepend(number_list, GINT_TO_POINTER(27));
+    number_list = g_list_prepend(number_list, GINT_TO_POINTER(14));
+    number_list = g_list_prepend(number_list, GINT_TO_POINTER(9));
+
+    GList *l;
+    for (l = number_list; l != NULL; l = l->next) {
+        // do something with l->data
+        printf("%d\n", GPOINTER_TO_INT(l->data));
+    }
+    for (l = string_list; l != NULL; l = l->next) {
+        // do something with l->data
+        printf("%s\n", (char*)  l->data);
+    }
+
+    printf("length: %o\n",g_list_length(number_list));
+
+    printf("\n\nTotal time: %d seconds", (int) (clock() - tStart) / CLOCKS_PER_SEC);
 }
 
 long convertToMB(long bytes)
