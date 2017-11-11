@@ -28,4 +28,5 @@ extern int *generatePrimeNumbers(unsigned int n);
 extern void generateField();
 extern void printAllPrimes();
 
+
 #endif //SECASY_BLOCKONE_H
