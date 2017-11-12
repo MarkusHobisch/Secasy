@@ -5,8 +5,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
-int primesLength = 0;
+int primesLength_ = 0;
 int *primeSieve = NULL;
 int *primes = NULL;
 
@@ -18,7 +19,7 @@ int *generatePrimeNumbers(unsigned int n)
     if (!primeSieve)
     {
         primeSieve = calloc(n + 1, sizeof(int));
-        _STATIC_ASSERT(primeSieve != NULL);
+        assert(primeSieve != NULL && "mem alloc failed!");
     }
 
     for (int i = 2; i <= n; i++)
@@ -47,16 +48,16 @@ int *generatePrimeNumbers(unsigned int n)
     if (!primes)
     {
         primes = calloc(size, sizeof(int));
-        _STATIC_ASSERT(primes != NULL);
+        assert(primes != NULL);
     }
 
     for (int j = 2; j < (n + 1); j++)
     {
         if (primeSieve[j])
-            primes[primesLength++] = j;
+            primes[primesLength_++] = j;
     }
 
-    printf("The number of primes <= %d is %d\n", n, primesLength);
+    printf("The number of primes <= %d is %d\n", n, primesLength_);
     return primes;
 }
 
@@ -68,7 +69,7 @@ void printAllPrimes()
         return;
     }
 
-    for (int i = 0; i < primesLength; i++)
+    for (int i = 0; i < primesLength_; i++)
     {
         if (primes[i] != 0)
             printf("%d\n", primes[i]);

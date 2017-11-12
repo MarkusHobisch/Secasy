@@ -3,15 +3,10 @@
 #include <stdlib.h>
 #include <time.h>
 #include "BlockOne.h"
-#include <glib.h>
 
 char input_filename_[FILENAME_LEN];
 unsigned long rounds_ = 10000;
 unsigned long prime_index_ = 16000000;
-
-
-
-long convertToMB(long bytes);
 
 
 int main(int argc, char **argv)
@@ -39,26 +34,26 @@ int main(int argc, char **argv)
 
         if (i == 2) // the second passed argument: amount of rounds
         {
-            char *succ;
-            long rounds = strtol(argv[i], &succ, 10);
+            char *end_ptr;
+            long rounds = strtol(argv[i], &end_ptr, 10);
             if (rounds <= 0)
             {
                 printf("rounds <= 0 is not allowed!\n");
                 return -1;
             }
-            rounds_ = rounds;
+            rounds_ = (unsigned long) rounds;
         }
 
         if (i == 3) // the third passed argument: the number of generated primes
         {
-            char *succ;
-            long primes = strtol(argv[i], &succ, 10);
+            char *end_ptr;
+            long primes = strtol(argv[i], &end_ptr, 10);
             if (primes <= 0)
             {
                 printf("prime index <= 0 is not allowed!\n");
                 return -1;
             }
-            prime_index_ = primes;
+            prime_index_ = (unsigned long) primes;
         }
     }
     printf("input_filename_: %s\n", input_filename_);
@@ -68,13 +63,20 @@ int main(int argc, char **argv)
     // Todo some calculations...
     generateField();
     // printAllPrimes();
+    // printField();
+    printColorIndexes();
+    printSumsAndValues();
+    meltingPot();
+    printField();
 
+    long hashValue = getHashValue();
+    printf("-------------- RESULTS --------------------------\n");
+    printf("hash value (long): %li \n", hashValue);
 
-    printf("\n\nTotal time: %d seconds", (int) (clock() - tStart) / CLOCKS_PER_SEC);
-}
+    printf("hash value: (hex): %llx\n", hashValue);
+    /*char string[64];
+    snprintf (string, 64, "hash value: (hex): %lX \n", hashValue);*/
 
-long convertToMB(long bytes)
-{
-    return bytes / (1024 * 1024);
+    printf("\n\nTotal time: %.2f seconds", (double)(clock() - tStart) / CLOCKS_PER_SEC);
 }
 

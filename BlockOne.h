@@ -23,10 +23,35 @@
 extern char input_filename_[FILENAME_LEN];
 extern unsigned long rounds_;
 extern unsigned long prime_index_;
+extern int primesLength_;
+extern int field_[SIZE][SIZE];
+extern int colorIndexes_[SIZE][SIZE];
+
 
 extern int *generatePrimeNumbers(unsigned int n);
+
 extern void generateField();
+
 extern void printAllPrimes();
 
+extern void printField();
+
+extern void printColorIndexes();
+
+extern void printSumsAndValues();
+
+extern void meltingPot();
+
+extern long getHashValue();
+
+extern void calcSum();
+
+struct Position
+{
+    int x;
+    int y;
+};
+
+struct Position pos;
 
 #endif //SECASY_BLOCKONE_H

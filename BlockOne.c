@@ -6,14 +6,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "BlockOne.h"
-#include <glib.h>
 
 
-int field[SIZE][SIZE];
+int field_[SIZE][SIZE];
 int primeIndexes[SIZE][SIZE];
-int colorIndexes[SIZE][SIZE];
+int colorIndexes_[SIZE][SIZE];
 int rowSum[SIZE];
 int columnSum[SIZE];
+
 int lastPrime = 0;
 int colorLen = 5;
 int counter = 0;
@@ -21,8 +21,6 @@ int primeIndex = 0;
 int colorIndex = 0;
 int *primeArray;
 
-
-void generateField();
 
 void readAndProcessFile();
 
@@ -32,21 +30,42 @@ int logical_shift_right(int a, int b);
 
 void toBinaryString(int n);
 
+void fillField(char dir[4]);
+
+int nextPrimeNumber();
+
+void writeOnMove(char i);
+
+int fastMod(int param, int i);
+
+long getFieldSum();
+
+long getMultipliedSums();
+
+void printField();
+
+void printColorIndexes();
+
+void printSumsAndValues();
+
+long getHashValue();
+
+
 void generateField()
 {
 
-    //first check if field size is power of 2!
+    //first check if field_ size is power of 2!
     assert((SIZE & (SIZE - 1)) == 0); // SIZE is not the power of 2!
 
     if (primeArray == NULL)
         primeArray = generatePrimeNumbers(prime_index_);
 
-    // init field
+    // init field_
     for (int i = 0; i < SIZE; i++)
     {
         for (int j = 0; j < SIZE; j++)
         {
-            field[i][j] = 2;
+            field_[i][j] = 2;
         }
     }
 
@@ -67,14 +86,14 @@ void readAndProcessFile()
         return;
     }
 
-    fseek(filePtr, 0, SEEK_END);          // Jump to the end of the file
-    fileLen = ftell(filePtr);             // Get the current byte offset in the file
-    rewind(filePtr);                      // Jump back to the beginning of the file
+    fseek(filePtr, 0, SEEK_END);
+    fileLen = ftell(filePtr);
+    rewind(filePtr);
 
-    buffer = (char *) malloc((fileLen + 1) * sizeof(char)); // Enough memory for file + \0
-    fread(buffer, fileLen, 1, filePtr); // Read in the entire file
-    fclose(filePtr); // Close the file
-    printf("File length: %d bytes\n", fileLen);
+    buffer = (char *) malloc((fileLen + 1) * sizeof(char));
+    fread(buffer, (size_t) fileLen, 1, filePtr);
+    fclose(filePtr);
+    printf("File length: %lu bytes\n", fileLen);
 
     //iterate through buffer
     char dir[4];
@@ -93,13 +112,98 @@ void readAndProcessFile()
             dir[2] = 0;
             dir[3] = 0;
         }
-        //fillField(direction_list);
+        fillField(dir);
     }
 
     //finally
     // update last position
-    /* field[Postition.posX][Postition.posY] = nextPrime();
-     lastPrime = field[Postition.posX][Postition.posY];*/
+    /* field_[Postition.posX][Postition.posY] = nextPrime();
+     lastPrime = field_[Postition.posX][Postition.posY];*/
+}
+
+void fillField(char dir[4])
+{
+    //  printf("start by pos[%d,%d]", pos.x, pos.y);
+    for (int i = 0; i < 4; i++)
+    {
+        writeOnMove(dir[i]);
+        counter++;
+    }
+}
+
+void writeOnMove(char direction)
+{
+    int oldPrime = field_[pos.x][pos.y];
+    int nextPrime = nextPrimeNumber();
+    field_[pos.x][pos.y] = nextPrime;
+    // printf(" prime -> new value: %d\n", nextPrime);
+
+    int newPosition;
+    int diff;
+    switch (direction)
+    {
+        case UP:
+            diff = pos.y - oldPrime + SQUARE_AVOIDANCE_FACTOR;
+            newPosition = fastMod(fastMod(diff, SIZE) + SIZE, SIZE);
+
+            if (newPosition == pos.y)
+                newPosition = 1;
+
+            pos.y = newPosition;
+            // printf(" UP\n");
+            break;
+        case DOWN:
+            diff = pos.y + oldPrime;
+            newPosition = fastMod(fastMod(diff, SIZE) + SIZE, SIZE);
+
+            if (newPosition == pos.y)
+                newPosition = 1;
+
+            pos.y = newPosition;
+            //printf(" DOWN\n");
+            break;
+        case LEFT:
+            diff = pos.x - oldPrime;
+            newPosition = fastMod(fastMod(diff, SIZE) + SIZE, SIZE);
+
+            if (newPosition == pos.x)
+                newPosition = 1;
+
+            pos.x = newPosition;
+            //printf(" LEFT\n");
+            break;
+        case RIGHT:
+            diff = pos.x + oldPrime + SQUARE_AVOIDANCE_FACTOR;
+            newPosition = fastMod(fastMod(diff, SIZE) + SIZE, SIZE);
+
+            if (newPosition == pos.x)
+                newPosition = 1;
+
+            pos.x = newPosition;
+            //printf(" RIGHT\n");
+            break;
+        default:
+            printf("UNKNOWN POSITION !!\n");
+            break;
+    }
+}
+
+int fastMod(int dividend, int divisor)
+{
+    return dividend & (divisor - 1);
+}
+
+int nextPrimeNumber()
+{
+    primeIndex = primeIndexes[pos.x][pos.y];
+    colorIndex = colorIndexes_[pos.x][pos.y];
+
+    primeIndex = ++primeIndex < primesLength_ ? primeIndex : 0;
+    colorIndex = (++colorIndex < colorLen) && primeIndex != 0 ? colorIndex : 0;
+
+    primeIndexes[pos.x][pos.y] = primeIndex;
+    colorIndexes_[pos.x][pos.y] = colorIndex;
+    return primeArray[primeIndex];
 }
 
 void calcDirections(int ops, char *dir)
@@ -107,10 +211,10 @@ void calcDirections(int ops, char *dir)
     int index = 4;
     while (ops != 0)
     {
-        dir[--index] = ops & 3;
+        dir[--index] = (char) (ops & 3); // max ops length is always 8 bits, otherwise assertion will fail!
         ops = logical_shift_right(ops, 2); // is the same as ops >>>= 2 in Java
         // toBinaryString(ops);
-        assert(index >= 0);
+        assert(index >= 0 && "index is negative!");
     }
 }
 
@@ -131,5 +235,131 @@ void toBinaryString(int n)
         n >>= 1;
     }
     printf("\n");
+}
+
+void calcSum()
+{
+    int sum;
+    for (int j = 0; j < SIZE; j++)
+    {
+        sum = 0;
+        for (int i = 0; i < SIZE; i++)
+        {
+            sum += field_[i][j];
+        }
+        rowSum[j] = sum;
+    }
+
+    for (int j = 0; j < SIZE; j++)
+    {
+        sum = 0;
+        for (int i = 0; i < SIZE; i++)
+        {
+            sum += field_[j][i];
+        }
+        columnSum[j] = sum;
+    }
+}
+
+long getFieldSum()
+{
+    int sum = 0;
+    for (int i = 0; i < SIZE; ++i)
+    {
+        for (int j = 0; j < SIZE; ++j)
+        {
+            sum += field_[i][j];
+        }
+    }
+    return sum;
+}
+
+long getMultipliedSums()
+{
+    long muliply1 = 1;
+    long muliply2 = 1;
+    for (int i = 0; i < SIZE; i++)
+    {
+        muliply1 *= rowSum[i];
+    }
+
+    for (int i = 0; i < SIZE; i++)
+    {
+        muliply2 *= columnSum[i];
+    }
+    return (muliply1 + muliply2);
+}
+
+void printField()
+{
+    printf("-------------- Prime Field ------------\n");
+    printf("\n\t Origin matrix - \n");
+    printf("last postion: [%d,%d] \n", pos.x, pos.y);
+
+    for (int j = 0; j < SIZE; j++)
+    {
+        for (int i = 0; i < SIZE; i++)
+        {
+            printf("%16d ", field_[i][j]);
+        }
+        printf("sum row: %d\n", rowSum[j]);
+    }
+
+    printf("\n\t Transposed matrix\n");
+    for (int j = 0; j < SIZE; j++)
+    {
+        for (int i = 0; i < SIZE; i++)
+        {
+            printf("%16d ", field_[j][i]);
+        }
+        printf("sum column: %d", columnSum[j]);
+    }
+}
+
+void printColorIndexes()
+{
+    printf("-------------- ColorIndexes ------------\n");
+    for (int j = 0; j < SIZE; j++)
+    {
+        for (int i = 0; i < SIZE; i++)
+        {
+            printf("%4d ", colorIndexes_[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+void printSumsAndValues()
+{
+    printf("\n");
+    printf("- Print row sums: \n");
+    for (int i = 0; i < SIZE; ++i)
+    {
+        printf("  Row: %d\n", rowSum[i]);
+    }
+    printf("\n");
+    printf("- Print column sums: \n");
+    for (int j = 0; j < SIZE; ++j)
+    {
+        printf("  Column: %d\n", columnSum[j]);
+    }
+    printf("\n");
+    printf("- Last prime was %d\n", lastPrime);
+    printf("- Last position was [%d,%d]\n", pos.x, pos.y);
+    printf("multiply over sums: %d", getMultipliedSums());
+    printf("Anzahl der Durchläufe: %4d \n", counter);
+}
+
+long getHashValue()
+{
+    calcSum();
+    const long checksum = getMultipliedSums() ^lastPrime;
+    printf("checksum = %d\n", checksum);
+
+    const long fieldSum = getFieldSum();
+    printf("fieldSum = %d\n", fieldSum);
+
+    return checksum ^ fieldSum; // hash value
+
 }
 
