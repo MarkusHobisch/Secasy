@@ -38,7 +38,7 @@ void meltingPot()
             if (++posY == SIZE)
             {
                 posY = 0;
-                printf("Completely surrounded once!");
+                //printf("Completely surrounded once!\n");
             }
         }
     }

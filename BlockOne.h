@@ -42,7 +42,7 @@ extern void printSumsAndValues();
 
 extern void meltingPot();
 
-extern long getHashValue();
+extern long long int getHashValue();
 
 extern void calcSum();
 
