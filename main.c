@@ -64,11 +64,11 @@ int main(int argc, char **argv)
     // Todo some calculations...
     generateField();
     // printAllPrimes();
-    printField();
+    //printField();
     printColorIndexes();
     printSumsAndValues();
     meltingPot();
-    //printField();
+    printField();
 
     long long hashValue = getHashValue();
     printf("-------------- RESULTS --------------------------\n");

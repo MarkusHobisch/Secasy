@@ -77,52 +77,38 @@ void generateField()
 
 void readAndProcessFile()
 {
-    FILE *filePtr;
-    char *buffer;
-    long fileLen;
-
-    filePtr = fopen(input_filename_, "rb");  // Open the file in binary mode
-    if (!filePtr)
-    {
-        printf("File could not be opened! Check your path name!\n");
-        return;
-    }
-
-    fseek(filePtr, 0, SEEK_END);
-    fileLen = ftell(filePtr);
-    rewind(filePtr);
-
-    buffer = (char *) malloc((fileLen + 1) * sizeof(char));
-    if (!buffer)
-    {
-        printf("Could not allocate buffer!");
-        return;
-    }
-    fread(buffer, (size_t) fileLen, 1, filePtr);
-    fclose(filePtr);
-    printf("File length: %lu bytes\n", fileLen);
-
-    //iterate through buffer
+    FILE *file = NULL;
+    unsigned char buffer[1024];
+    size_t bytesRead = 0;
     int dir[4] = {0};
-    int byte; // must be int!
-    for (int i = 0; i < fileLen; ++i)
-    {
-        byte = buffer[i];
-        if (byte != 0)
-        {
-            int block = byte & 0xFF; // byte to int conversation
-            calcDirections(block, dir);
-        } else
-        {
-            dir[0] = 0;
-            dir[1] = 0;
-            dir[2] = 0;
-            dir[3] = 0;
-        }
-        fillField(dir);
-        clearArray(dir);
-    }
+    int block = 0;
 
+    file = fopen(input_filename_, "rb");
+
+    if (file != NULL)
+    {
+        while ((bytesRead = fread(buffer, 1, sizeof(buffer), file)) > 0)
+        {
+            int byte; // must be int!
+            for (int i = 0; i < bytesRead; ++i)
+            {
+                byte = buffer[i];
+                if (byte != 0)
+                {
+                    block = byte & 0xFF; // byte to int conversation
+                    calcDirections(block, dir);
+                } else
+                {
+                    dir[0] = 0;
+                    dir[1] = 0;
+                    dir[2] = 0;
+                    dir[3] = 0;
+                }
+                fillField(dir);
+                clearArray(dir);
+            }
+        }
+    }
     // update last position
     field_[pos.x][pos.y] = nextPrimeNumber();
     lastPrime = field_[pos.x][pos.y];
@@ -327,14 +313,14 @@ long long getMultipliedSums()
 void printField()
 {
     printf("-------------- Prime Field ------------\n");
-    printf("\n\t Origin matrix - \n");
+    printf("\n\t Origin matrix - ");
     printf("last position: [%d,%d] \n", pos.x, pos.y);
     calcSum();
     for (int j = 0; j < SIZE; j++)
     {
         for (int i = 0; i < SIZE; i++)
         {
-            printf("%10d ", field_[i][j]);
+            printf("%15d ", field_[i][j]);
         }
         printf("sum row: %d\n", rowSum[j]);
     }
@@ -344,7 +330,7 @@ void printField()
     {
         for (int i = 0; i < SIZE; i++)
         {
-            printf("%10d ", field_[j][i]);
+            printf("%15d ", field_[j][i]);
         }
         printf("sum column: %d\n", columnSum[j]);
     }
