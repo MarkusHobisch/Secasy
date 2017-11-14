@@ -3,21 +3,40 @@
 //
 
 #include <stdio.h>
+#include <mem.h>
+#include <stdlib.h>
+#include <math.h>
 #include "BlockOne.h"
 
 int colorIndex;
 
-void meltingPot();
+char *meltingPot();
 
 void processData(int colorIndex, int posX, int posY);
 
-void meltingPot()
+void initBuffer(char buffer[]);
+
+char *meltingPot()
 {
     printf("-------------- Processing Data ------------\n");
     printf("ROUNDS = %7d \n", rounds_);
 
     int posX = pos.x;
     int posY = pos.y;
+    int iterations = bit_size_ / 64;
+    int limit = ceil(rounds_ / iterations + 0.5);
+    long long hash_val;
+    int newLimit = limit;
+
+    char *finalHashValue = calloc(bit_size_ + 1, sizeof(char));
+    if (!finalHashValue)
+    {
+        printf("Not enough memory!\n");
+        return "ERROR";
+    }
+
+    initBuffer(finalHashValue);
+
     for (long k = 0; k < rounds_; k++)
     {
         // printf("current pos: [%d,%d]\n", posX, posY);
@@ -41,8 +60,34 @@ void meltingPot()
                 //printf("Completely surrounded once!\n");
             }
         }
+
+        if (k == newLimit)
+        {
+            hash_val = generateHashValue();
+            char buffer[64];
+            sprintf(buffer, "%llx", hash_val);
+            strcat(finalHashValue, buffer);
+            newLimit += limit;
+            printf("partial hash value #%d:            %s \n", newLimit / limit - 1, buffer);
+        }
     }
-    calcSum();
+
+    // final
+    hash_val = generateHashValue();
+    char buffer[64];
+    sprintf(buffer, "%llx", hash_val);
+    strcat(finalHashValue, buffer);
+    printf("partial hash value #%d:            %s \n", newLimit / limit, buffer);
+
+    return finalHashValue;
+}
+
+void initBuffer(char buffer[])
+{
+    for (int i = 0; i < (bit_size_ + 1); ++i)
+    {
+        buffer[i] = 0;
+    }
 }
 
 void processData(int colorIndex, int posX, int posY)

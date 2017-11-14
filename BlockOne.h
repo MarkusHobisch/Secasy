@@ -25,6 +25,7 @@
 extern char input_filename_[FILENAME_LEN];
 extern unsigned long rounds_;
 extern unsigned long prime_index_;
+extern int bit_size_;
 extern int primesLength_;
 extern int field_[SIZE][SIZE];
 extern int colorIndexes_[SIZE][SIZE];
@@ -42,11 +43,13 @@ extern void printColorIndexes();
 
 extern void printSumsAndValues();
 
-extern void meltingPot();
+extern char * meltingPot();
 
-extern long long int getHashValue();
+extern long long int generateHashValue();
 
 extern void calcSum();
+
+extern long long generateHashValue();
 
 struct Position
 {

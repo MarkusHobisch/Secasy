@@ -46,7 +46,7 @@ void printColorIndexes();
 
 void printSumsAndValues();
 
-long long int getHashValue();
+long long int generateHashValue();
 
 void toBinaryString(int n);
 
@@ -372,23 +372,23 @@ void printSumsAndValues()
     printf("- Number of iterations: %4d \n", counter);
 }
 
-long long getHashValue()
-{
-    calcSum();
-    const long long checksum = getMultipliedSums() ^lastPrime;
-    printf("checksum = %lld\n", checksum);
-
-    const long long fieldSum = getFieldSum();
-    printf("fieldSum = %lld\n", fieldSum);
-
-    return checksum ^ fieldSum; // hash value
-
-}
-
 void toBinaryString(int n)
 {
     char output[9];
     itoa(n, output, 2);
     printf("%s\n", output);
+}
+
+long long generateHashValue()
+{
+    calcSum();
+    const long long checksum = getMultipliedSums() ^lastPrime;
+    //printf("checksum = %lld\n", checksum);
+
+    const long long fieldSum = getFieldSum();
+    //printf("fieldSum = %lld\n", fieldSum);
+
+    return checksum ^ fieldSum; // hash value
+
 }
 

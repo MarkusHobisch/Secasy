@@ -7,6 +7,8 @@
 char input_filename_[FILENAME_LEN];
 unsigned long rounds_ = 10000;
 unsigned long prime_index_ = 16000000;
+int bit_size_ = 64;
+char *hashValue;
 
 void printDatatypeMaxValues();
 
@@ -56,6 +58,22 @@ int main(int argc, char **argv)
             }
             prime_index_ = (unsigned long) primes;
         }
+
+        if (i == 4)
+        {
+            char *end_ptr;
+            long bit_size = strtol(argv[i], &end_ptr, 10);
+            if (bit_size < 64)
+            {
+                printf("Bit size small than 64 is not supported!\n");
+                return -1;
+            } else if ((bit_size & (bit_size - 1)) != 0)
+            {
+                printf("Bit size must be a multiple of two!\n");
+                return -1;
+            }
+            bit_size_ = bit_size;
+        }
     }
     printf("input_filename_: %s\n", input_filename_);
     printf("rounds_: %lu\n", rounds_);
@@ -65,19 +83,14 @@ int main(int argc, char **argv)
     generateField();
     // printAllPrimes();
     //printField();
-    printColorIndexes();
-    printSumsAndValues();
-    meltingPot();
-    printField();
+    //printColorIndexes();
+    //printSumsAndValues();
+    hashValue = meltingPot();
+    //printField();
 
-    long long hashValue = getHashValue();
-    printf("-------------- RESULTS --------------------------\n");
-    printf("hash value (long): %llu \n", hashValue);
-
-    printf("hash value: (hex): %llx\n", hashValue);
-    /*char string[64];
-    snprintf (string, 64, "hash value: (hex): %lX \n", hashValue);*/
-
+    printf("\n\n++++++++++++++++++++++++++++ HASH VALUE ++++++++++++++++++++++++++++++++++++++\n");
+    printf("%s \n", hashValue);
+    printf("\n++++++++++++++++++++++++++++ HASH VALUE ++++++++++++++++++++++++++++++++++++++\n");
     printf("\n\nTotal time: %.2f seconds", (double) (clock() - tStart) / CLOCKS_PER_SEC);
     // printDatatypeMaxValues();
 }
