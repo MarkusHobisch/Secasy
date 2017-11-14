@@ -24,15 +24,15 @@ int *primeArray;
 
 void readAndProcessFile();
 
-void calcDirections(int ops, char *dir);
+void calcDirections(int ops, int *dir);
 
 int logical_shift_right(int a, int b);
 
-void fillField(char dir[4]);
+void fillField(int *dir);
 
 int nextPrimeNumber();
 
-void writeOnMove(char i);
+void writeOnMove(int i);
 
 int fastMod(int param, int i);
 
@@ -48,6 +48,10 @@ void printSumsAndValues();
 
 long long int getHashValue();
 
+void toBinaryString(int n);
+
+
+void clearArray(int dir[4]);
 
 void generateField()
 {
@@ -99,7 +103,7 @@ void readAndProcessFile()
     printf("File length: %lu bytes\n", fileLen);
 
     //iterate through buffer
-    char dir[4];
+    int dir[4] = {0};
     int byte; // must be int!
     for (int i = 0; i < fileLen; ++i)
     {
@@ -116,6 +120,7 @@ void readAndProcessFile()
             dir[3] = 0;
         }
         fillField(dir);
+        clearArray(dir);
     }
 
     // update last position
@@ -123,22 +128,34 @@ void readAndProcessFile()
     lastPrime = field_[pos.x][pos.y];
 }
 
-void fillField(char dir[4])
+void clearArray(int dir[4])
 {
-    //printf("start by pos[%d,%d]\n", pos.x, pos.y);
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 4; ++i)
     {
-        writeOnMove(dir[i]);
-        counter++;
+        dir[i] = 0;
     }
 }
 
-void writeOnMove(char direction)
+void fillField(int *dir)
+{
+    if (DEBUG_MODE)
+        printf("start by pos[%d,%d]\n", pos.x, pos.y);
+    for (int i = 0; i < 4; i++)
+    {
+        writeOnMove(dir[i]);
+    }
+}
+
+void writeOnMove(int direction)
 {
     int oldPrime = field_[pos.x][pos.y];
     int nextPrime = nextPrimeNumber();
     field_[pos.x][pos.y] = nextPrime;
-    //printf("%d prime -> new value: %d ", oldPrime, nextPrime);
+    if (DEBUG_MODE)
+    {
+        printf("%d prime -> new value: %d ", oldPrime, nextPrime);
+        printf("dir: %d", direction);
+    }
 
     int newPosition;
     int diff;
@@ -158,7 +175,8 @@ void writeOnMove(char direction)
             }
 
             pos.y = newPosition;
-            //printf(" UP\n");
+            if (DEBUG_MODE)
+                printf(" UP\n");
             break;
         case DOWN:
             diff = pos.y + oldPrime;
@@ -174,7 +192,8 @@ void writeOnMove(char direction)
             }
 
             pos.y = newPosition;
-            // printf(" DOWN\n");
+            if (DEBUG_MODE)
+                printf(" DOWN\n");
             break;
         case LEFT:
             diff = pos.x - oldPrime;
@@ -190,7 +209,8 @@ void writeOnMove(char direction)
             }
 
             pos.x = newPosition;
-            // printf(" LEFT\n");
+            if (DEBUG_MODE)
+                printf(" LEFT\n");
             break;
         case RIGHT:
             diff = pos.x + oldPrime + SQUARE_AVOIDANCE_FACTOR;
@@ -206,7 +226,8 @@ void writeOnMove(char direction)
             }
 
             pos.x = newPosition;
-            // printf(" RIGHT\n");
+            if (DEBUG_MODE)
+                printf(" RIGHT\n");
             break;
         default:
             printf("UNKNOWN POSITION !!\n");
@@ -232,16 +253,17 @@ int nextPrimeNumber()
     return primeArray[primeIndex];
 }
 
-void calcDirections(int ops, char *dir)
+void calcDirections(int ops, int *dir)
 {
     int index = 0;
     while (ops != 0)
     {
-        dir[index++] = (char) (ops & 3); // max ops length is always 8 bits, otherwise assertion will fail!
+        dir[index++] = (ops & 3); // max ops length is always 8 bits, otherwise assertion will fail!
         ops = logical_shift_right(ops, 2); // is the same as ops >>>= 2 in Java
-        // toBinaryString(ops);
         assert(index <= 4 && "index is negative!");
+        counter++;
     }
+
 }
 
 int logical_shift_right(int a, int b)
@@ -306,13 +328,13 @@ void printField()
 {
     printf("-------------- Prime Field ------------\n");
     printf("\n\t Origin matrix - \n");
-    printf("last postion: [%d,%d] \n", pos.x, pos.y);
+    printf("last position: [%d,%d] \n", pos.x, pos.y);
     calcSum();
     for (int j = 0; j < SIZE; j++)
     {
         for (int i = 0; i < SIZE; i++)
         {
-            printf("%16d ", field_[i][j]);
+            printf("%10d ", field_[i][j]);
         }
         printf("sum row: %d\n", rowSum[j]);
     }
@@ -322,7 +344,7 @@ void printField()
     {
         for (int i = 0; i < SIZE; i++)
         {
-            printf("%16d ", field_[j][i]);
+            printf("%10d ", field_[j][i]);
         }
         printf("sum column: %d\n", columnSum[j]);
     }
@@ -375,5 +397,12 @@ long long getHashValue()
 
     return checksum ^ fieldSum; // hash value
 
+}
+
+void toBinaryString(int n)
+{
+    char output[9];
+    itoa(n, output, 2);
+    printf("%s\n", output);
 }
 

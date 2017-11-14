@@ -20,6 +20,8 @@
 #define DOWN 3
 #define SQUARE_AVOIDANCE_FACTOR 1 // Prevents the formation of squares
 
+#define DEBUG_MODE 0
+
 extern char input_filename_[FILENAME_LEN];
 extern unsigned long rounds_;
 extern unsigned long prime_index_;

@@ -64,11 +64,11 @@ int main(int argc, char **argv)
     // Todo some calculations...
     generateField();
     // printAllPrimes();
-    // printField();
+    printField();
     printColorIndexes();
     printSumsAndValues();
     meltingPot();
-    printField();
+    //printField();
 
     long long hashValue = getHashValue();
     printf("-------------- RESULTS --------------------------\n");
@@ -79,7 +79,7 @@ int main(int argc, char **argv)
     snprintf (string, 64, "hash value: (hex): %lX \n", hashValue);*/
 
     printf("\n\nTotal time: %.2f seconds", (double) (clock() - tStart) / CLOCKS_PER_SEC);
-    printDatatypeMaxValues();
+    // printDatatypeMaxValues();
 }
 
 void printDatatypeMaxValues()
