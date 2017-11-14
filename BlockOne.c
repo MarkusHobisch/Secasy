@@ -260,7 +260,7 @@ void calcDirections(int ops, int *dir)
     {
         dir[index++] = (ops & 3); // max ops length is always 8 bits, otherwise assertion will fail!
         ops = logical_shift_right(ops, 2); // is the same as ops >>>= 2 in Java
-        assert(index <= 4 && "index is negative!");
+        //assert(index <= 4 && "index is negative!");
         counter++;
     }
 
