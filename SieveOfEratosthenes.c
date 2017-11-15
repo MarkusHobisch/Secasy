@@ -57,7 +57,7 @@ int *generatePrimeNumbers(unsigned int n)
             primes[primesLength_++] = j;
     }
 
-    printf("The number of primes <= %d is %d\n", n, primesLength_);
+    printf("number of primes <= %d is %d\n", n, primesLength_);
     return primes;
 }
 

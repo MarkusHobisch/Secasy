@@ -18,8 +18,7 @@ void initBuffer(char buffer[]);
 
 char *meltingPot()
 {
-    printf("-------------- Processing Data ------------\n");
-    printf("ROUNDS = %7d \n", rounds_);
+    printf("\n-------------- Processing Data --------------------\n");
 
     int posX = pos.x;
     int posY = pos.y;

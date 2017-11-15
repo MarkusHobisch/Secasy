@@ -78,35 +78,38 @@ void generateField()
 void readAndProcessFile()
 {
     FILE *file = NULL;
-    unsigned char buffer[1024];
+    const unsigned int BUFFER_SIZE = 1 * 1024 * 1024;
+    unsigned char buffer[BUFFER_SIZE];
     size_t bytesRead = 0;
     int dir[4] = {0};
     int block = 0;
 
     file = fopen(input_filename_, "rb");
+    if(file == NULL){
+        fprintf(stderr,"Could not open file!\n", file);
+        exit(EXIT_FAILURE);
+    }
 
-    if (file != NULL)
+
+    while ((bytesRead = fread(buffer, sizeof(char), sizeof(buffer), file)) > 0)
     {
-        while ((bytesRead = fread(buffer, 1, sizeof(buffer), file)) > 0)
+        int byte; // must be int!
+        for (int i = 0; i < bytesRead; ++i)
         {
-            int byte; // must be int!
-            for (int i = 0; i < bytesRead; ++i)
+            byte = buffer[i];
+            if (byte != 0)
             {
-                byte = buffer[i];
-                if (byte != 0)
-                {
-                    block = byte & 0xFF; // byte to int conversation
-                    calcDirections(block, dir);
-                } else
-                {
-                    dir[0] = 0;
-                    dir[1] = 0;
-                    dir[2] = 0;
-                    dir[3] = 0;
-                }
-                fillField(dir);
-                clearArray(dir);
+                block = byte & 0xFF; // byte to int conversation
+                calcDirections(block, dir);
+            } else
+            {
+                dir[0] = 0;
+                dir[1] = 0;
+                dir[2] = 0;
+                dir[3] = 0;
             }
+            fillField(dir);
+            clearArray(dir);
         }
     }
     // update last position
