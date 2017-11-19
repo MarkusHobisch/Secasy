@@ -85,8 +85,9 @@ void readAndProcessFile()
     int block = 0;
 
     file = fopen(input_filename_, "rb");
-    if(file == NULL){
-        fprintf(stderr,"Could not open file!\n", file);
+    if (file == NULL)
+    {
+        fprintf(stderr, "Could not open file!\n", file);
         exit(EXIT_FAILURE);
     }
 

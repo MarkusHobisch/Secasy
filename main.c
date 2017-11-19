@@ -20,13 +20,13 @@ int main(int argc, char **argv)
     clock_t tStart = clock();
 
     int opt;
-    while ((opt = getopt(argc, argv, "r:i:b:")) != -1)
+    while ((opt = getopt(argc, argv, "r:i:n:")) != -1)
     {
         switch (opt)
         {
             case 'r':
             {
-                char *end_ptr = NULL;
+                char *end_ptr;
                 long rounds = strtol(optarg, &end_ptr, 10);
                 if (rounds <= 0)
                 {
@@ -48,7 +48,7 @@ int main(int argc, char **argv)
                 prime_index_ = (unsigned long) primes;
                 break;
             }
-            case 'b':
+            case 'n':
             {
                 char *end_ptr;
                 long bit_size = strtol(optarg, &end_ptr, 10);
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
                 break;
             }
             default:
-                fprintf(stderr, "Usage: %s [-ilw] [file...]\n", argv[0]);
+                fprintf(stderr, "Usage: %s [-rin] [file...]\n", argv[0]);
                 exit(EXIT_FAILURE);
         }
     }
