@@ -8,12 +8,12 @@
 char input_filename_[FILENAME_LEN];
 unsigned long rounds_ = 10000;
 unsigned long prime_index_ = 16000000;
-int bit_size_ = 64;
+int bit_size_ = 512;
 char *hashValue;
 
 void printDatatypeMaxValues();
 
-unsigned int getFileSize();
+long getFileSize();
 
 int main(int argc, char **argv)
 {
@@ -81,9 +81,8 @@ int main(int argc, char **argv)
     printf("input_filename_: %s\n", input_filename_);
     printf("rounds_: %lu\n", rounds_);
     printf("prime_index_: %ld\n", prime_index_);
-    printf("bit_size_: %ld\n", bit_size_);
+    printf("bit_size_: %d\n", bit_size_);
 
-    // Todo some calculations...
     generateField();
     // printAllPrimes();
     //printField();
@@ -102,7 +101,7 @@ int main(int argc, char **argv)
     // printDatatypeMaxValues();
 }
 
-unsigned int getFileSize()
+long getFileSize()
 {
     FILE *fp = fopen(input_filename_, "rb");
     fseek(fp, 0L, SEEK_END);
@@ -113,7 +112,7 @@ void printDatatypeMaxValues()
 {
     printf("\n\n**************/////// MAX VALUES OF DATATYPES ///////**************\n");
     printf("+ LONG_MAX                 %ld\n", LONG_MAX);
-    printf("+ INT_MAX                  %ld\n", INT_MAX);
+    printf("+ INT_MAX                  %i\n", INT_MAX);
     printf("+ LONG_LONG_MAX            %llu\n", LLONG_MAX);
     printf("+ I64_MAX                  %llu\n", _I64_MAX);
     printf("+ UNSIGNED_LONG_LONG_MAX   %llu\n", ULONG_LONG_MAX);

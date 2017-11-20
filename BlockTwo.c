@@ -4,13 +4,11 @@
 
 #include <stdio.h>
 #include <mem.h>
-#include <stdlib.h>
 #include <math.h>
+#include <stdlib.h>
 #include "BlockOne.h"
 
 int colorIndex;
-
-char *meltingPot();
 
 void processData(int colorIndex, int posX, int posY);
 
@@ -23,11 +21,11 @@ char *meltingPot()
     int posX = pos.x;
     int posY = pos.y;
     int iterations = bit_size_ / 64;
-    int limit = ceil(rounds_ / iterations + 0.5);
+    int limit = (int) ceil(rounds_ / iterations + 0.5);
     long long hash_val;
     int newLimit = limit;
 
-    char *finalHashValue = calloc(bit_size_ + 1, sizeof(char));
+    char *finalHashValue = calloc((size_t) (bit_size_ + 1), sizeof(char));
     if (!finalHashValue)
     {
         printf("Not enough memory!\n");

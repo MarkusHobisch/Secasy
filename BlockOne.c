@@ -32,21 +32,14 @@ void fillField(int *dir);
 
 int nextPrimeNumber();
 
-void writeOnMove(int i);
+void writeOnMove(int direction);
 
-int fastMod(int param, int i);
+int fastMod(int dividend, int divisor);
 
 long long getFieldSum();
 
 long long getMultipliedSums();
 
-void printField();
-
-void printColorIndexes();
-
-void printSumsAndValues();
-
-long long int generateHashValue();
 
 void toBinaryString(int n);
 
@@ -87,7 +80,7 @@ void readAndProcessFile()
     file = fopen(input_filename_, "rb");
     if (file == NULL)
     {
-        fprintf(stderr, "Could not open file!\n", file);
+        fprintf(stderr, "Could not open file!\n");
         exit(EXIT_FAILURE);
     }
 
@@ -372,7 +365,7 @@ void printSumsAndValues()
     printf("\n");
     printf("- Last prime was %d\n", lastPrime);
     printf("- Last position was [%d,%d]\n", pos.x, pos.y);
-    printf("- Get multiplied sums: %d\n", getMultipliedSums());
+    printf("- Get multiplied sums: %lli\n", getMultipliedSums());
     printf("- Number of iterations: %4d \n", counter);
 }
 
