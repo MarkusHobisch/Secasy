@@ -49,8 +49,7 @@ extern long long int generateHashValue();
 
 extern void calcSum();
 
-struct Position
-{
+struct Position {
     int x;
     int y;
 };

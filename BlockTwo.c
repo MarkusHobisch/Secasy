@@ -3,10 +3,10 @@
 //
 
 #include <stdio.h>
-#include <mem.h>
 #include <math.h>
 #include <stdlib.h>
 #include "BlockOne.h"
+#include <string.h>
 
 int colorIndex;
 
@@ -14,8 +14,7 @@ void processData(int colorIndex, int posX, int posY);
 
 void initBuffer(char buffer[]);
 
-char *meltingPot()
-{
+char *meltingPot() {
     printf("\n-------------- Processing Data --------------------\n");
 
     int posX = pos.x;
@@ -25,22 +24,18 @@ char *meltingPot()
     long long hash_val;
     int newLimit = limit;
 
-    char *finalHashValue = calloc((size_t) (bit_size_ + 1), sizeof(char));
-    if (!finalHashValue)
-    {
+    char *finalHashValue = calloc((size_t) (bit_size_ + 1), sizeof (char));
+    if (!finalHashValue) {
         printf("Not enough memory!\n");
         return "ERROR";
     }
 
     initBuffer(finalHashValue);
 
-    for (long k = 0; k < rounds_; k++)
-    {
+    for (long k = 0; k < rounds_; k++) {
         // printf("current pos: [%d,%d]\n", posX, posY);
-        for (int i = 0; i < SIZE; i++)
-        {
-            for (int j = 0; j < SIZE; j++)
-            {
+        for (int i = 0; i < SIZE; i++) {
+            for (int j = 0; j < SIZE; j++) {
                 colorIndex = colorIndexes_[(posX + i) % SIZE][(posY + j) % SIZE];
                 // printf("%d : %d\n", (posX + i) % SIZE, (posY + j) % SIZE);
                 processData(colorIndex, i, j);
@@ -48,18 +43,15 @@ char *meltingPot()
         }
         // printf("Round completed!");
 
-        if (++posX == SIZE)
-        {
+        if (++posX == SIZE) {
             posX = 0;
-            if (++posY == SIZE)
-            {
+            if (++posY == SIZE) {
                 posY = 0;
                 //printf("Completely surrounded once!\n");
             }
         }
 
-        if (k == newLimit)
-        {
+        if (k == newLimit) {
             hash_val = generateHashValue();
             char buffer[64];
             sprintf(buffer, "%llx", hash_val);
@@ -79,18 +71,14 @@ char *meltingPot()
     return finalHashValue;
 }
 
-void initBuffer(char buffer[])
-{
-    for (int i = 0; i < (bit_size_ + 1); ++i)
-    {
+void initBuffer(char buffer[]) {
+    for (int i = 0; i < (bit_size_ + 1); ++i) {
         buffer[i] = 0;
     }
 }
 
-void processData(int colorIndex, int posX, int posY)
-{
-    switch (colorIndex)
-    {
+void processData(int colorIndex, int posX, int posY) {
+    switch (colorIndex) {
         case 0: // add
             if (posY == 0)
                 field_[posX][posY] += 1;
