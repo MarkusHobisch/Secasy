@@ -16,3 +16,5 @@
 *.includecache
 *.log
 cmake-build-debug/
+*.gch
+secasy

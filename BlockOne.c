@@ -1,6 +1,8 @@
-//
-// Created by Markus on 10.11.2017.
-//
+/* Copyright (C) Markus Hobisch - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * Written by Markus Hobisch <markus.hobisch@gmx.at>, November 2017, Austria
+ */
 
 #include <assert.h>
 #include <stdio.h>
