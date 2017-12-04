@@ -123,70 +123,29 @@ void writeOnMove(int direction) {
         printf("dir: %d", direction);
     }
 
-    int newPosition;
-    int diff;
+    int newPos = 0;
     switch (direction) {
         case UP:
-            diff = pos.y - oldPrime + SQUARE_AVOIDANCE_FACTOR;
-            newPosition = fastMod(fastMod(diff, SIZE) + SIZE, SIZE);
-
-            if (newPosition == pos.y) {
-                newPosition += 1;
-                if (newPosition == SIZE)
-                    newPosition = 0;
-                if (newPosition < 0)
-                    newPosition = SIZE - 1;
-            }
-
-            pos.y = newPosition;
+            newPos = pos.y - oldPrime + SQUARE_AVOIDANCE_FACTOR;
+            pos.y = fastMod(fastMod(newPos, SIZE) + SIZE, SIZE);
             if (DEBUG_MODE)
                 printf(" UP\n");
             break;
         case DOWN:
-            diff = pos.y + oldPrime;
-            newPosition = fastMod(fastMod(diff, SIZE) + SIZE, SIZE);
-
-            if (newPosition == pos.y) {
-                newPosition += 1;
-                if (newPosition == SIZE)
-                    newPosition = 0;
-                if (newPosition < 0)
-                    newPosition = SIZE - 1;
-            }
-
-            pos.y = newPosition;
+            newPos = pos.y + oldPrime;
+            pos.y = fastMod(fastMod(newPos, SIZE) + SIZE, SIZE);
             if (DEBUG_MODE)
                 printf(" DOWN\n");
             break;
         case LEFT:
-            diff = pos.x - oldPrime;
-            newPosition = fastMod(fastMod(diff, SIZE) + SIZE, SIZE);
-
-            if (newPosition == pos.x) {
-                newPosition += 1;
-                if (newPosition == SIZE)
-                    newPosition = 0;
-                if (newPosition < 0)
-                    newPosition = SIZE - 1;
-            }
-
-            pos.x = newPosition;
+            newPos = pos.x - oldPrime;
+            pos.x = fastMod(fastMod(newPos, SIZE) + SIZE, SIZE);
             if (DEBUG_MODE)
                 printf(" LEFT\n");
             break;
         case RIGHT:
-            diff = pos.x + oldPrime + SQUARE_AVOIDANCE_FACTOR;
-            newPosition = fastMod(fastMod(diff, SIZE) + SIZE, SIZE);
-
-            if (newPosition == pos.x) {
-                newPosition += 1;
-                if (newPosition == SIZE)
-                    newPosition = 0;
-                if (newPosition < 0)
-                    newPosition = SIZE - 1;
-            }
-
-            pos.x = newPosition;
+            newPos = pos.x + oldPrime + SQUARE_AVOIDANCE_FACTOR;
+            pos.x = fastMod(fastMod(newPos, SIZE) + SIZE, SIZE);
             if (DEBUG_MODE)
                 printf(" RIGHT\n");
             break;

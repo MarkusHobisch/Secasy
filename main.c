@@ -99,6 +99,7 @@ int main(int argc, char **argv) {
     //printSumsAndValues();
     hashValue = meltingPot();
     //printField();
+    printSumsAndValues();
 
     printf("\n\nHASH VALUE: %s \n", hashValue);
 
