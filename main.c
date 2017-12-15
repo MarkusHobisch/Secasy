@@ -17,7 +17,7 @@
  */
 
 char input_filename_[FILENAME_LEN];
-unsigned long rounds_ = 10000;
+unsigned long rounds_ = 100000;
 unsigned long prime_index_ = 16000000;
 int bit_size_ = 512;
 char *hashValue;
@@ -94,12 +94,12 @@ int main(int argc, char **argv) {
 
     generateField();
     // printAllPrimes();
-    //printField();
-    //printColorIndexes();
-    //printSumsAndValues();
+    // printField();
+    // printColorIndexes();
+    // printSumsAndValues();
     hashValue = meltingPot();
     //printField();
-    printSumsAndValues();
+    // printSumsAndValues();
 
     printf("\n\nHASH VALUE: %s \n", hashValue);
 
