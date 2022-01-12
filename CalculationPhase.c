@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-#include "BlockOne.h"
+#include "InitializationPhase.h"
 #include <string.h>
 
 int colorIndex;
@@ -15,12 +15,12 @@ char *meltingPot() {
 
     int posX = pos.x;
     int posY = pos.y;
-    int iterations = bit_size_ / 64;
-    int limit = (int) ceil(rounds_ / iterations + 0.5);
+    int iterations = numberOfBits / 64;
+    int limit = (int) ceil(numberOfRounds / iterations + 0.5);
     long long hash_val;
     int newLimit = limit;
 
-    char *finalHashValue = calloc((size_t) (bit_size_ + 1), sizeof (char));
+    char *finalHashValue = calloc(numberOfBits, sizeof (char));
     if (!finalHashValue) {
         printf("Not enough memory!\n");
         return "ERROR";
@@ -28,11 +28,11 @@ char *meltingPot() {
 
     initBuffer(finalHashValue);
 
-    for (long k = 0; k < rounds_; k++) {
+    for (long k = 0; k < numberOfRounds; k++) {
         // printf("current pos: [%d,%d]\n", posX, posY);
         for (int i = 0; i < SIZE; i++) {
             for (int j = 0; j < SIZE; j++) {
-                colorIndex = colorIndexes_[(posX + i) % SIZE][(posY + j) % SIZE];
+                colorIndex = colorIndexes[(posX + i) % SIZE][(posY + j) % SIZE];
                 // printf("%d : %d\n", (posX + i) % SIZE, (posY + j) % SIZE);
                 processData(colorIndex, i, j);
             }
@@ -68,7 +68,7 @@ char *meltingPot() {
 }
 
 void initBuffer(char buffer[]) {
-    for (int i = 0; i < (bit_size_ + 1); ++i) {
+    for (int i = 0; i < (numberOfBits + 1); ++i) {
         buffer[i] = 0;
     }
 }
@@ -77,36 +77,36 @@ void processData(int colorIndex, int posX, int posY) {
     switch (colorIndex) {
         case 0: // add
             if (posY == 0)
-                field_[posX][posY] += 1;
+                field[posX][posY] += 1;
             else
-                field_[posX][posY] += field_[posX][posY - 1];
+                field[posX][posY] += field[posX][posY - 1];
             break;
         case 1: // sub
             if (posY == (SIZE - 1))
-                field_[posX][posY] -= 1;
+                field[posX][posY] -= 1;
             else
-                field_[posX][posY] -= field_[posX][posY + 1];
+                field[posX][posY] -= field[posX][posY + 1];
             break;
         case 2: // Xor
             if (posX == 0)
-                field_[posX][posY] ^= 1;
+                field[posX][posY] ^= 1;
             else
-                field_[posX][posY] ^= field_[posX - 1][posY];
+                field[posX][posY] ^= field[posX - 1][posY];
             break;
         case 3: // |
             if (posX == (SIZE - 1))
-                field_[posX][posY] |= 1;
+                field[posX][posY] |= 1;
             else
-                field_[posX][posY] |= field_[posX + 1][posY];
+                field[posX][posY] |= field[posX + 1][posY];
             break;
         case 4: // |
             if (posX == 0)
-                field_[posX][posY] |= 1;
+                field[posX][posY] |= 1;
             else
-                field_[posX][posY] |= field_[posX - 1][posY];
+                field[posX][posY] |= field[posX - 1][posY];
             break;
         case 5: // ~
-            field_[posX][posY] = ~field_[posX][posY];
+            field[posX][posY] = ~field[posX][posY];
             break;
         default:
             printf("function not found! %d\n", colorIndex);

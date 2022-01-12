@@ -4,99 +4,161 @@
 #include <time.h>
 #include <getopt.h>
 #include <limits.h>
-#include "BlockOne.h"
+#include "InitializationPhase.h"
 
 /*
      Compile with gcc -Ofast *.c *.h -lm -o secasy
  */
 
-char input_filename_[FILENAME_LEN];
-unsigned long rounds_ = 100000;
-unsigned long prime_index_ = 16000000;
-int bit_size_ = 512;
+// Markus -> b72aead319ecd43e
+
+char *inputFilename;
+unsigned long numberOfRounds = 100000;
+unsigned long maximumPrimeIndex = 16000000;
+int numberOfBits = 512;
 char *hashValue;
+
+void readInCommandLineOptions();
+
+void readAndStoreNumberOfRoundsOption();
 
 void printDatatypeMaxValues();
 
 long getFileSize();
 
-int main(int argc, char **argv) {
+void readAndStoreNumberOfMaximumPrimeIndexOption();
+
+void readAndStoreNumberOfBitsOption();
+
+void readAndStoreFilenameOption();
+
+void printCommandLineOptions();
+
+void printStatistics(clock_t tStart);
+
+int main(int argc, char **argv)
+{
     clock_t tStart = clock();
 
-    if (argc < 2) {
-        printf("Missing file! Please select a file! \n");
-        fprintf(stderr, "Usage: [-rin] [file...]\n");
-        return EXIT_FAILURE;
-    }
+    readInCommandLineOptions(argc, argv);
+    printCommandLineOptions();
 
+    initFieldWithDefaultNumbers(maximumPrimeIndex);
+    readAndProcessFile(inputFilename);
+
+    // Additional information on partial results
+    // printAllPrimes();
+    // printField();
+    // printColorIndexes();
+    // printSumsAndValues();
+    hashValue = meltingPot();
+
+    // Check finally values based on calculations
+    // printField();
+    // printSumsAndValues();
+
+    printf("\n\nHASH VALUE: %s \n", hashValue);
+
+    printStatistics(tStart);
+}
+
+void readInCommandLineOptions(int argc, char **argv)
+{
     int opt;
-    while ((opt = getopt(argc, argv, "r:i:n:")) != -1) {
-        switch (opt) {
+    while ((opt = getopt(argc, argv, "r:i:n:f:")) != -1)
+    {
+        switch (opt)
+        {
             case 'r':
             {
-                char *end_ptr;
-                long rounds = strtol(optarg, &end_ptr, 10);
-                if (rounds <= 0) {
-                    printf("rounds <= 0 is not allowed!\n");
-                    return EXIT_FAILURE;
-                }
-                rounds_ = (unsigned long) rounds;
+                readAndStoreNumberOfRoundsOption();
                 break;
             }
             case 'i':
             {
-                char *end_ptr;
-                long primes = strtol(optarg, &end_ptr, 10);
-                if (primes <= 0) {
-                    printf("prime index <= 0 is not allowed!\n");
-                    return EXIT_FAILURE;
-                }
-                prime_index_ = (unsigned long) primes;
+                readAndStoreNumberOfMaximumPrimeIndexOption();
                 break;
             }
             case 'n':
             {
-                char *end_ptr;
-                long bit_size = strtol(optarg, &end_ptr, 10);
-                if (bit_size < 64) {
-                    printf("Bit size small than 64 is not supported!\n");
-                    return EXIT_FAILURE;
-                } else if ((bit_size & (bit_size - 1)) != 0) {
-                    printf("Bit size must be the power of two!\n");
-                    return EXIT_FAILURE;
-                }
-                bit_size_ = bit_size;
+                readAndStoreNumberOfBitsOption();
                 break;
+            }
+            case 'f':
+            {
+                readAndStoreFilenameOption();
+                break;
+
             }
             default:
                 fprintf(stderr, "Usage: %s [-rin] [file...]\n", argv[0]);
                 exit(EXIT_FAILURE);
         }
     }
+}
 
-    size_t input_len = strlen(argv[argc - 1]) + 1;
-    if (input_len > 100) {
-        printf("Error: filename is too long! [1..100 signs]\n");
-        return EXIT_FAILURE;
+void readAndStoreNumberOfRoundsOption()
+{
+    char *end_ptr;
+    numberOfRounds = strtol(optarg, &end_ptr, 10);
+    if (numberOfRounds <= 0)
+    {
+        printf("rounds <= 0 is not allowed.\n");
+        exit(EXIT_FAILURE);
     }
-    strncpy(input_filename_, argv[argc - 1], 100);
+}
 
-    printf("input_filename_: %s\n", input_filename_);
-    printf("rounds_: %lu\n", rounds_);
-    printf("prime_index_: %ld\n", prime_index_);
-    printf("bit_size_: %d\n", bit_size_);
+void readAndStoreNumberOfMaximumPrimeIndexOption()
+{
+    char *end_ptr;
+    maximumPrimeIndex = strtol(optarg, &end_ptr, 10);
+    if (maximumPrimeIndex <= 0)
+    {
+        printf("prime index <= 0 is not allowed.\n");
+        exit(EXIT_FAILURE);
+    }
+}
 
-    generateField();
-    // printAllPrimes();
-    // printField();
-    // printColorIndexes();
-    // printSumsAndValues();
-    hashValue = meltingPot();
-    //printField();
-    // printSumsAndValues();
+void readAndStoreNumberOfBitsOption()
+{
+    char *end_ptr;
+    numberOfBits = strtol(optarg, &end_ptr, 10);
+    if (numberOfBits < 64)
+    {
+        printf("Bit size small than 64 is not supported.\n");
+        exit(EXIT_FAILURE);
+    } else if ((numberOfBits & (numberOfBits - 1)) != 0)
+    {
+        printf("Bit size must be the power of two.\n");
+        exit(EXIT_FAILURE);
+    }
+}
 
-    printf("\n\nHASH VALUE: %s \n", hashValue);
+void readAndStoreFilenameOption()
+{
+    char *path = optarg;
+    unsigned long lengthOfPath = strlen(path) + 1;
+    if (path == NULL || lengthOfPath <= 0)
+    {
+        printf("Missing file. Please specify a file. \n");
+        fprintf(stderr, "Usage: [-rin] [file...]\n");
+        exit(EXIT_FAILURE);
+    }
+    inputFilename = (char *) calloc(lengthOfPath, sizeof(char));
+    strncpy(inputFilename, path, lengthOfPath);
+}
 
+void printCommandLineOptions()
+{
+    printf("inputFilename: %s\n", inputFilename);
+    printf("numberOfRounds: %lu\n", numberOfRounds);
+    printf("maximumPrimeIndex: %ld\n", maximumPrimeIndex);
+    printf("numberOfBits: %d\n", numberOfBits);
+}
+
+
+void printStatistics(clock_t tStart)
+{
     double time_diff = (double) (clock() - tStart) / CLOCKS_PER_SEC;
     double hash_rate = (double) getFileSize() / time_diff / (1024 * 1024);
     printf("\n\nTotal time: %.2f seconds \n", time_diff);
@@ -105,13 +167,15 @@ int main(int argc, char **argv) {
     // printDatatypeMaxValues();
 }
 
-long getFileSize() {
-    FILE *fp = fopen(input_filename_, "rb");
+long getFileSize()
+{
+    FILE *fp = fopen(inputFilename, "rb");
     fseek(fp, 0L, SEEK_END);
     return ftell(fp);
 }
 
-void printDatatypeMaxValues() {
+void printDatatypeMaxValues()
+{
     printf("\n\n**************/////// MAX VALUES OF DATATYPES ///////**************\n");
     printf("+ LONG_MAX                 %ld\n", LONG_MAX);
     printf("+ INT_MAX                  %i\n", INT_MAX);

@@ -4,7 +4,7 @@ project(Secasy)
 set(CMAKE_C_STANDARD 11)
 set($(pkg-config --cflags --libs glib-2.0))
 
-set(SOURCE_FILES main.c BlockOne.c BlockTwo.c SieveOfEratosthenes.c BlockOne.h)
+set(SOURCE_FILES main.c InitializationPhase.c CalculationPhase.c SieveOfEratosthenes.c InitializationPhase.h)
 add_executable(Secasy ${SOURCE_FILES})
 
 find_package(PkgConfig REQUIRED)
