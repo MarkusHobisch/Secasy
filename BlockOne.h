@@ -1,9 +1,3 @@
-/* Copyright (C) Markus Hobisch - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential
- * Written by Markus Hobisch <markus.hobisch@gmx.at>, November 2017, Austria
- */
-
 #ifndef SECASY_BLOCKONE_H
 #define SECASY_BLOCKONE_H
 
