@@ -10,7 +10,8 @@
      Compile with gcc -Ofast *.c *.h -lm -o secasy
  */
 
-// Markus -> b72aead319ecd43e
+// Markus -> a2ba76c9512
+// -n 64 -i 100 -r 1 -f C...
 
 char *inputFilename;
 unsigned long numberOfRounds = 100000;
@@ -47,15 +48,22 @@ int main(int argc, char **argv)
     readAndProcessFile(inputFilename);
 
     // Additional information on partial results
-    // printAllPrimes();
-    // printField();
-    // printColorIndexes();
-    // printSumsAndValues();
+
+    if(DEBUG_MODE && DEBUG_LOG_EXTENDED){
+        printAllPrimes();
+        printField();
+        printPrimeIndexes();
+        printColorIndexes();
+        printSumsAndValues();
+    }
+
     hashValue = meltingPot();
 
     // Check finally values based on calculations
-    // printField();
-    // printSumsAndValues();
+    if(DEBUG_MODE && DEBUG_LOG_EXTENDED){
+        printField();
+        printSumsAndValues();
+    }
 
     printf("\n\nHASH VALUE: %s \n", hashValue);
 

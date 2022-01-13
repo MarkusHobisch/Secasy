@@ -315,9 +315,9 @@ void printField()
     {
         for (int i = 0; i < SIZE; i++)
         {
-            printf("%15d ", field[i][j]);
+            printf("%10d ", field[i][j]);
         }
-        printf("sum row: %d\n", rowSum[j]);
+        printf("\t sum row: %d\n", rowSum[j]);
     }
 
     printf("\n\t Transposed matrix\n");
@@ -325,9 +325,9 @@ void printField()
     {
         for (int i = 0; i < SIZE; i++)
         {
-            printf("%15d ", field[j][i]);
+            printf("%10d ", field[j][i]);
         }
-        printf("sum column: %d\n", columnSum[j]);
+        printf("\t sum column: %d\n", columnSum[j]);
     }
     printf("\n\n");
 }
@@ -340,6 +340,19 @@ void printColorIndexes()
         for (int i = 0; i < SIZE; i++)
         {
             printf("%4d ", colorIndexes[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+void printPrimeIndexes()
+{
+    printf("-------------- PrimeIndexes ------------\n");
+    for (int j = 0; j < SIZE; j++)
+    {
+        for (int i = 0; i < SIZE; i++)
+        {
+            printf("%4d ", primeIndexes[i][j]);
         }
         printf("\n");
     }
