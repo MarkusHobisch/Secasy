@@ -5,9 +5,7 @@
 
 #define ONE_MB 1048576
 
-int field[SIZE][SIZE];
-int primeIndexes[SIZE][SIZE];
-int colorIndexes[SIZE][SIZE];
+Tile field[SIZE][SIZE];
 int rowSum[SIZE];
 int columnSum[SIZE];
 
@@ -27,7 +25,7 @@ int logicalShiftRight(int a, int b);
 
 void addNumbersToField(int *direction);
 
-int nextPrimeNumber();
+int nextPrimeNumber(Tile *tile);
 
 void writeNextNumberOnMove(int direction);
 
@@ -47,7 +45,7 @@ FILE* readFile(char* filename);
 
 void calcNoDirections(int pInt[4]);
 
-void updateColorAndPrimeIndex();
+int updateColorAndPrimeIndexOfTile(Tile *tile);
 
 void updateLastPosition();
 
@@ -73,7 +71,13 @@ void initSquareFieldWithDefaultValue(int defaultValue)
     {
         for (int j = 0; j < SIZE; j++)
         {
-            field[i][j] = defaultValue;
+            Tile tile;
+            tile.posX = i;
+            tile.posY = j;
+            tile.primeValue = defaultValue;
+            tile.primeIndex = 0;
+            tile.colorIndex = 0;
+            field[i][j] = tile;
         }
     }
 }
@@ -105,7 +109,7 @@ void readAndProcessFile(char* filename)
         }
     }
     updateLastPosition();
-    lastPrime = field[pos.x][pos.y];
+    lastPrime = field[pos.x][pos.y].primeValue;
 }
 
 FILE* readFile(char* filename)
@@ -175,12 +179,13 @@ void addNumbersToField(int *direction)
  */
 void writeNextNumberOnMove(int direction)
 {
-    int oldPrime = field[pos.x][pos.y];
-    int nextPrime = nextPrimeNumber();
-    field[pos.x][pos.y] = nextPrime;
+    Tile *tile = &field[pos.x][pos.y];
+    int oldPrime = tile->primeValue;
+    int nextPrime = nextPrimeNumber(tile);
+    tile->primeValue = nextPrime;
     if (DEBUG_MODE)
     {
-        printf("%d prime -> new value: %d ", oldPrime, nextPrime);
+        printf("old prime: %d -> new prime: %d ", oldPrime, nextPrime);
         printf("dir: %d", direction);
     }
 
@@ -227,24 +232,25 @@ void clearArray(int direction[4])
 
 void updateLastPosition()
 {
-    field[pos.x][pos.y] = nextPrimeNumber();
+    Tile *tile = &field[pos.x][pos.y];
+    tile->primeValue = nextPrimeNumber(tile);
 }
 
-int nextPrimeNumber()
+int nextPrimeNumber(Tile *tile)
 {
-    updateColorAndPrimeIndex();
-    return primeArray[primeIndex];
+    updateColorAndPrimeIndexOfTile(tile);
+    return primeArray[tile->primeIndex];
 }
 
-void updateColorAndPrimeIndex(){
-    primeIndex = primeIndexes[pos.x][pos.y];
-    colorIndex = colorIndexes[pos.x][pos.y];
+int updateColorAndPrimeIndexOfTile(Tile *tile){
+    primeIndex =  tile->primeIndex;
+    colorIndex = tile->colorIndex;
 
     primeIndex = ++primeIndex < numberOfPrimes ? primeIndex : 0;
     colorIndex = (++colorIndex < colorLen) && primeIndex != 0 ? colorIndex : 0;
 
-    primeIndexes[pos.x][pos.y] = primeIndex;
-    colorIndexes[pos.x][pos.y] = colorIndex;
+    tile->primeIndex = primeIndex;
+    tile->colorIndex = colorIndex;
 }
 
 int fastModulus(int dividend, int divisor)
@@ -260,7 +266,7 @@ void calcSum()
         sum = 0;
         for (int i = 0; i < SIZE; i++)
         {
-            sum += field[i][j];
+            sum += field[i][j].primeValue;
         }
         rowSum[j] = sum;
     }
@@ -270,7 +276,7 @@ void calcSum()
         sum = 0;
         for (int i = 0; i < SIZE; i++)
         {
-            sum += field[j][i];
+            sum += field[j][i].primeValue;
         }
         columnSum[j] = sum;
     }
@@ -283,7 +289,7 @@ long long getFieldSum()
     {
         for (int j = 0; j < SIZE; ++j)
         {
-            sum += field[i][j];
+            sum += field[i][j].primeValue;
         }
     }
     return sum;
@@ -315,7 +321,7 @@ void printField()
     {
         for (int i = 0; i < SIZE; i++)
         {
-            printf("%10d ", field[i][j]);
+            printf("%10d ", field[i][j].primeValue);
         }
         printf("\t sum row: %d\n", rowSum[j]);
     }
@@ -325,7 +331,7 @@ void printField()
     {
         for (int i = 0; i < SIZE; i++)
         {
-            printf("%10d ", field[j][i]);
+            printf("%10d ", field[j][i].primeValue);
         }
         printf("\t sum column: %d\n", columnSum[j]);
     }
@@ -339,7 +345,8 @@ void printColorIndexes()
     {
         for (int i = 0; i < SIZE; i++)
         {
-            printf("%4d ", colorIndexes[i][j]);
+            Tile *tile = &field[i][j];
+            printf("%4d ", tile->colorIndex);
         }
         printf("\n");
     }
@@ -352,7 +359,8 @@ void printPrimeIndexes()
     {
         for (int i = 0; i < SIZE; i++)
         {
-            printf("%4d ", primeIndexes[i][j]);
+            Tile *tile = &field[i][j];
+            printf("%4d ", tile->primeIndex);
         }
         printf("\n");
     }

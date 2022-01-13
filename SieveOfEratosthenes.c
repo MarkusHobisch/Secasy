@@ -32,7 +32,7 @@ int *generatePrimeNumbers(unsigned int maxPrimeIndex)
     printf("number of primes <= %d is %d\n", maxPrimeIndex, numberOfPrimes);
     if (DEBUG_MODE)
     {
-        printAllPrimes(primes);
+        // printAllPrimes(primes);
     }
     return primes;
 }

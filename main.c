@@ -11,6 +11,7 @@
  */
 
 // Markus -> a2ba76c9512
+// b72aead319ecd43e
 // -n 64 -i 100 -r 1 -f C...
 
 char *inputFilename;

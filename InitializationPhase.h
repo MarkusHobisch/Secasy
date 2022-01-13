@@ -20,12 +20,27 @@
 #define DEBUG_MODE 1
 #define DEBUG_LOG_EXTENDED 1
 
+typedef struct Positions {
+    int x;
+    int y;
+} Position;
+
+typedef struct Tiles {
+    int posX;
+    int posY;
+    int primeValue;
+    int colorIndex;
+    int primeIndex;
+} Tile;
+
+Position pos;
+#define DEBUG_MODE 1
+#define DEBUG_LOG_EXTENDED 1
+
 extern unsigned long numberOfRounds;
 extern int numberOfBits;
 extern int numberOfPrimes;
-extern int field[SIZE][SIZE];
-extern int colorIndexes[SIZE][SIZE];
-
+extern Tile field[SIZE][SIZE];
 
 extern int *generatePrimeNumbers(unsigned int maxPrimeIndex);
 
@@ -49,11 +64,4 @@ extern long long int generateHashValue();
 
 extern void calcSum();
 
-struct Position {
-    int x;
-    int y;
-};
-
-struct Position pos;
-
-#endif
+#endif //SECASY_INITIALIZATIONPHASE_H
