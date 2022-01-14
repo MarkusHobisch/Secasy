@@ -20,15 +20,17 @@
 #define DEBUG_MODE 1
 #define DEBUG_LOG_EXTENDED 1
 
-typedef struct Positions {
+typedef struct Positions
+{
     int x;
     int y;
 } Position;
 
-typedef struct Tiles {
+typedef struct Tiles
+{
     int posX;
     int posY;
-    int primeValue;
+    int value;
     int colorIndex;
     int primeIndex;
 } Tile;
@@ -41,12 +43,13 @@ extern unsigned long numberOfRounds;
 extern int numberOfBits;
 extern int numberOfPrimes;
 extern Tile field[SIZE][SIZE];
+extern int lastPrime;
 
 extern int *generatePrimeNumbers(unsigned int maxPrimeIndex);
 
 extern void initFieldWithDefaultNumbers(unsigned int maxPrimeIndex);
 
-extern void readAndProcessFile(char* filename);
+extern void readAndProcessFile(char *filename);
 
 extern void printAllPrimes();
 
@@ -58,10 +61,8 @@ extern void printColorIndexes();
 
 extern void printSumsAndValues();
 
-extern char * calculateHashValue();
+extern char *calculateHashValue();
 
 extern long long int generateHashValue();
-
-extern void calcSum();
 
 #endif

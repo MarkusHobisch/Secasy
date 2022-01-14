@@ -15,6 +15,8 @@ void checkBoundariesOfFieldAndResetPositionsIfNecessary(int *posX, int *posY);
 
 char *storeHashValueInBuffer(char *buffer);
 
+void concatenateHashStrings(char *hashValue);
+
 char *calculateHashValue()
 {
     printf("\n-------------- Processing Data --------------------\n");
@@ -43,18 +45,14 @@ char *calculateHashValue()
 
         if (isPartialRoundCompleted(roundCounter, sizeOfOneIteration))
         {
-            char buffer[64];
-            storeHashValueInBuffer(buffer);
-            strcat(hashValue, buffer);
-            printf("Partial hash value #%d:            %s \n", roundCounter / sizeOfOneIteration,
-                   buffer);
+            printf("Partial hash value #%d: ", roundCounter / sizeOfOneIteration);
+            concatenateHashStrings(hashValue);
         }
     }
 
-    char buffer[64];
-    storeHashValueInBuffer(buffer);
-    strcat(hashValue, buffer);
-    printf("Partial hash value #%d:            %s \n", roundCounter / sizeOfOneIteration + 1, buffer);
+    int numberOfLastRound = roundCounter > 1 ? roundCounter / sizeOfOneIteration + 1 : 1;
+    printf("Partial hash value #%d: ", numberOfLastRound);
+    concatenateHashStrings(hashValue);
 
     return hashValue;
 }
@@ -77,51 +75,51 @@ void processData(int colorIndex, int posX, int posY)
     {
         case 0: // add
             if (posY == 0)
-                tile->primeValue += 1;
+                tile->value += 1;
             else
             {
                 Tile neighbourTileAbove = field[posX][posY - 1];
-                tile->primeValue += neighbourTileAbove.primeValue;
+                tile->value += neighbourTileAbove.value;
             }
             break;
         case 1: // sub
             if (posY == (SIZE - 1))
-                tile->primeValue -= 1;
+                tile->value -= 1;
             else
             {
                 Tile neighbourTileBelow = field[posX][posY + 1];
-                tile->primeValue -= neighbourTileBelow.primeValue;
+                tile->value -= neighbourTileBelow.value;
             }
             break;
         case 2: // Xor
             if (posX == 0)
-                tile->primeValue ^= 1;
+                tile->value ^= 1;
             else
             {
                 Tile neighbourTileLeft = field[posX - 1][posY];
-                tile->primeValue ^= neighbourTileLeft.primeValue;
+                tile->value ^= neighbourTileLeft.value;
             }
             break;
         case 3: // |
             if (posX == (SIZE - 1))
-                tile->primeValue |= 1;
+                tile->value |= 1;
             else
             {
                 Tile neighbourTileRight = field[posX + 1][posY];
-                tile->primeValue |= neighbourTileRight.primeValue;
+                tile->value |= neighbourTileRight.value;
             }
             break;
         case 4: // |
             if (posX == 0)
-                tile->primeValue |= 1;
+                tile->value |= 1;
             else
             {
                 Tile neighbourTileLeft = field[posX - 1][posY];
-                tile->primeValue |= neighbourTileLeft.primeValue;
+                tile->value |= neighbourTileLeft.value;
             }
             break;
         case 5: // ~
-            tile->primeValue = ~tile->primeValue;
+            tile->value = ~tile->value;
             break;
         default:
         {
@@ -152,4 +150,12 @@ char *storeHashValueInBuffer(char *buffer)
 {
     long long partialHashValue = generateHashValue();
     sprintf(buffer, "%llx", partialHashValue);
+}
+
+void concatenateHashStrings(char *hashValue)
+{
+    char buffer[64];
+    storeHashValueInBuffer(buffer);
+    strcat(hashValue, buffer);
+    printf("%s\n", buffer);
 }

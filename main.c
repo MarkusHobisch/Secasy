@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <getopt.h>
-#include <limits.h>
 #include "InitializationPhase.h"
 
 /*
@@ -22,8 +21,6 @@ char *hashValue;
 void readInCommandLineOptions();
 
 void readAndStoreNumberOfRoundsOption();
-
-void printDatatypeMaxValues();
 
 long getFileSize();
 
@@ -48,8 +45,8 @@ int main(int argc, char **argv)
     readAndProcessFile(inputFilename);
 
     // Additional information on partial results
-
-    if(DEBUG_MODE && DEBUG_LOG_EXTENDED){
+    if (DEBUG_MODE && DEBUG_LOG_EXTENDED)
+    {
         printAllPrimes();
         printField();
         printPrimeIndexes();
@@ -60,7 +57,8 @@ int main(int argc, char **argv)
     hashValue = calculateHashValue();
 
     // Check finally values based on calculations
-    if(DEBUG_MODE && DEBUG_LOG_EXTENDED){
+    if (DEBUG_MODE && DEBUG_LOG_EXTENDED)
+    {
         printField();
         printSumsAndValues();
     }
@@ -180,14 +178,5 @@ long getFileSize()
     FILE *fp = fopen(inputFilename, "rb");
     fseek(fp, 0L, SEEK_END);
     return ftell(fp);
-}
-
-void printDatatypeMaxValues()
-{
-    printf("\n\n**************/////// MAX VALUES OF DATATYPES ///////**************\n");
-    printf("+ LONG_MAX                 %ld\n", LONG_MAX);
-    printf("+ INT_MAX                  %i\n", INT_MAX);
-    printf("+ LONG_LONG_MAX            %llu\n", LLONG_MAX);
-    printf("*******************************************************************\n\n");
 }
 

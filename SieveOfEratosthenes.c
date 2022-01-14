@@ -8,7 +8,7 @@
 // see https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes
 
 int numberOfPrimes = 0;
-int* primes;
+int *primes;
 
 int *initPrimeSieve(unsigned int maxPrimeIndex);
 
@@ -98,11 +98,11 @@ void printAllPrimes()
         return;
     }
 
-    printf("-------------- PRINT ALL PRIMES ------------\n");
+    printf("-------------- PRINT ALL PRIMES (%d) ------------\n", numberOfPrimes);
     for (int i = 0; i < numberOfPrimes; i++)
     {
         if (primes[i] != 0)
-            printf("%d\t", primes[i]);
+            printf("\t%d", primes[i]);
     }
     printf("\n");
 }

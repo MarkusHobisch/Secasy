@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.8)
 project(Secasy)
 
 set(CMAKE_C_STANDARD 11)
-set($(pkg-config --cflags --libs glib-2.0))
+set($ (pkg-config --cflags --libs glib-2.0))
 
-set(SOURCE_FILES main.c InitializationPhase.c CalculationPhase.c SieveOfEratosthenes.c InitializationPhase.h)
+set(SOURCE_FILES main.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c InitializationPhase.h Calculations.c Printing.c Calculation.h)
 add_executable(Secasy ${SOURCE_FILES})
 
 find_package(PkgConfig REQUIRED)

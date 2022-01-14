@@ -6,18 +6,15 @@
 #define ONE_MB 1048576
 
 Tile field[SIZE][SIZE];
-int rowSum[SIZE];
-int columnSum[SIZE];
 
 int lastPrime = 1;
 int colorLen = 5;
-int counter = 0;
 int primeIndex = 0;
 int colorIndex = 0;
 int *primeArray;
 
 
-void readAndProcessFile(char* filename);
+void readAndProcessFile(char *filename);
 
 void calcDirectionsForFieldTile(int byte, int *dir);
 
@@ -31,9 +28,9 @@ void writeNextNumberOnMove(int direction);
 
 int fastModulus(int dividend, int divisor);
 
-long long getFieldSum();
+long long calcSumOfField();
 
-long long getMultipliedSums();
+long long calcSumOfProducts();
 
 void clearArray(int direction[4]);
 
@@ -41,7 +38,7 @@ int *initPrimeNumbers();
 
 void initSquareFieldWithDefaultValue(int i);
 
-FILE* readFile(char* filename);
+FILE *readFile(char *filename);
 
 void calcNoDirections(int pInt[4]);
 
@@ -74,7 +71,7 @@ void initSquareFieldWithDefaultValue(int defaultValue)
             Tile tile;
             tile.posX = i;
             tile.posY = j;
-            tile.primeValue = defaultValue;
+            tile.value = defaultValue;
             tile.primeIndex = 0;
             tile.colorIndex = 0;
             field[i][j] = tile;
@@ -82,7 +79,7 @@ void initSquareFieldWithDefaultValue(int defaultValue)
     }
 }
 
-void readAndProcessFile(char* filename)
+void readAndProcessFile(char *filename)
 {
     unsigned char buffer[ONE_MB];
     size_t bytesRead;
@@ -109,10 +106,10 @@ void readAndProcessFile(char* filename)
         }
     }
     updateLastPosition();
-    lastPrime = field[pos.x][pos.y].primeValue;
+    lastPrime = field[pos.x][pos.y].value;
 }
 
-FILE* readFile(char* filename)
+FILE *readFile(char *filename)
 {
     FILE *file;
     file = fopen(filename, "rb");
@@ -144,7 +141,6 @@ void calcDirectionsForFieldTile(int byte, int *dir)
         dir[index++] = (byte & 3); // max byte length is always 8 bits, otherwise assertion will fail.
         byte = logicalShiftRight(byte, 2); // is the same as byte >>>= 2 in Java
         assert(index <= 4 && "index is negative!");
-        counter++;
     }
 
 }
@@ -154,7 +150,8 @@ int logicalShiftRight(int a, int b)
     return (int) ((unsigned int) a >> b);
 }
 
-void calcNoDirections(int *dir){
+void calcNoDirections(int *dir)
+{
     dir[0] = 0;
     dir[1] = 0;
     dir[2] = 0;
@@ -180,9 +177,9 @@ void addNumbersToField(int *direction)
 void writeNextNumberOnMove(int direction)
 {
     Tile *tile = &field[pos.x][pos.y];
-    int oldPrime = tile->primeValue;
+    int oldPrime = tile->value;
     int nextPrime = nextPrimeNumber(tile);
-    tile->primeValue = nextPrime;
+    tile->value = nextPrime;
     if (DEBUG_MODE)
     {
         printf("old prime: %d -> new prime: %d ", oldPrime, nextPrime);
@@ -233,7 +230,7 @@ void clearArray(int direction[4])
 void updateLastPosition()
 {
     Tile *tile = &field[pos.x][pos.y];
-    tile->primeValue = nextPrimeNumber(tile);
+    tile->value = nextPrimeNumber(tile);
 }
 
 int nextPrimeNumber(Tile *tile)
@@ -242,8 +239,9 @@ int nextPrimeNumber(Tile *tile)
     return primeArray[tile->primeIndex];
 }
 
-int updateColorAndPrimeIndexOfTile(Tile *tile){
-    primeIndex =  tile->primeIndex;
+int updateColorAndPrimeIndexOfTile(Tile *tile)
+{
+    primeIndex = tile->primeIndex;
     colorIndex = tile->colorIndex;
 
     primeIndex = ++primeIndex < numberOfPrimes ? primeIndex : 0;
@@ -258,146 +256,4 @@ int fastModulus(int dividend, int divisor)
     return dividend & (divisor - 1);
 }
 
-void calcSum()
-{
-    int sum;
-    for (int j = 0; j < SIZE; j++)
-    {
-        sum = 0;
-        for (int i = 0; i < SIZE; i++)
-        {
-            sum += field[i][j].primeValue;
-        }
-        rowSum[j] = sum;
-    }
-
-    for (int j = 0; j < SIZE; j++)
-    {
-        sum = 0;
-        for (int i = 0; i < SIZE; i++)
-        {
-            sum += field[j][i].primeValue;
-        }
-        columnSum[j] = sum;
-    }
-}
-
-long long getFieldSum()
-{
-    long long sum = 0;
-    for (int i = 0; i < SIZE; ++i)
-    {
-        for (int j = 0; j < SIZE; ++j)
-        {
-            sum += field[i][j].primeValue;
-        }
-    }
-    return sum;
-}
-
-long long getMultipliedSums()
-{
-    long long muliply1 = 1;
-    long long muliply2 = 1;
-    for (int i = 0; i < SIZE; i++)
-    {
-        muliply1 *= rowSum[i];
-    }
-
-    for (int i = 0; i < SIZE; i++)
-    {
-        muliply2 *= columnSum[i];
-    }
-    return (muliply1 + muliply2);
-}
-
-void printField()
-{
-    printf("\n------------------------------------ Prime Field ---------------------------------------\n");
-    printf("\t --------------- Origin matrix - ");
-    printf("last position: [%d,%d] ---------------\n", pos.x, pos.y);
-    calcSum();
-    for (int j = 0; j < SIZE; j++)
-    {
-        for (int i = 0; i < SIZE; i++)
-        {
-            printf("%12d ", field[i][j].primeValue);
-        }
-        printf("\t sum row: %d\n", rowSum[j]);
-    }
-
-    printf("\n\t --------------- Transposed matrix --------------- \n");
-    for (int j = 0; j < SIZE; j++)
-    {
-        for (int i = 0; i < SIZE; i++)
-        {
-            printf("%12d ", field[j][i].primeValue);
-        }
-        printf("\t sum column: %d\n", columnSum[j]);
-    }
-    printf("\n\n");
-}
-
-void printColorIndexes()
-{
-    printf("-------------- ColorIndexes ------------\n");
-    for (int j = 0; j < SIZE; j++)
-    {
-        for (int i = 0; i < SIZE; i++)
-        {
-            Tile *tile = &field[i][j];
-            printf("%4d ", tile->colorIndex);
-        }
-        printf("\n");
-    }
-}
-
-void printPrimeIndexes()
-{
-    printf("-------------- PrimeIndexes ------------\n");
-    for (int j = 0; j < SIZE; j++)
-    {
-        for (int i = 0; i < SIZE; i++)
-        {
-            Tile *tile = &field[i][j];
-            printf("%4d ", tile->primeIndex);
-        }
-        printf("\n");
-    }
-}
-
-void printSumsAndValues()
-{
-    printf("\n");
-    printf("- Print row sums: \n");
-    calcSum();
-    for (int i = 0; i < SIZE; ++i)
-    {
-        printf("  Row: %d\n", rowSum[i]);
-    }
-    printf("\n");
-    printf("- Print column sums: \n");
-    for (int j = 0; j < SIZE; ++j)
-    {
-        printf("  Column: %d\n", columnSum[j]);
-    }
-    printf("\n");
-    printf("- Last prime was %d\n", lastPrime);
-    printf("- Last position was [%d,%d]\n", pos.x, pos.y);
-    printf("- Sum of multiplied values is %lli\n", getMultipliedSums());
-    printf("- Number of iterations: %4d \n", counter);
-}
-
-long long generateHashValue()
-{
-    calcSum();
-    const long long checksum = getMultipliedSums() ^ lastPrime;
-    //printf("checksum = %lld\n", checksum);
-
-    const long long fieldSum = getFieldSum();
-    //printf("fieldSum = %lld\n", fieldSum);
-
-    return checksum ^ fieldSum; // hash value
-
-}
 
