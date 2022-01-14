@@ -10,8 +10,7 @@
      Compile with gcc -Ofast *.c *.h -lm -o secasy
  */
 
-// Markus -> a2ba76c9512
-// b72aead319ecd43e
+// maRkus -> 69901ca8141
 // -n 64 -i 100 -r 1 -f C...
 
 char *inputFilename;
@@ -58,7 +57,7 @@ int main(int argc, char **argv)
         printSumsAndValues();
     }
 
-    hashValue = meltingPot();
+    hashValue = calculateHashValue();
 
     // Check finally values based on calculations
     if(DEBUG_MODE && DEBUG_LOG_EXTENDED){

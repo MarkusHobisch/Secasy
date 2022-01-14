@@ -313,25 +313,25 @@ long long getMultipliedSums()
 
 void printField()
 {
-    printf("-------------- Prime Field ------------\n");
-    printf("\n\t Origin matrix - ");
-    printf("last position: [%d,%d] \n", pos.x, pos.y);
+    printf("\n------------------------------------ Prime Field ---------------------------------------\n");
+    printf("\t --------------- Origin matrix - ");
+    printf("last position: [%d,%d] ---------------\n", pos.x, pos.y);
     calcSum();
     for (int j = 0; j < SIZE; j++)
     {
         for (int i = 0; i < SIZE; i++)
         {
-            printf("%10d ", field[i][j].primeValue);
+            printf("%12d ", field[i][j].primeValue);
         }
         printf("\t sum row: %d\n", rowSum[j]);
     }
 
-    printf("\n\t Transposed matrix\n");
+    printf("\n\t --------------- Transposed matrix --------------- \n");
     for (int j = 0; j < SIZE; j++)
     {
         for (int i = 0; i < SIZE; i++)
         {
-            printf("%10d ", field[j][i].primeValue);
+            printf("%12d ", field[j][i].primeValue);
         }
         printf("\t sum column: %d\n", columnSum[j]);
     }
@@ -384,7 +384,7 @@ void printSumsAndValues()
     printf("\n");
     printf("- Last prime was %d\n", lastPrime);
     printf("- Last position was [%d,%d]\n", pos.x, pos.y);
-    printf("- Get multiplied sums: %lli\n", getMultipliedSums());
+    printf("- Sum of multiplied values is %lli\n", getMultipliedSums());
     printf("- Number of iterations: %4d \n", counter);
 }
 

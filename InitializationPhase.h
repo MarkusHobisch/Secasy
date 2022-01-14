@@ -58,10 +58,10 @@ extern void printColorIndexes();
 
 extern void printSumsAndValues();
 
-extern char * meltingPot();
+extern char * calculateHashValue();
 
 extern long long int generateHashValue();
 
 extern void calcSum();
 
-#endif //SECASY_INITIALIZATIONPHASE_H
+#endif

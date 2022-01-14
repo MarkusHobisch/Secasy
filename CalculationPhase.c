@@ -3,34 +3,30 @@
 #include <stdlib.h>
 #include "InitializationPhase.h"
 #include <string.h>
-
-int colorIndex;
+#include <stdbool.h>
 
 void processData(int colorIndex, int posX, int posY);
 
-void initBuffer(char buffer[]);
+char *initHashValueBuffer();
 
-char *meltingPot()
+bool isPartialRoundCompleted(int roundCounter, int sizeOfOneIteration);
+
+void checkBoundariesOfFieldAndResetPositionsIfNecessary(int *posX, int *posY);
+
+char *storeHashValueInBuffer(char *buffer);
+
+char *calculateHashValue()
 {
     printf("\n-------------- Processing Data --------------------\n");
 
     int posX = pos.x;
     int posY = pos.y;
-    int iterations = numberOfBits / 64;
-    int limit = (int) ceil(numberOfRounds / iterations + 0.5);
-    long long hash_val;
-    int newLimit = limit;
+    double iterations = numberOfBits / 64.0;
+    int sizeOfOneIteration = (int) ceil(numberOfRounds / iterations + 0.5);
+    char *hashValue = initHashValueBuffer();
 
-    char *finalHashValue = calloc(numberOfBits, sizeof(char));
-    if (!finalHashValue)
-    {
-        printf("Not enough memory!\n");
-        return "ERROR";
-    }
-
-    initBuffer(finalHashValue);
-
-    for (long k = 0; k < numberOfRounds; k++)
+    int roundCounter;
+    for (roundCounter = 0; roundCounter < numberOfRounds; roundCounter++)
     {
         // printf("current pos: [%d,%d]\n", posX, posY);
         for (int i = 0; i < SIZE; i++)
@@ -42,45 +38,36 @@ char *meltingPot()
                 processData(tile->colorIndex, i, j);
             }
         }
-        // printf("Round completed!");
 
-        if (++posX == SIZE)
-        {
-            posX = 0;
-            if (++posY == SIZE)
-            {
-                posY = 0;
-                //printf("Completely surrounded once!\n");
-            }
-        }
+        checkBoundariesOfFieldAndResetPositionsIfNecessary(&posX, &posY);
 
-        if (k == newLimit)
+        if (isPartialRoundCompleted(roundCounter, sizeOfOneIteration))
         {
-            hash_val = generateHashValue();
             char buffer[64];
-            sprintf(buffer, "%llx", hash_val);
-            strcat(finalHashValue, buffer);
-            newLimit += limit;
-            printf("partial hash value #%d:            %s \n", newLimit / limit - 1, buffer);
+            storeHashValueInBuffer(buffer);
+            strcat(hashValue, buffer);
+            printf("Partial hash value #%d:            %s \n", roundCounter / sizeOfOneIteration,
+                   buffer);
         }
     }
 
-    // final
-    hash_val = generateHashValue();
     char buffer[64];
-    sprintf(buffer, "%llx", hash_val);
-    strcat(finalHashValue, buffer);
-    printf("partial hash value #%d:            %s \n", newLimit / limit, buffer);
+    storeHashValueInBuffer(buffer);
+    strcat(hashValue, buffer);
+    printf("Partial hash value #%d:            %s \n", roundCounter / sizeOfOneIteration + 1, buffer);
 
-    return finalHashValue;
+    return hashValue;
 }
 
-void initBuffer(char buffer[])
+char *initHashValueBuffer()
 {
-    for (int i = 0; i < (numberOfBits + 1); ++i)
+    char *buffer = calloc(numberOfBits, sizeof(char));
+    if (!buffer)
     {
-        buffer[i] = 0;
+        printf("Not enough memory!\n");
+        exit(EXIT_FAILURE);
     }
+    return buffer;
 }
 
 void processData(int colorIndex, int posX, int posY)
@@ -141,4 +128,28 @@ void processData(int colorIndex, int posX, int posY)
             printf("function not found! %d\n", colorIndex);
         }
     }
+}
+
+void checkBoundariesOfFieldAndResetPositionsIfNecessary(int *posX, int *posY)
+{
+    if (++*posX == SIZE)
+    {
+        *posX = 0;
+        // highest position at bottom right corner
+        if (++*posY == SIZE)
+        {
+            *posY = 0;
+        }
+    }
+}
+
+bool isPartialRoundCompleted(int roundCounter, int sizeOfOneIteration)
+{
+    return roundCounter > 0 && roundCounter % sizeOfOneIteration == 0;
+}
+
+char *storeHashValueInBuffer(char *buffer)
+{
+    long long partialHashValue = generateHashValue();
+    sprintf(buffer, "%llx", partialHashValue);
 }
