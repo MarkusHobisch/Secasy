@@ -7,7 +7,7 @@ Secasy is free open source software. You can download, read, use and modify ever
 ## Compilation
 + gcc -Ofast *.c *.h -lm -o secasy
 
-Tested on Windows platform and Windows WSL (Ubuntu 20.04 LTS)
+Tested on Windows platform and Windows WSL (Ubuntu 20.04 LTS).
 
 ## Usage
 Secasy is a command line tool. It supports 3 arguments.

@@ -5,10 +5,6 @@
 #include <getopt.h>
 #include "InitializationPhase.h"
 
-/*
-     Optimization: Compile with gcc -Ofast *.c *.h -lm -o secasy
- */
-
 // maRkus -> 69901ca8141
 // -n 64 -i 100 -r 1 -f C...
 
@@ -97,7 +93,7 @@ void readInCommandLineOptions(int argc, char **argv)
 
             }
             default:
-                fprintf(stderr, "Usage: %s [-rin] [file...]\n", argv[0]);
+                fprintf(stderr, "Usage: %s allowed arguments [-r] [-i] [-n] [-f]. \n", argv[0]);
                 exit(EXIT_FAILURE);
         }
     }
@@ -147,7 +143,7 @@ void readAndStoreFilenameOption()
     if (path == NULL || lengthOfPath <= 0)
     {
         printf("Missing file. Please specify a file. \n");
-        fprintf(stderr, "Usage: [-rin] [file...]\n");
+        fprintf(stderr, "Usage: allowed arguments [-r] [-i] [-n] [-f].\n");
         exit(EXIT_FAILURE);
     }
     inputFilename = (char *) calloc(lengthOfPath, sizeof(char));
