@@ -11,7 +11,7 @@ char *initHashValueBuffer();
 
 bool isPartialRoundCompleted(int roundCounter, int sizeOfOneIteration);
 
-void checkBoundariesOfFieldAndResetPositionsIfNecessary(int *posX, int *posY);
+void setPositionsToZeroIfOutOfRange(int *posX, int *posY);
 
 char *storeHashValueInBuffer(char *buffer);
 
@@ -41,7 +41,7 @@ char *calculateHashValue()
             }
         }
 
-        checkBoundariesOfFieldAndResetPositionsIfNecessary(&posX, &posY);
+        setPositionsToZeroIfOutOfRange(&posX, &posY);
 
         if (isPartialRoundCompleted(roundCounter, sizeOfOneIteration))
         {
@@ -73,7 +73,7 @@ void processData(int colorIndex, int posX, int posY)
     Tile *tile = &field[posX][posY];
     switch (colorIndex)
     {
-        case 0: // add
+        case 0: // Add
             if (posY == 0)
                 tile->value += 1;
             else
@@ -82,7 +82,7 @@ void processData(int colorIndex, int posX, int posY)
                 tile->value += neighbourTileAbove.value;
             }
             break;
-        case 1: // sub
+        case 1: // Sub
             if (posY == (SIZE - 1))
                 tile->value -= 1;
             else
@@ -100,7 +100,7 @@ void processData(int colorIndex, int posX, int posY)
                 tile->value ^= neighbourTileLeft.value;
             }
             break;
-        case 3: // |
+        case 3: // Bitwise AND (&)
             if (posX == (SIZE - 1))
                 tile->value |= 1;
             else
@@ -109,7 +109,7 @@ void processData(int colorIndex, int posX, int posY)
                 tile->value |= neighbourTileRight.value;
             }
             break;
-        case 4: // |
+        case 4: // Bitwise OR (|)
             if (posX == 0)
                 tile->value |= 1;
             else
@@ -118,7 +118,7 @@ void processData(int colorIndex, int posX, int posY)
                 tile->value |= neighbourTileLeft.value;
             }
             break;
-        case 5: // ~
+        case 5: // Invert (~)
             tile->value = ~tile->value;
             break;
         default:
@@ -128,7 +128,7 @@ void processData(int colorIndex, int posX, int posY)
     }
 }
 
-void checkBoundariesOfFieldAndResetPositionsIfNecessary(int *posX, int *posY)
+void setPositionsToZeroIfOutOfRange(int *posX, int *posY)
 {
     if (++*posX == SIZE)
     {
@@ -146,16 +146,16 @@ bool isPartialRoundCompleted(int roundCounter, int sizeOfOneIteration)
     return roundCounter > 0 && roundCounter % sizeOfOneIteration == 0;
 }
 
-char *storeHashValueInBuffer(char *buffer)
-{
-    long long partialHashValue = generateHashValue();
-    sprintf(buffer, "%llx", partialHashValue);
-}
-
 void concatenateHashStrings(char *hashValue)
 {
     char buffer[64];
     storeHashValueInBuffer(buffer);
     strcat(hashValue, buffer);
     printf("%s\n", buffer);
+}
+
+char *storeHashValueInBuffer(char *buffer)
+{
+    long long partialHashValue = generateHashValue();
+    sprintf(buffer, "%llx", partialHashValue);
 }

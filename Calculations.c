@@ -16,19 +16,6 @@ long long generateHashValue()
     return checksum ^ fieldSum;
 }
 
-long long calcSumOfField()
-{
-    long long sum = 0;
-    for (int i = 0; i < SIZE; ++i)
-    {
-        for (int j = 0; j < SIZE; ++j)
-        {
-            sum += field[i][j].value;
-        }
-    }
-    return sum;
-}
-
 long long calcSumOfProducts()
 {
     long long productOfSumOfRows = 1;
@@ -50,6 +37,19 @@ long long calcSumOfProducts()
         productOfSumOfColumns *= columnsSums[i];
     }
     return productOfSumOfRows + productOfSumOfColumns;
+}
+
+long long calcSumOfField()
+{
+    long long sum = 0;
+    for (int i = 0; i < SIZE; ++i)
+    {
+        for (int j = 0; j < SIZE; ++j)
+        {
+            sum += field[i][j].value;
+        }
+    }
+    return sum;
 }
 
 void calcSumOfRows(int *rowSums)

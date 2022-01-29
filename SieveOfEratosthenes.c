@@ -14,22 +14,20 @@ int *initPrimeSieve(unsigned int maxPrimeIndex);
 
 void crossOutMultiples(unsigned int maxPrimeIndex, int *primeSieve);
 
-unsigned int optimizeMaxPrimeIndex(unsigned int maxPrimeIndex);
+unsigned int optimizePrimeIndexMaxSize(unsigned int maxPrimeIndex);
 
 int *getAllPrimes(unsigned int maxPrimeIndex, const int *primeSieve);
-
-void printAllPrimes();
 
 int *generatePrimeNumbers(unsigned int maxPrimeIndex)
 {
     int *primeSieve = initPrimeSieve(maxPrimeIndex);
     crossOutMultiples(maxPrimeIndex, primeSieve);
 
-    unsigned int optimizedMaxPrimeIndex = optimizeMaxPrimeIndex(maxPrimeIndex);
+    unsigned int optimizedMaxPrimeIndex = optimizePrimeIndexMaxSize(maxPrimeIndex);
 
     primes = getAllPrimes(optimizedMaxPrimeIndex, primeSieve);
 
-    printf("number of primes <= %d is %d\n", maxPrimeIndex, numberOfPrimes);
+    printf("Number of primes <= %d is %d\n", maxPrimeIndex, numberOfPrimes);
     if (DEBUG_MODE)
     {
         // printAllPrimes(primes);
@@ -63,7 +61,7 @@ void crossOutMultiples(unsigned int maxPrimeIndex, int *primeSieve)
     }
 }
 
-unsigned int optimizeMaxPrimeIndex(unsigned int maxPrimeIndex)
+unsigned int optimizePrimeIndexMaxSize(unsigned int maxPrimeIndex)
 {
     unsigned int size = maxPrimeIndex;
     if (maxPrimeIndex > 10000)
@@ -77,17 +75,17 @@ unsigned int optimizeMaxPrimeIndex(unsigned int maxPrimeIndex)
 
 int *getAllPrimes(unsigned int maxPrimeIndex, const int *primeSieve)
 {
-    int *primes = calloc(maxPrimeIndex, sizeof(int));
-    assert(primes != NULL);
+    int *primeNumbers = calloc(maxPrimeIndex, sizeof(int));
+    assert(primeNumbers != NULL);
 
     int primeCounter = 0;
     for (int j = 2; j < (maxPrimeIndex + 1); j++)
     {
         if (primeSieve[j])
-            primes[primeCounter++] = j;
+            primeNumbers[primeCounter++] = j;
     }
     numberOfPrimes = primeCounter;
-    return primes;
+    return primeNumbers;
 }
 
 void printAllPrimes()

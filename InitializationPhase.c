@@ -4,6 +4,7 @@
 #include "InitializationPhase.h"
 
 #define ONE_MB 1048576
+#define FIRST_PRIME 2
 
 Tile field[SIZE][SIZE];
 
@@ -13,10 +14,7 @@ int primeIndex = 0;
 int colorIndex = 0;
 int *primeArray;
 
-
-void readAndProcessFile(char *filename);
-
-void calcDirectionsForFieldTile(int byte, int *dir);
+void calcAndSetDirections(int byte, int *directions);
 
 int logicalShiftRight(int a, int b);
 
@@ -36,15 +34,17 @@ void clearArray(int direction[4]);
 
 int *initPrimeNumbers();
 
-void initSquareFieldWithDefaultValue(int i);
+void initSquareFieldWithDefaultValue(int defaultValue);
 
 FILE *readFile(char *filename);
 
-void calcNoDirections(int pInt[4]);
+void doNotSetAnyDirections(int dir[4]);
 
 int updateColorAndPrimeIndexOfTile(Tile *tile);
 
-void updateLastPosition();
+void setPrimeNumberOfLastTile();
+
+void createTile(int defaultValue, int posX, int posY);
 
 void initFieldWithDefaultNumbers(unsigned int maxPrimeIndex)
 {
@@ -52,7 +52,7 @@ void initFieldWithDefaultNumbers(unsigned int maxPrimeIndex)
     assert((SIZE & (SIZE - 1)) == 0);
 
     initPrimeNumbers(maxPrimeIndex);
-    initSquareFieldWithDefaultValue(2);
+    initSquareFieldWithDefaultValue(FIRST_PRIME);
 }
 
 int *initPrimeNumbers(int maxPrimeIndex)
@@ -68,23 +68,27 @@ void initSquareFieldWithDefaultValue(int defaultValue)
     {
         for (int j = 0; j < SIZE; j++)
         {
-            Tile tile;
-            tile.posX = i;
-            tile.posY = j;
-            tile.value = defaultValue;
-            tile.primeIndex = 0;
-            tile.colorIndex = 0;
-            field[i][j] = tile;
+            createTile(defaultValue, i, j);
         }
     }
+}
+
+void createTile(int defaultValue, int posX, int posY)
+{
+    Tile tile;
+    tile.posX = posX;
+    tile.posY = posY;
+    tile.value = defaultValue;
+    tile.primeIndex = 0;
+    tile.colorIndex = 0;
+    field[posX][posY] = tile;
 }
 
 void readAndProcessFile(char *filename)
 {
     unsigned char buffer[ONE_MB];
     size_t bytesRead;
-    int dir[4]; // LEFT, RIGHT, TOP, DOWN
-    int intByte;
+    int directions[4]; // LEFT, RIGHT, TOP, DOWN
 
     FILE *file = readFile(filename);
     while ((bytesRead = fread(buffer, sizeof(char), sizeof(buffer), file)) > 0)
@@ -92,20 +96,19 @@ void readAndProcessFile(char *filename)
         int byte; // must be int
         for (int i = 0; i < bytesRead; ++i)
         {
-            byte = buffer[i];
+            byte = buffer[i] & 0xFF; // byte to int conversation
             if (byte != 0)
             {
-                intByte = byte & 0xFF; // byte to int conversation
-                calcDirectionsForFieldTile(intByte, dir);
+                calcAndSetDirections(byte, directions);
             } else
             {
-                calcNoDirections(dir);
+                doNotSetAnyDirections(directions);
             }
-            addNumbersToField(dir);
-            clearArray(dir);
+            addNumbersToField(directions);
+            clearArray(directions);
         }
     }
-    updateLastPosition();
+    setPrimeNumberOfLastTile();
     lastPrime = field[pos.x][pos.y].value;
 }
 
@@ -133,12 +136,12 @@ FILE *readFile(char *filename)
  *  Third round: 00
  *  Fourth round: 11
  */
-void calcDirectionsForFieldTile(int byte, int *dir)
+void calcAndSetDirections(int byte, int *directions)
 {
     int index = 0;
     while (byte != 0)
     {
-        dir[index++] = (byte & 3); // max byte length is always 8 bits, otherwise assertion will fail.
+        directions[index++] = (byte & 3); // max byte length is always 8 bits, otherwise assertion will fail.
         byte = logicalShiftRight(byte, 2); // is the same as byte >>>= 2 in Java
         assert(index <= 4 && "index is negative!");
     }
@@ -150,7 +153,7 @@ int logicalShiftRight(int a, int b)
     return (int) ((unsigned int) a >> b);
 }
 
-void calcNoDirections(int *dir)
+void doNotSetAnyDirections(int *dir)
 {
     dir[0] = 0;
     dir[1] = 0;
@@ -227,7 +230,7 @@ void clearArray(int direction[4])
     }
 }
 
-void updateLastPosition()
+void setPrimeNumberOfLastTile()
 {
     Tile *tile = &field[pos.x][pos.y];
     tile->value = nextPrimeNumber(tile);

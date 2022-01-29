@@ -6,7 +6,7 @@
 #include "InitializationPhase.h"
 
 /*
-     Compile with gcc -Ofast *.c *.h -lm -o secasy
+     Optimization: Compile with gcc -Ofast *.c *.h -lm -o secasy
  */
 
 // maRkus -> 69901ca8141

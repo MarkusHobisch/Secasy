@@ -17,8 +17,8 @@
 // Prevents the formation of squares. Circulating loops (left or right order) lead to identical results and must therefore be avoided
 #define SQUARE_AVOIDANCE_VALUE 1
 
-#define DEBUG_MODE 1
-#define DEBUG_LOG_EXTENDED 1
+#define DEBUG_MODE 0
+#define DEBUG_LOG_EXTENDED 0
 
 typedef struct Positions
 {
@@ -36,8 +36,6 @@ typedef struct Tiles
 } Tile;
 
 Position pos;
-#define DEBUG_MODE 1
-#define DEBUG_LOG_EXTENDED 1
 
 extern unsigned long numberOfRounds;
 extern int numberOfBits;
