@@ -1,50 +1,51 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "Defines.h"
 #include "InitializationPhase.h"
+#include "SieveOfEratosthenes.h"
 
 #define ONE_MB 1048576
 #define FIRST_PRIME 2
 
-Tile field[SIZE][SIZE];
+/* Directions:
+ 00 -> up   --> state 0 ; state == value
+ 11 -> down  --> state 3
+ 10 -> left  --> state 2
+ 01 -> right --> state 1
+ */
+#define UP 0
+#define RIGHT 1
+#define LEFT 2
+#define DOWN 3
 
+// Prevents the formation of squares. Circulating loops (left or right order) lead to identical results and must therefore be avoided
+#define SQUARE_AVOIDANCE_VALUE 1
+
+Position_t pos;
+Tile_t field[SIZE][SIZE];
 int lastPrime = 1;
-int colorLen = 5;
-int primeIndex = 0;
-int colorIndex = 0;
-int *primeArray;
 
-void calcAndSetDirections(int byte, int *directions);
+static int numberOfPrimes = 0;
+static int colorLen = 5;
+static int primeIndex = 0;
+static ColorIndex_t colorIndex = AND;
+static int *primeArray;
 
-int logicalShiftRight(int a, int b);
-
-void addNumbersToField(int *direction);
-
-int nextPrimeNumber(Tile *tile);
-
-void writeNextNumberOnMove(int direction);
-
-int fastModulus(int dividend, int divisor);
-
-long long calcSumOfField();
-
-long long calcSumOfProducts();
-
-void clearArray(int direction[4]);
-
-int *initPrimeNumbers();
-
-void initSquareFieldWithDefaultValue(int defaultValue);
-
-FILE *readFile(char *filename);
-
-void doNotSetAnyDirections(int dir[4]);
-
-int updateColorAndPrimeIndexOfTile(Tile *tile);
-
-void setPrimeNumberOfLastTile();
-
-void createTile(int defaultValue, int posX, int posY);
+static void calcAndSetDirections(int byte, int *directions);
+static int logicalShiftRight(int a, int b);
+static void addNumbersToField(int *direction);
+static int nextPrimeNumber(Tile_t *tile);
+static void writeNextNumberOnMove(int direction);
+static int fastModulus(int dividend, int divisor);
+static void clearArray(int direction[4]);
+static int *initPrimeNumbers();
+static void initSquareFieldWithDefaultValue(int defaultValue);
+static FILE *readFile(char *filename);
+static void doNotSetAnyDirections(int dir[4]);
+static int updateColorAndPrimeIndexOfTile(Tile_t *tile);
+static void setPrimeNumberOfLastTile();
+static void createTile(int defaultValue, int posX, int posY);
 
 void initFieldWithDefaultNumbers(unsigned int maxPrimeIndex)
 {
@@ -53,35 +54,6 @@ void initFieldWithDefaultNumbers(unsigned int maxPrimeIndex)
 
     initPrimeNumbers(maxPrimeIndex);
     initSquareFieldWithDefaultValue(FIRST_PRIME);
-}
-
-int *initPrimeNumbers(int maxPrimeIndex)
-{
-    if (primeArray == NULL)
-        primeArray = generatePrimeNumbers(maxPrimeIndex);
-    return primeArray;
-}
-
-void initSquareFieldWithDefaultValue(int defaultValue)
-{
-    for (int i = 0; i < SIZE; i++)
-    {
-        for (int j = 0; j < SIZE; j++)
-        {
-            createTile(defaultValue, i, j);
-        }
-    }
-}
-
-void createTile(int defaultValue, int posX, int posY)
-{
-    Tile tile;
-    tile.posX = posX;
-    tile.posY = posY;
-    tile.value = defaultValue;
-    tile.primeIndex = 0;
-    tile.colorIndex = 0;
-    field[posX][posY] = tile;
 }
 
 void readAndProcessFile(char *filename)
@@ -100,7 +72,8 @@ void readAndProcessFile(char *filename)
             if (byte != 0)
             {
                 calcAndSetDirections(byte, directions);
-            } else
+            }
+            else
             {
                 doNotSetAnyDirections(directions);
             }
@@ -112,7 +85,36 @@ void readAndProcessFile(char *filename)
     lastPrime = field[pos.x][pos.y].value;
 }
 
-FILE *readFile(char *filename)
+static int *initPrimeNumbers(int maxPrimeIndex)
+{
+    if (primeArray == NULL)
+        primeArray = generatePrimeNumbers(numberOfPrimes, maxPrimeIndex);
+    return primeArray;
+}
+
+static void initSquareFieldWithDefaultValue(int defaultValue)
+{
+    for (int i = 0; i < SIZE; i++)
+    {
+        for (int j = 0; j < SIZE; j++)
+        {
+            createTile(defaultValue, i, j);
+        }
+    }
+}
+
+static void createTile(int defaultValue, int posX, int posY)
+{
+    Tile_t tile;
+    tile.posX = posX;
+    tile.posY = posY;
+    tile.value = defaultValue;
+    tile.primeIndex = 0;
+    tile.colorIndex = AND;
+    field[posX][posY] = tile;
+}
+
+static FILE *readFile(char *filename)
 {
     FILE *file;
     file = fopen(filename, "rb");
@@ -136,7 +138,7 @@ FILE *readFile(char *filename)
  *  Third round: 00
  *  Fourth round: 11
  */
-void calcAndSetDirections(int byte, int *directions)
+static void calcAndSetDirections(int byte, int *directions)
 {
     int index = 0;
     while (byte != 0)
@@ -148,12 +150,12 @@ void calcAndSetDirections(int byte, int *directions)
 
 }
 
-int logicalShiftRight(int a, int b)
+static int logicalShiftRight(int a, int b)
 {
     return (int) ((unsigned int) a >> b);
 }
 
-void doNotSetAnyDirections(int *dir)
+static void doNotSetAnyDirections(int *dir)
 {
     dir[0] = 0;
     dir[1] = 0;
@@ -161,7 +163,7 @@ void doNotSetAnyDirections(int *dir)
     dir[3] = 0;
 }
 
-void addNumbersToField(int *direction)
+static void addNumbersToField(int *direction)
 {
     if (DEBUG_MODE)
         printf("start by pos[%d,%d]\n", pos.x, pos.y);
@@ -177,9 +179,9 @@ void addNumbersToField(int *direction)
  * the field range (number of tiles per horizontal or vertical direction) then we start at the opposite direction again
  * (RIGHT -> LEFT, LEFT -> RIGHT, BOTTOM -> UP, UP -> BOTTOM. We realize this with the modulu operand.
  */
-void writeNextNumberOnMove(int direction)
+static void writeNextNumberOnMove(int direction)
 {
-    Tile *tile = &field[pos.x][pos.y];
+    Tile_t *tile = &field[pos.x][pos.y];
     int oldPrime = tile->value;
     int nextPrime = nextPrimeNumber(tile);
     tile->value = nextPrime;
@@ -193,36 +195,46 @@ void writeNextNumberOnMove(int direction)
     switch (direction)
     {
         case UP:
+        {
             newPos = pos.y - oldPrime + SQUARE_AVOIDANCE_VALUE;
             pos.y = fastModulus(fastModulus(newPos, SIZE) + SIZE, SIZE);
             if (DEBUG_MODE)
                 printf(" UP\n");
             break;
+        }
         case DOWN:
+        {
             newPos = pos.y + oldPrime;
             pos.y = fastModulus(fastModulus(newPos, SIZE) + SIZE, SIZE);
             if (DEBUG_MODE)
                 printf(" DOWN\n");
             break;
+        }
         case LEFT:
+        {
             newPos = pos.x - oldPrime;
             pos.x = fastModulus(fastModulus(newPos, SIZE) + SIZE, SIZE);
             if (DEBUG_MODE)
                 printf(" LEFT\n");
             break;
+        }
         case RIGHT:
+        {
             newPos = pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE;
             pos.x = fastModulus(fastModulus(newPos, SIZE) + SIZE, SIZE);
             if (DEBUG_MODE)
                 printf(" RIGHT\n");
             break;
+        }
         default:
+        {
             printf("UNKNOWN POSITION !!\n");
             break;
+        }
     }
 }
 
-void clearArray(int direction[4])
+static void clearArray(int direction[4])
 {
     for (int i = 0; i < 4; ++i)
     {
@@ -230,19 +242,19 @@ void clearArray(int direction[4])
     }
 }
 
-void setPrimeNumberOfLastTile()
+static void setPrimeNumberOfLastTile()
 {
-    Tile *tile = &field[pos.x][pos.y];
+    Tile_t *tile = &field[pos.x][pos.y];
     tile->value = nextPrimeNumber(tile);
 }
 
-int nextPrimeNumber(Tile *tile)
+static int nextPrimeNumber(Tile_t *tile)
 {
     updateColorAndPrimeIndexOfTile(tile);
     return primeArray[tile->primeIndex];
 }
 
-int updateColorAndPrimeIndexOfTile(Tile *tile)
+static int updateColorAndPrimeIndexOfTile(Tile_t *tile)
 {
     primeIndex = tile->primeIndex;
     colorIndex = tile->colorIndex;
@@ -254,9 +266,7 @@ int updateColorAndPrimeIndexOfTile(Tile *tile)
     tile->colorIndex = colorIndex;
 }
 
-int fastModulus(int dividend, int divisor)
+static int fastModulus(int dividend, int divisor)
 {
     return dividend & (divisor - 1);
 }
-
-

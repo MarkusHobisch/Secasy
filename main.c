@@ -3,35 +3,32 @@
 #include <stdlib.h>
 #include <time.h>
 #include <getopt.h>
+#include "Printing.h"
+#include "Calculation.h"
 #include "InitializationPhase.h"
+#include "ProcessingPhase.h"
+#include "Defines.h"
 
 // maRkus -> 69901ca8141
 // -n 64 -i 100 -r 1 -f C...
-
-char *inputFilename;
 unsigned long numberOfRounds = 100000;
-unsigned long maximumPrimeIndex = 16000000;
 int numberOfBits = 512;
-char *hashValue;
 
-void readInCommandLineOptions();
+static char *inputFilename;
+static unsigned long maximumPrimeIndex = 16000000;
 
-void readAndStoreNumberOfRoundsOption();
-
-long getFileSize();
-
-void readAndStoreNumberOfMaximumPrimeIndexOption();
-
-void readAndStoreNumberOfBitsOption();
-
-void readAndStoreFilenameOption();
-
-void printCommandLineOptions();
-
-void printStatistics(clock_t tStart);
+static void readInCommandLineOptions();
+static void readAndStoreNumberOfRoundsOption();
+static long getFileSize();
+static void readAndStoreNumberOfMaximumPrimeIndexOption();
+static void readAndStoreNumberOfBitsOption();
+static void readAndStoreFilenameOption();
+static void printCommandLineOptions();
+static void printStatistics(clock_t tStart);
 
 int main(int argc, char **argv)
 {
+    char *hashValue;
     clock_t tStart = clock();
 
     readInCommandLineOptions(argc, argv);
@@ -64,7 +61,7 @@ int main(int argc, char **argv)
     printStatistics(tStart);
 }
 
-void readInCommandLineOptions(int argc, char **argv)
+static void readInCommandLineOptions(int argc, char **argv)
 {
     int opt;
     while ((opt = getopt(argc, argv, "r:i:n:f:")) != -1)
@@ -93,13 +90,16 @@ void readInCommandLineOptions(int argc, char **argv)
 
             }
             default:
+            {
                 fprintf(stderr, "Usage: %s allowed arguments [-r] [-i] [-n] [-f]. \n", argv[0]);
                 exit(EXIT_FAILURE);
+                break;
+            }
         }
     }
 }
 
-void readAndStoreNumberOfRoundsOption()
+static void readAndStoreNumberOfRoundsOption()
 {
     char *end_ptr;
     numberOfRounds = strtol(optarg, &end_ptr, 10);
@@ -110,7 +110,7 @@ void readAndStoreNumberOfRoundsOption()
     }
 }
 
-void readAndStoreNumberOfMaximumPrimeIndexOption()
+static void readAndStoreNumberOfMaximumPrimeIndexOption()
 {
     char *end_ptr;
     maximumPrimeIndex = strtol(optarg, &end_ptr, 10);
@@ -121,7 +121,7 @@ void readAndStoreNumberOfMaximumPrimeIndexOption()
     }
 }
 
-void readAndStoreNumberOfBitsOption()
+static void readAndStoreNumberOfBitsOption()
 {
     char *end_ptr;
     numberOfBits = strtol(optarg, &end_ptr, 10);
@@ -129,14 +129,15 @@ void readAndStoreNumberOfBitsOption()
     {
         printf("Bit size small than 64 is not supported.\n");
         exit(EXIT_FAILURE);
-    } else if ((numberOfBits & (numberOfBits - 1)) != 0)
+    }
+    else if ((numberOfBits & (numberOfBits - 1)) != 0)
     {
         printf("Bit size must be the power of two.\n");
         exit(EXIT_FAILURE);
     }
 }
 
-void readAndStoreFilenameOption()
+static void readAndStoreFilenameOption()
 {
     char *path = optarg;
     unsigned long lengthOfPath = strlen(path) + 1;
@@ -150,7 +151,7 @@ void readAndStoreFilenameOption()
     strncpy(inputFilename, path, lengthOfPath);
 }
 
-void printCommandLineOptions()
+static void printCommandLineOptions()
 {
     printf("inputFilename: %s\n", inputFilename);
     printf("numberOfRounds: %lu\n", numberOfRounds);
@@ -158,8 +159,7 @@ void printCommandLineOptions()
     printf("numberOfBits: %d\n", numberOfBits);
 }
 
-
-void printStatistics(clock_t tStart)
+static void printStatistics(clock_t tStart)
 {
     double time_diff = (double) (clock() - tStart) / CLOCKS_PER_SEC;
     double hash_rate = (double) getFileSize() / time_diff / (1024 * 1024);
@@ -169,10 +169,9 @@ void printStatistics(clock_t tStart)
     // printDatatypeMaxValues();
 }
 
-long getFileSize()
+static long getFileSize()
 {
     FILE *fp = fopen(inputFilename, "rb");
     fseek(fp, 0L, SEEK_END);
     return ftell(fp);
 }
-

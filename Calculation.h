@@ -1,12 +1,9 @@
 #ifndef SECASY_CALCULATION_H
 #define SECASY_CALCULATION_H
 
-extern void calcSumOfRows(int *rowSums);
-
-extern void calcSumOfColumns(int *columnsSums);
-
-extern long long calcSumOfProducts();
-
-extern long long calcSumOfField();
+long long generateHashValue();
+void calcSumOfRows(int *rowSums);
+void calcSumOfColumns(int *columnsSums);
+long long calcSumOfProducts();
 
 #endif

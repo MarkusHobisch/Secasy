@@ -1,21 +1,21 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-#include "InitializationPhase.h"
 #include <string.h>
 #include <stdbool.h>
+#include "Defines.h"
 
-void processData(int colorIndex, int posX, int posY);
+extern Position_t pos;
+extern Tile_t field[SIZE][SIZE];
+extern unsigned long numberOfRounds;
+extern int numberOfBits;
 
-char *initHashValueBuffer();
-
-bool isPartialRoundCompleted(int roundCounter, int sizeOfOneIteration);
-
-void setPositionsToZeroIfOutOfRange(int *posX, int *posY);
-
-char *storeHashValueInBuffer(char *buffer);
-
-void concatenateHashStrings(char *hashValue);
+static void processData(ColorIndex_t colorIndex, int posX, int posY);
+static char *initHashValueBuffer();
+static bool isPartialRoundCompleted(int roundCounter, int sizeOfOneIteration);
+static void setPositionsToZeroIfOutOfRange(int *posX, int *posY);
+static char *storeHashValueInBuffer(char *buffer);
+static void concatenateHashStrings(char *hashValue);
 
 char *calculateHashValue()
 {
@@ -35,7 +35,7 @@ char *calculateHashValue()
         {
             for (int j = 0; j < SIZE; j++)
             {
-                Tile *tile = &field[(posX + i) % SIZE][(posY + j) % SIZE];
+                Tile_t *tile = &field[(posX + i) % SIZE][(posY + j) % SIZE];
                 // printf("%d : %d\n", (posX + i) % SIZE, (posY + j) % SIZE);
                 processData(tile->colorIndex, i, j);
             }
@@ -57,7 +57,7 @@ char *calculateHashValue()
     return hashValue;
 }
 
-char *initHashValueBuffer()
+static char *initHashValueBuffer()
 {
     char *buffer = calloc(numberOfBits, sizeof(char));
     if (!buffer)
@@ -68,59 +68,71 @@ char *initHashValueBuffer()
     return buffer;
 }
 
-void processData(int colorIndex, int posX, int posY)
+static void processData(ColorIndex_t colorIndex, int posX, int posY)
 {
-    Tile *tile = &field[posX][posY];
+    Tile_t *tile = &field[posX][posY];
     switch (colorIndex)
     {
-        case 0: // Add
+        case AND:
+        {
             if (posY == 0)
                 tile->value += 1;
             else
             {
-                Tile neighbourTileAbove = field[posX][posY - 1];
+                Tile_t neighbourTileAbove = field[posX][posY - 1];
                 tile->value += neighbourTileAbove.value;
             }
             break;
-        case 1: // Sub
+        }
+        case SUB:
+        {
             if (posY == (SIZE - 1))
                 tile->value -= 1;
             else
             {
-                Tile neighbourTileBelow = field[posX][posY + 1];
+                Tile_t neighbourTileBelow = field[posX][posY + 1];
                 tile->value -= neighbourTileBelow.value;
             }
             break;
-        case 2: // Xor
+        }
+        case XOR:
+        {
             if (posX == 0)
                 tile->value ^= 1;
             else
             {
-                Tile neighbourTileLeft = field[posX - 1][posY];
+                Tile_t neighbourTileLeft = field[posX - 1][posY];
                 tile->value ^= neighbourTileLeft.value;
             }
             break;
-        case 3: // Bitwise AND (&)
+        }
+        case BITWISE_AND: // Bitwise AND (&)
+        {
             if (posX == (SIZE - 1))
                 tile->value |= 1;
             else
             {
-                Tile neighbourTileRight = field[posX + 1][posY];
+                Tile_t neighbourTileRight = field[posX + 1][posY];
                 tile->value |= neighbourTileRight.value;
             }
             break;
-        case 4: // Bitwise OR (|)
+        }
+        case BITWISE_OR: // Bitwise OR (|)
+        {
             if (posX == 0)
                 tile->value |= 1;
             else
             {
-                Tile neighbourTileLeft = field[posX - 1][posY];
+                Tile_t neighbourTileLeft = field[posX - 1][posY];
                 tile->value |= neighbourTileLeft.value;
             }
             break;
-        case 5: // Invert (~)
+        }
+        case INVERT: // Invert (~)
+        {
             tile->value = ~tile->value;
             break;
+        }
         default:
         {
             printf("function not found! %d\n", colorIndex);
@@ -128,7 +140,7 @@ void processData(int colorIndex, int posX, int posY)
     }
 }
 
-void setPositionsToZeroIfOutOfRange(int *posX, int *posY)
+static void setPositionsToZeroIfOutOfRange(int *posX, int *posY)
 {
     if (++*posX == SIZE)
     {
@@ -141,12 +153,12 @@ void setPositionsToZeroIfOutOfRange(int *posX, int *posY)
     }
 }
 
-bool isPartialRoundCompleted(int roundCounter, int sizeOfOneIteration)
+static bool isPartialRoundCompleted(int roundCounter, int sizeOfOneIteration)
 {
     return roundCounter > 0 && roundCounter % sizeOfOneIteration == 0;
 }
 
-void concatenateHashStrings(char *hashValue)
+static void concatenateHashStrings(char *hashValue)
 {
     char buffer[64];
     storeHashValueInBuffer(buffer);
@@ -154,7 +166,7 @@ void concatenateHashStrings(char *hashValue)
     printf("%s\n", buffer);
 }
 
-char *storeHashValueInBuffer(char *buffer)
+static char *storeHashValueInBuffer(char *buffer)
 {
     long long partialHashValue = generateHashValue();
     sprintf(buffer, "%llx", partialHashValue);

@@ -1,7 +1,11 @@
 #include <stdio.h>
-#include "InitializationPhase.h"
-#include "Calculation.h"
 #include <limits.h>
+#include "Calculation.h"
+#include "Defines.h"
+
+extern Position_t pos;
+extern Tile_t field[SIZE][SIZE];
+extern int lastPrime;
 
 void printField()
 {
@@ -97,4 +101,3 @@ void printDatatypeMaxValues()
     printf("+ LONG_LONG_MAX            %llu\n", LLONG_MAX);
     printf("*******************************************************************\n\n");
 }
-
