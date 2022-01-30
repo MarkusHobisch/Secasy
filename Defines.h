@@ -9,12 +9,12 @@ typedef struct
 
 typedef enum
 {
-    AND=0,
-    SUB=1,
-    XOR=2,
-    BITWISE_AND=3,
-    BITWISE_OR=4,
-    INVERT=5
+    AND = 0,
+    SUB = 1,
+    XOR = 2,
+    BITWISE_AND = 3,
+    BITWISE_OR = 4,
+    INVERT = 5
 } ColorIndex_t;
 
 typedef struct

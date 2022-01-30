@@ -5,17 +5,23 @@
 #include <stdbool.h>
 #include "Defines.h"
 #include "ProcessingPhase.h"
+#include "Calculations.h"
 
 extern Position_t pos;
 extern Tile_t field[SIZE][SIZE];
 extern unsigned long numberOfRounds;
 extern int numberOfBits;
 
-static void processData(const ColorIndex_t colorIndex, const int posX, const int posY);
+static void processData(ColorIndex_t colorIndex, int posX, int posY);
+
 static char *initHashValueBuffer();
-static bool isPartialRoundCompleted(const int roundCounter, const int sizeOfOneIteration);
+
+static bool isPartialRoundCompleted(int roundCounter, int sizeOfOneIteration);
+
 static void setPositionsToZeroIfOutOfRange(int *posX, int *posY);
-static char *storeHashValueInBuffer(char *buffer);
+
+static void storeHashValueInBuffer(char *buffer);
+
 static void concatenateHashStrings(char *hashValue);
 
 char *calculateHashValue()
@@ -167,7 +173,7 @@ static void concatenateHashStrings(char *hashValue)
     printf("%s\n", buffer);
 }
 
-static char *storeHashValueInBuffer(char *buffer)
+static void storeHashValueInBuffer(char *buffer)
 {
     long long partialHashValue = generateHashValue();
     sprintf(buffer, "%llx", partialHashValue);

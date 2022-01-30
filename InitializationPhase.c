@@ -6,7 +6,6 @@
 #include "SieveOfEratosthenes.h"
 
 #define ONE_MB 1048576
-#define FIRST_PRIME 2
 
 /* Directions:
  00 -> up   --> state 0 ; state == value
@@ -19,6 +18,8 @@
 #define LEFT 2
 #define DOWN 3
 #define DIRECTIONS 4
+
+#define FIRST_PRIME 2
 
 // Prevents the formation of squares. Circulating loops (left or right order) lead to identical results and must therefore be avoided
 #define SQUARE_AVOIDANCE_VALUE 1
@@ -34,27 +35,40 @@ static ColorIndex_t colorIndex = AND;
 static int *primeArray;
 
 static void calcAndSetDirections(int byte, int *directions);
-static int logicalShiftRight(const int a, const int b);
-static void addNumbersToField(const int *directions);
-static int nextPrimeNumber(Tile_t *tile);
-static void writeNextNumberOnMove(const int direction);
-static int fastModulus(const int dividend, const int divisor);
-static void clearArray(int *directions);
-static void initPrimeNumbers(const int maxPrimeIndex);
-static void initSquareFieldWithDefaultValue(const int defaultValue);
-static FILE *readFile(const char *filename);
-static void doNotSetAnyDirections(int *directions);
-static int updateColorAndPrimeIndexOfTile(Tile_t *tile);
-static void setPrimeNumberOfLastTile();
-static void createTile(const int defaultValue, const int posX, const int posY);
 
-void initFieldWithDefaultNumbers(const unsigned int maxPrimeIndex)
+static int logicalShiftRight(int a, int b);
+
+static void addNumbersToField(const int *directions);
+
+static int nextPrimeNumber(Tile_t *tile);
+
+static void writeNextNumberOnMove(int direction);
+
+static int fastModulus(int dividend, int divisor);
+
+static void clearArray(int *directions);
+
+static void initPrimeNumbers(unsigned long maxPrimeIndex);
+
+static void initSquareFieldWithDefaultValue();
+
+static FILE *readFile(const char *filename);
+
+static void doNotSetAnyDirections(int *directions);
+
+static void updateColorAndPrimeIndexOfTile(Tile_t *tile);
+
+static void setPrimeNumberOfLastTile();
+
+static void createTile(int posX, int posY);
+
+void initFieldWithDefaultNumbers(const unsigned long maxPrimeIndex)
 {
     //first check if the size of the field is power of 2!
     assert((SIZE & (SIZE - 1)) == 0);
 
     initPrimeNumbers(maxPrimeIndex);
-    initSquareFieldWithDefaultValue(FIRST_PRIME);
+    initSquareFieldWithDefaultValue();
 }
 
 void readAndProcessFile(const char *filename)
@@ -73,8 +87,7 @@ void readAndProcessFile(const char *filename)
             if (byte != 0)
             {
                 calcAndSetDirections(byte, directions);
-            }
-            else
+            } else
             {
                 doNotSetAnyDirections(directions);
             }
@@ -86,31 +99,31 @@ void readAndProcessFile(const char *filename)
     lastPrime = field[pos.x][pos.y].value;
 }
 
-static void initPrimeNumbers(const int maxPrimeIndex)
+static void initPrimeNumbers(const unsigned long maxPrimeIndex)
 {
     if (primeArray == NULL)
         primeArray = generatePrimeNumbers(&numberOfPrimes, maxPrimeIndex);
 }
 
-static void initSquareFieldWithDefaultValue(const int defaultValue)
+static void initSquareFieldWithDefaultValue()
 {
     for (int i = 0; i < SIZE; i++)
     {
         for (int j = 0; j < SIZE; j++)
         {
-            createTile(defaultValue, i, j);
+            createTile(i, j);
         }
     }
 }
 
-static void createTile(const int defaultValue, const int posX, const int posY)
+static void createTile(const int posX, const int posY)
 {
-    if(posX>=SIZE || posY>=SIZE)
+    if (posX >= SIZE || posY >= SIZE)
         return;
     Tile_t tile;
     tile.posX = posX;
     tile.posY = posY;
-    tile.value = defaultValue;
+    tile.value = FIRST_PRIME;
     tile.primeIndex = 0;
     tile.colorIndex = AND;
     field[posX][posY] = tile;
@@ -159,7 +172,7 @@ static int logicalShiftRight(const int a, const int b)
 
 static void doNotSetAnyDirections(int *directions)
 {
-    for(int i = 0 ; i < DIRECTIONS ; i++)
+    for (int i = 0; i < DIRECTIONS; i++)
         directions[i] = 0;
 }
 
@@ -178,7 +191,7 @@ static void addNumbersToField(const int *directions)
  * This method defines the jump moves. Let's say the direction is TOP and the current tile value is 5. Now we increase
  * the tile value to 7 (because 7 is the next prim value) and jump 5 fields above. If the jumping value is greater than
  * the field range (number of tiles per horizontal or vertical direction) then we start at the opposite direction again
- * (RIGHT -> LEFT, LEFT -> RIGHT, BOTTOM -> UP, UP -> BOTTOM. We realize this with the modulu operand.
+ * (RIGHT -> LEFT, LEFT -> RIGHT, BOTTOM -> UP, UP -> BOTTOM. We realize this with the modulus operand.
  */
 static void writeNextNumberOnMove(const int direction)
 {
@@ -258,7 +271,7 @@ static int nextPrimeNumber(Tile_t *tile)
     return primeArray[tile->primeIndex];
 }
 
-static int updateColorAndPrimeIndexOfTile(Tile_t *tile)
+static void updateColorAndPrimeIndexOfTile(Tile_t *tile)
 {
     primeIndex = tile->primeIndex;
     colorIndex = tile->colorIndex;

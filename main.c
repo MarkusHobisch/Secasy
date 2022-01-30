@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <getopt.h>
-#include "Printing.h"
-#include "Calculations.h"
 #include "InitializationPhase.h"
 #include "ProcessingPhase.h"
 #include "Defines.h"
@@ -18,13 +16,20 @@ static char *inputFilename;
 static unsigned long maximumPrimeIndex = 16000000;
 
 static void readInCommandLineOptions();
+
 static void readAndStoreNumberOfRoundsOption();
+
 static long getFileSize();
+
 static void readAndStoreNumberOfMaximumPrimeIndexOption();
+
 static void readAndStoreNumberOfBitsOption();
+
 static void readAndStoreFilenameOption();
+
 static void printCommandLineOptions();
-static void printStatistics(const clock_t tStart);
+
+static void printStatistics(clock_t tStart);
 
 int main(int argc, char **argv)
 {
@@ -90,7 +95,6 @@ static void readInCommandLineOptions(int argc, char **argv)
             {
                 fprintf(stderr, "Usage: %s allowed arguments [-r] [-i] [-n] [-f]. \n", argv[0]);
                 exit(EXIT_FAILURE);
-                break;
             }
         }
     }
@@ -126,8 +130,7 @@ static void readAndStoreNumberOfBitsOption()
     {
         printf("Bit size small than 64 is not supported.\n");
         exit(EXIT_FAILURE);
-    }
-    else if ((numberOfBits & (numberOfBits - 1)) != 0)
+    } else if ((numberOfBits & (numberOfBits - 1)) != 0)
     {
         printf("Bit size must be the power of two.\n");
         exit(EXIT_FAILURE);

@@ -8,13 +8,17 @@
 // using Sieve of Eratosthenes
 // see https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes
 
-static int *initPrimeSieve(const unsigned int maxPrimeIndex);
-static void crossOutMultiples(const unsigned int maxPrimeIndex, int *primeSieve);
-static unsigned int optimizePrimeIndexMaxSize(const unsigned int maxPrimeIndex);
-static int *getAllPrimes(int *numberOfPrimes, const unsigned int maxPrimeIndex, const int *primeSieve);
-static void printAllPrimes(const int numberOfPrimes, const int *primes);
+static int *initPrimeSieve(unsigned int maxPrimeIndex);
 
-int *generatePrimeNumbers(int *numberOfPrimes, const unsigned int maxPrimeIndex)
+static void crossOutMultiples(unsigned int maxPrimeIndex, int *primeSieve);
+
+static unsigned int optimizePrimeIndexMaxSize(unsigned int maxPrimeIndex);
+
+static int *getAllPrimes(int *numberOfPrimes, unsigned int maxPrimeIndex, const int *primeSieve);
+
+static void printAllPrimes(int numberOfPrimes, const int *primes);
+
+int *generatePrimeNumbers(int *numberOfPrimes, const unsigned long maxPrimeIndex)
 {
     int *primeSieve = initPrimeSieve(maxPrimeIndex);
     crossOutMultiples(maxPrimeIndex, primeSieve);
@@ -22,7 +26,7 @@ int *generatePrimeNumbers(int *numberOfPrimes, const unsigned int maxPrimeIndex)
     unsigned int optimizedMaxPrimeIndex = optimizePrimeIndexMaxSize(maxPrimeIndex);
     int *primes = getAllPrimes(numberOfPrimes, optimizedMaxPrimeIndex, primeSieve);
 
-    printf("Number of primes <= %d is %d\n", maxPrimeIndex, *numberOfPrimes);
+    printf("Number of primes <= %lu is %d\n", maxPrimeIndex, *numberOfPrimes);
 #if DEBUG_MODE
     //printAllPrimes(*numberOfPrimes, primes);
 #endif
