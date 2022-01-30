@@ -10,9 +10,9 @@ extern Tile_t field[SIZE][SIZE];
 extern unsigned long numberOfRounds;
 extern int numberOfBits;
 
-static void processData(ColorIndex_t colorIndex, int posX, int posY);
+static void processData(const ColorIndex_t colorIndex, const int posX, const int posY);
 static char *initHashValueBuffer();
-static bool isPartialRoundCompleted(int roundCounter, int sizeOfOneIteration);
+static bool isPartialRoundCompleted(const int roundCounter, const int sizeOfOneIteration);
 static void setPositionsToZeroIfOutOfRange(int *posX, int *posY);
 static char *storeHashValueInBuffer(char *buffer);
 static void concatenateHashStrings(char *hashValue);
@@ -68,7 +68,7 @@ static char *initHashValueBuffer()
     return buffer;
 }
 
-static void processData(ColorIndex_t colorIndex, int posX, int posY)
+static void processData(const ColorIndex_t colorIndex, const int posX, const int posY)
 {
     Tile_t *tile = &field[posX][posY];
     switch (colorIndex)
@@ -153,7 +153,7 @@ static void setPositionsToZeroIfOutOfRange(int *posX, int *posY)
     }
 }
 
-static bool isPartialRoundCompleted(int roundCounter, int sizeOfOneIteration)
+static bool isPartialRoundCompleted(const int roundCounter, const int sizeOfOneIteration)
 {
     return roundCounter > 0 && roundCounter % sizeOfOneIteration == 0;
 }

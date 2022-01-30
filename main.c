@@ -24,7 +24,7 @@ static void readAndStoreNumberOfMaximumPrimeIndexOption();
 static void readAndStoreNumberOfBitsOption();
 static void readAndStoreFilenameOption();
 static void printCommandLineOptions();
-static void printStatistics(clock_t tStart);
+static void printStatistics(const clock_t tStart);
 
 int main(int argc, char **argv)
 {
@@ -38,23 +38,21 @@ int main(int argc, char **argv)
     readAndProcessFile(inputFilename);
 
     // Additional information on partial results
-    if (DEBUG_MODE && DEBUG_LOG_EXTENDED)
-    {
-        printAllPrimes();
-        printField();
-        printPrimeIndexes();
-        printColorIndexes();
-        printSumsAndValues();
-    }
+#if (DEBUG_MODE && DEBUG_LOG_EXTENDED)
+    printAllPrimes();
+    printField();
+    printPrimeIndexes();
+    printColorIndexes();
+    printSumsAndValues();
+#endif
 
     hashValue = calculateHashValue();
 
     // Check finally values based on calculations
-    if (DEBUG_MODE && DEBUG_LOG_EXTENDED)
-    {
-        printField();
-        printSumsAndValues();
-    }
+#if (DEBUG_MODE && DEBUG_LOG_EXTENDED)
+    printField();
+    printSumsAndValues();
+#endif
 
     printf("\n\nHASH VALUE: %s \n", hashValue);
 
@@ -87,7 +85,6 @@ static void readInCommandLineOptions(int argc, char **argv)
             {
                 readAndStoreFilenameOption();
                 break;
-
             }
             default:
             {
@@ -159,7 +156,7 @@ static void printCommandLineOptions()
     printf("numberOfBits: %d\n", numberOfBits);
 }
 
-static void printStatistics(clock_t tStart)
+static void printStatistics(const clock_t tStart)
 {
     double time_diff = (double) (clock() - tStart) / CLOCKS_PER_SEC;
     double hash_rate = (double) getFileSize() / time_diff / (1024 * 1024);

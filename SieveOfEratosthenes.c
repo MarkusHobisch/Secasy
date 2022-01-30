@@ -7,13 +7,13 @@
 // using Sieve of Eratosthenes
 // see https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes
 
-static int *initPrimeSieve(unsigned int maxPrimeIndex);
-static void crossOutMultiples(unsigned int maxPrimeIndex, int *primeSieve);
-static unsigned int optimizePrimeIndexMaxSize(unsigned int maxPrimeIndex);
-static int *getAllPrimes(int numberOfPrimes, unsigned int maxPrimeIndex, const int *primeSieve);
-static void printAllPrimes(int numberOfPrimes, int *primes);
+static int *initPrimeSieve(const unsigned int maxPrimeIndex);
+static void crossOutMultiples(const unsigned int maxPrimeIndex, int *primeSieve);
+static unsigned int optimizePrimeIndexMaxSize(const unsigned int maxPrimeIndex);
+static int *getAllPrimes(int *numberOfPrimes, const unsigned int maxPrimeIndex, const int *primeSieve);
+static void printAllPrimes(const int numberOfPrimes, const int *primes);
 
-int *generatePrimeNumbers(int numberOfPrimes, unsigned int maxPrimeIndex)
+int *generatePrimeNumbers(int *numberOfPrimes, const unsigned int maxPrimeIndex)
 {
     int *primeSieve = initPrimeSieve(maxPrimeIndex);
     crossOutMultiples(maxPrimeIndex, primeSieve);
@@ -21,15 +21,14 @@ int *generatePrimeNumbers(int numberOfPrimes, unsigned int maxPrimeIndex)
     unsigned int optimizedMaxPrimeIndex = optimizePrimeIndexMaxSize(maxPrimeIndex);
     int *primes = getAllPrimes(numberOfPrimes, optimizedMaxPrimeIndex, primeSieve);
 
-    printf("Number of primes <= %d is %d\n", maxPrimeIndex, numberOfPrimes);
-    if (DEBUG_MODE)
-    {
-        // printAllPrimes(numberOfPrimes, primes);
-    }
+    printf("Number of primes <= %d is %d\n", maxPrimeIndex, *numberOfPrimes);
+#if DEBUG_MODE
+    //printAllPrimes(*numberOfPrimes, primes);
+#endif
     return primes;
 }
 
-static int *initPrimeSieve(unsigned int maxPrimeIndex)
+static int *initPrimeSieve(const unsigned int maxPrimeIndex)
 {
     int *primeSieve = calloc(maxPrimeIndex + 1, sizeof(int));
     assert(primeSieve != NULL && "mem alloc failed!");
@@ -43,7 +42,7 @@ static int *initPrimeSieve(unsigned int maxPrimeIndex)
     return primeSieve;
 }
 
-static void crossOutMultiples(unsigned int maxPrimeIndex, int *primeSieve)
+static void crossOutMultiples(const unsigned int maxPrimeIndex, int *primeSieve)
 {
     for (int i = 2; i * i <= maxPrimeIndex; i++)
     {
@@ -67,22 +66,22 @@ static unsigned int optimizePrimeIndexMaxSize(unsigned int maxPrimeIndex)
     return size;
 }
 
-static int *getAllPrimes(int numberOfPrimes, unsigned int maxPrimeIndex, const int *primeSieve)
+static int *getAllPrimes(int *numberOfPrimes, const unsigned int maxPrimeIndex, const int *primeSieve)
 {
     int *primeNumbers = calloc(maxPrimeIndex, sizeof(int));
     assert(primeNumbers != NULL);
 
     int primeCounter = 0;
-    for (int j = 2; j < (maxPrimeIndex + 1); j++)
+    for (int i = 2; i < (maxPrimeIndex + 1); i++)
     {
-        if (primeSieve[j])
-            primeNumbers[primeCounter++] = j;
+        if (primeSieve[i])
+            primeNumbers[primeCounter++] = i;
     }
-    numberOfPrimes = primeCounter;
+    *numberOfPrimes = primeCounter;
     return primeNumbers;
 }
 
-static void printAllPrimes(int numberOfPrimes, int *primes)
+static void printAllPrimes(const int numberOfPrimes, const int *primes)
 {
     if (!primes)
     {
