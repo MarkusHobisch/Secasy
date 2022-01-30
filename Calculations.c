@@ -13,7 +13,7 @@ long long generateHashValue()
     return checksum ^ fieldSum;
 }
 
-void calcSumOfRows(int *rowSums)
+void calcSumOfRows(int* rowSums)
 {
     int sum = 0;
     for (int j = 0; j < SIZE; j++)
@@ -27,7 +27,7 @@ void calcSumOfRows(int *rowSums)
     }
 }
 
-void calcSumOfColumns(int *columnsSums)
+void calcSumOfColumns(int* columnsSums)
 {
     int sum = 0;
     for (int j = 0; j < SIZE; j++)

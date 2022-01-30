@@ -14,17 +14,17 @@ extern int numberOfBits;
 
 static void processData(ColorIndex_t colorIndex, int posX, int posY);
 
-static char *initHashValueBuffer();
+static char* initHashValueBuffer();
 
 static bool isPartialRoundCompleted(int roundCounter, int sizeOfOneIteration);
 
-static void setPositionsToZeroIfOutOfRange(int *posX, int *posY);
+static void setPositionsToZeroIfOutOfRange(int* posX, int* posY);
 
-static void storeHashValueInBuffer(char *buffer);
+static void storeHashValueInBuffer(char* buffer);
 
-static void concatenateHashStrings(char *hashValue);
+static void concatenateHashStrings(char* hashValue);
 
-char *calculateHashValue()
+char* calculateHashValue()
 {
     printf("\n-------------- Processing Data --------------------\n");
 
@@ -32,7 +32,7 @@ char *calculateHashValue()
     int posY = pos.y;
     double iterations = numberOfBits / 64.0;
     int sizeOfOneIteration = (int) ceil(numberOfRounds / iterations + 0.5);
-    char *hashValue = initHashValueBuffer();
+    char* hashValue = initHashValueBuffer();
 
     int roundCounter;
     for (roundCounter = 0; roundCounter < numberOfRounds; roundCounter++)
@@ -42,7 +42,7 @@ char *calculateHashValue()
         {
             for (int j = 0; j < SIZE; j++)
             {
-                Tile_t *tile = &field[(posX + i) % SIZE][(posY + j) % SIZE];
+                Tile_t* tile = &field[(posX + i) % SIZE][(posY + j) % SIZE];
                 // printf("%d : %d\n", (posX + i) % SIZE, (posY + j) % SIZE);
                 processData(tile->colorIndex, i, j);
             }
@@ -64,9 +64,9 @@ char *calculateHashValue()
     return hashValue;
 }
 
-static char *initHashValueBuffer()
+static char* initHashValueBuffer()
 {
-    char *buffer = calloc(numberOfBits, sizeof(char));
+    char* buffer = calloc(numberOfBits, sizeof(char));
     if (!buffer)
     {
         printf("Not enough memory!\n");
@@ -77,7 +77,7 @@ static char *initHashValueBuffer()
 
 static void processData(const ColorIndex_t colorIndex, const int posX, const int posY)
 {
-    Tile_t *tile = &field[posX][posY];
+    Tile_t* tile = &field[posX][posY];
     switch (colorIndex)
     {
         case AND:
@@ -147,7 +147,7 @@ static void processData(const ColorIndex_t colorIndex, const int posX, const int
     }
 }
 
-static void setPositionsToZeroIfOutOfRange(int *posX, int *posY)
+static void setPositionsToZeroIfOutOfRange(int* posX, int* posY)
 {
     if (++*posX == SIZE)
     {
@@ -165,7 +165,7 @@ static bool isPartialRoundCompleted(const int roundCounter, const int sizeOfOneI
     return roundCounter > 0 && roundCounter % sizeOfOneIteration == 0;
 }
 
-static void concatenateHashStrings(char *hashValue)
+static void concatenateHashStrings(char* hashValue)
 {
     char buffer[64];
     storeHashValueInBuffer(buffer);
@@ -173,7 +173,7 @@ static void concatenateHashStrings(char *hashValue)
     printf("%s\n", buffer);
 }
 
-static void storeHashValueInBuffer(char *buffer)
+static void storeHashValueInBuffer(char* buffer)
 {
     long long partialHashValue = generateHashValue();
     sprintf(buffer, "%llx", partialHashValue);

@@ -3,6 +3,6 @@
 
 void initFieldWithDefaultNumbers(unsigned long maxPrimeIndex);
 
-void readAndProcessFile(const char *filename);
+void readAndProcessFile(const char* filename);
 
 #endif

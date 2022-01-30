@@ -12,7 +12,7 @@
 unsigned long numberOfRounds = 100000;
 int numberOfBits = 512;
 
-static char *inputFilename;
+static char* inputFilename;
 static unsigned long maximumPrimeIndex = 16000000;
 
 static void readInCommandLineOptions();
@@ -31,9 +31,9 @@ static void printCommandLineOptions();
 
 static void printStatistics(clock_t tStart);
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-    char *hashValue;
+    char* hashValue;
     clock_t tStart = clock();
 
     readInCommandLineOptions(argc, argv);
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     printStatistics(tStart);
 }
 
-static void readInCommandLineOptions(int argc, char **argv)
+static void readInCommandLineOptions(int argc, char** argv)
 {
     int opt;
     while ((opt = getopt(argc, argv, "r:i:n:f:")) != -1)
@@ -102,7 +102,7 @@ static void readInCommandLineOptions(int argc, char **argv)
 
 static void readAndStoreNumberOfRoundsOption()
 {
-    char *end_ptr;
+    char* end_ptr;
     numberOfRounds = strtol(optarg, &end_ptr, 10);
     if (numberOfRounds <= 0)
     {
@@ -113,7 +113,7 @@ static void readAndStoreNumberOfRoundsOption()
 
 static void readAndStoreNumberOfMaximumPrimeIndexOption()
 {
-    char *end_ptr;
+    char* end_ptr;
     maximumPrimeIndex = strtol(optarg, &end_ptr, 10);
     if (maximumPrimeIndex <= 0)
     {
@@ -124,7 +124,7 @@ static void readAndStoreNumberOfMaximumPrimeIndexOption()
 
 static void readAndStoreNumberOfBitsOption()
 {
-    char *end_ptr;
+    char* end_ptr;
     numberOfBits = strtol(optarg, &end_ptr, 10);
     if (numberOfBits < 64)
     {
@@ -139,7 +139,7 @@ static void readAndStoreNumberOfBitsOption()
 
 static void readAndStoreFilenameOption()
 {
-    char *path = optarg;
+    char* path = optarg;
     unsigned long lengthOfPath = strlen(path) + 1;
     if (path == NULL || lengthOfPath <= 0)
     {
@@ -147,7 +147,7 @@ static void readAndStoreFilenameOption()
         fprintf(stderr, "Usage: allowed arguments [-r] [-i] [-n] [-f].\n");
         exit(EXIT_FAILURE);
     }
-    inputFilename = (char *) calloc(lengthOfPath, sizeof(char));
+    inputFilename = (char*) calloc(lengthOfPath, sizeof(char));
     strncpy(inputFilename, path, lengthOfPath);
 }
 
@@ -171,7 +171,7 @@ static void printStatistics(const clock_t tStart)
 
 static long getFileSize()
 {
-    FILE *fp = fopen(inputFilename, "rb");
+    FILE* fp = fopen(inputFilename, "rb");
     fseek(fp, 0L, SEEK_END);
     return ftell(fp);
 }

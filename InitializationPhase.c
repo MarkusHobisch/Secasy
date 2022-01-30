@@ -32,31 +32,31 @@ static int numberOfPrimes = 0;
 static int colorLen = 5;
 static int primeIndex = 0;
 static ColorIndex_t colorIndex = AND;
-static int *primeArray;
+static int* primeArray;
 
-static void calcAndSetDirections(int byte, int *directions);
+static void calcAndSetDirections(int byte, int* directions);
 
 static int logicalShiftRight(int a, int b);
 
-static void addNumbersToField(const int *directions);
+static void addNumbersToField(const int* directions);
 
-static int nextPrimeNumber(Tile_t *tile);
+static int nextPrimeNumber(Tile_t* tile);
 
 static void writeNextNumberOnMove(int direction);
 
 static int fastModulus(int dividend, int divisor);
 
-static void clearArray(int *directions);
+static void clearArray(int* directions);
 
 static void initPrimeNumbers(unsigned long maxPrimeIndex);
 
 static void initSquareFieldWithDefaultValue();
 
-static FILE *readFile(const char *filename);
+static FILE* readFile(const char* filename);
 
-static void doNotSetAnyDirections(int *directions);
+static void doNotSetAnyDirections(int* directions);
 
-static void updateColorAndPrimeIndexOfTile(Tile_t *tile);
+static void updateColorAndPrimeIndexOfTile(Tile_t* tile);
 
 static void setPrimeNumberOfLastTile();
 
@@ -71,13 +71,13 @@ void initFieldWithDefaultNumbers(const unsigned long maxPrimeIndex)
     initSquareFieldWithDefaultValue();
 }
 
-void readAndProcessFile(const char *filename)
+void readAndProcessFile(const char* filename)
 {
     unsigned char buffer[ONE_MB];
     size_t bytesRead;
     int directions[DIRECTIONS]; // LEFT, RIGHT, TOP, DOWN
 
-    FILE *file = readFile(filename);
+    FILE* file = readFile(filename);
     while ((bytesRead = fread(buffer, sizeof(char), sizeof(buffer), file)) > 0)
     {
         int byte; // must be int
@@ -129,9 +129,9 @@ static void createTile(const int posX, const int posY)
     field[posX][posY] = tile;
 }
 
-static FILE *readFile(const char *filename)
+static FILE* readFile(const char* filename)
 {
-    FILE *file;
+    FILE* file;
     file = fopen(filename, "rb");
     if (file == NULL)
     {
@@ -153,7 +153,7 @@ static FILE *readFile(const char *filename)
  *  Third round: 00
  *  Fourth round: 11
  */
-static void calcAndSetDirections(int byte, int *directions)
+static void calcAndSetDirections(int byte, int* directions)
 {
     int index = 0;
     while (byte != 0)
@@ -170,13 +170,13 @@ static int logicalShiftRight(const int a, const int b)
     return (int) ((unsigned int) a >> b);
 }
 
-static void doNotSetAnyDirections(int *directions)
+static void doNotSetAnyDirections(int* directions)
 {
     for (int i = 0; i < DIRECTIONS; i++)
         directions[i] = 0;
 }
 
-static void addNumbersToField(const int *directions)
+static void addNumbersToField(const int* directions)
 {
 #if DEBUG_MODE
     printf("start by pos[%d,%d]\n", pos.x, pos.y);
@@ -195,7 +195,7 @@ static void addNumbersToField(const int *directions)
  */
 static void writeNextNumberOnMove(const int direction)
 {
-    Tile_t *tile = &field[pos.x][pos.y];
+    Tile_t* tile = &field[pos.x][pos.y];
     int oldPrime = tile->value;
     int nextPrime = nextPrimeNumber(tile);
     tile->value = nextPrime;
@@ -251,7 +251,7 @@ static void writeNextNumberOnMove(const int direction)
     }
 }
 
-static void clearArray(int *directions)
+static void clearArray(int* directions)
 {
     for (int i = 0; i < DIRECTIONS; ++i)
     {
@@ -261,17 +261,17 @@ static void clearArray(int *directions)
 
 static void setPrimeNumberOfLastTile()
 {
-    Tile_t *tile = &field[pos.x][pos.y];
+    Tile_t* tile = &field[pos.x][pos.y];
     tile->value = nextPrimeNumber(tile);
 }
 
-static int nextPrimeNumber(Tile_t *tile)
+static int nextPrimeNumber(Tile_t* tile)
 {
     updateColorAndPrimeIndexOfTile(tile);
     return primeArray[tile->primeIndex];
 }
 
-static void updateColorAndPrimeIndexOfTile(Tile_t *tile)
+static void updateColorAndPrimeIndexOfTile(Tile_t* tile)
 {
     primeIndex = tile->primeIndex;
     colorIndex = tile->colorIndex;
