@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <limits.h>
-#include "Calculation.h"
+#include "Calculations.h"
 #include "Defines.h"
+#include "Printing.h"
 
 extern Position_t pos;
 extern Tile_t field[SIZE][SIZE];

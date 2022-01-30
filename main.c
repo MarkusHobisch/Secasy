@@ -4,7 +4,7 @@
 #include <time.h>
 #include <getopt.h>
 #include "Printing.h"
-#include "Calculation.h"
+#include "Calculations.h"
 #include "InitializationPhase.h"
 #include "ProcessingPhase.h"
 #include "Defines.h"

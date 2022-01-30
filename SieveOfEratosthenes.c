@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "Defines.h"
+#include "SieveOfEratosthenes.h"
 
 // using Sieve of Eratosthenes
 // see https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes

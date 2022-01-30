@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "Defines.h"
+#include "ProcessingPhase.h"
 
 extern Position_t pos;
 extern Tile_t field[SIZE][SIZE];
