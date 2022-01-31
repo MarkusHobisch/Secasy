@@ -26,9 +26,9 @@ int *generatePrimeNumbers(int *numberOfPrimes, const unsigned long maxPrimeIndex
     unsigned int optimizedMaxPrimeIndex = optimizePrimeIndexMaxSize(maxPrimeIndex);
     int *primes = getAllPrimes(numberOfPrimes, optimizedMaxPrimeIndex, primeSieve);
 
-    printf("Number of primes <= %lu is %d\n", maxPrimeIndex, *numberOfPrimes);
+    printf("Number of primes.c <= %lu is %d\n", maxPrimeIndex, *numberOfPrimes);
 #if DEBUG_MODE
-    //printAllPrimes(*numberOfPrimes, primes);
+    printAllPrimes(*numberOfPrimes, primes);
 #endif
     return primes;
 }
@@ -38,7 +38,7 @@ static int *initPrimeSieve(const unsigned int maxPrimeIndex)
     int *primeSieve = calloc(maxPrimeIndex + 1, sizeof(int));
     assert(primeSieve != NULL && "mem alloc failed!");
 
-    // initially assume all integers are primes
+    // initially assume all integers are primes.c
     for (int i = 2; i <= maxPrimeIndex; i++)
     {
         primeSieve[i] = true;
@@ -90,7 +90,7 @@ static void printAllPrimes(const int numberOfPrimes, const int *primes)
 {
     if (!primes)
     {
-        printf("No primes found!\n");
+        printf("No primes.c found!\n");
         return;
     }
 
@@ -98,7 +98,10 @@ static void printAllPrimes(const int numberOfPrimes, const int *primes)
     for (int i = 0; i < numberOfPrimes; i++)
     {
         if (primes[i] != 0)
-            printf("\t%d", primes[i]);
+            if(i % 10 == 0){
+                printf("\n");
+            }
+            printf("%d,", primes[i]);
     }
     printf("\n");
 }

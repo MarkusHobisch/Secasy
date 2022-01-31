@@ -1,6 +1,10 @@
 #ifndef SECASY_DEFINES_H
 #define SECASY_DEFINES_H
 
+#define DEFAULT_NUMBER_OF_ROUNDS 100000
+#define DEFAULT_BIT_SIZE 512
+#define DEFAULT_MAX_PRIME_INDEX 16000000
+
 typedef struct
 {
     int x;

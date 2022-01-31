@@ -6,14 +6,17 @@
 #include "InitializationPhase.h"
 #include "ProcessingPhase.h"
 #include "Defines.h"
+#include "Printing.h"
 
-// maRkus -> 69901ca8141
-// -n 64 -i 100 -r 1 -f C...
-unsigned long numberOfRounds = 100000;
-int numberOfBits = 512;
+// maRkus -> 57dc2a5605a7d4ef
+// -n 64
+unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
+
+int numberOfBits = DEFAULT_BIT_SIZE;
+
+static unsigned long maximumPrimeIndex = DEFAULT_MAX_PRIME_INDEX;
 
 static char* inputFilename;
-static unsigned long maximumPrimeIndex = 16000000;
 
 static void readInCommandLineOptions();
 
@@ -44,7 +47,6 @@ int main(int argc, char** argv)
 
     // Additional information on partial results
 #if (DEBUG_MODE && DEBUG_LOG_EXTENDED)
-    printAllPrimes();
     printField();
     printPrimeIndexes();
     printColorIndexes();
@@ -130,7 +132,8 @@ static void readAndStoreNumberOfBitsOption()
     {
         printf("Bit size small than 64 is not supported.\n");
         exit(EXIT_FAILURE);
-    } else if ((numberOfBits & (numberOfBits - 1)) != 0)
+    }
+    else if ((numberOfBits & (numberOfBits - 1)) != 0)
     {
         printf("Bit size must be the power of two.\n");
         exit(EXIT_FAILURE);

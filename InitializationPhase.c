@@ -1,9 +1,11 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <intrin.h>
 #include "Defines.h"
 #include "InitializationPhase.h"
 #include "SieveOfEratosthenes.h"
+#include "primes.h"
 
 #define ONE_MB 1048576
 
@@ -28,11 +30,11 @@ Position_t pos;
 Tile_t field[SIZE][SIZE];
 int lastPrime = 1;
 
-static int numberOfPrimes = 0;
+static int numberOfPrimes = NUMBER_OF_PRIMES;
 static int colorLen = 5;
 static int primeIndex = 0;
 static ColorIndex_t colorIndex = AND;
-static int* primeArray;
+static int* primeArray = storedPrimesArray;
 
 static void calcAndSetDirections(int byte, int* directions);
 
@@ -45,8 +47,6 @@ static int nextPrimeNumber(Tile_t* tile);
 static void writeNextNumberOnMove(int direction);
 
 static int fastModulus(int dividend, int divisor);
-
-static void clearArray(int* directions);
 
 static void initPrimeNumbers(unsigned long maxPrimeIndex);
 
@@ -87,12 +87,12 @@ void readAndProcessFile(const char* filename)
             if (byte != 0)
             {
                 calcAndSetDirections(byte, directions);
-            } else
+            }
+            else
             {
                 doNotSetAnyDirections(directions);
             }
             addNumbersToField(directions);
-            clearArray(directions);
         }
     }
     setPrimeNumberOfLastTile();
@@ -101,8 +101,10 @@ void readAndProcessFile(const char* filename)
 
 static void initPrimeNumbers(const unsigned long maxPrimeIndex)
 {
-    if (primeArray == NULL)
+    if (maxPrimeIndex > DEFAULT_MAX_PRIME_INDEX)
+    {
         primeArray = generatePrimeNumbers(&numberOfPrimes, maxPrimeIndex);
+    }
 }
 
 static void initSquareFieldWithDefaultValue()
@@ -248,14 +250,6 @@ static void writeNextNumberOnMove(const int direction)
             printf("UNKNOWN POSITION !!\n");
             break;
         }
-    }
-}
-
-static void clearArray(int* directions)
-{
-    for (int i = 0; i < DIRECTIONS; ++i)
-    {
-        directions[i] = 0;
     }
 }
 

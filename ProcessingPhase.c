@@ -86,8 +86,8 @@ static void processData(const ColorIndex_t colorIndex, const int posX, const int
                 tile->value += 1;
             else
             {
-                Tile_t neighbourTileAbove = field[posX][posY - 1];
-                tile->value += neighbourTileAbove.value;
+                Tile_t *neighbourTileAbove = &field[posX][posY - 1];
+                tile->value += neighbourTileAbove->value;
             }
             break;
         }
@@ -97,8 +97,8 @@ static void processData(const ColorIndex_t colorIndex, const int posX, const int
                 tile->value -= 1;
             else
             {
-                Tile_t neighbourTileBelow = field[posX][posY + 1];
-                tile->value -= neighbourTileBelow.value;
+                Tile_t *neighbourTileBelow = &field[posX][posY + 1];
+                tile->value -= neighbourTileBelow->value;
             }
             break;
         }
@@ -108,8 +108,8 @@ static void processData(const ColorIndex_t colorIndex, const int posX, const int
                 tile->value ^= 1;
             else
             {
-                Tile_t neighbourTileLeft = field[posX - 1][posY];
-                tile->value ^= neighbourTileLeft.value;
+                Tile_t *neighbourTileLeft = &field[posX - 1][posY];
+                tile->value ^= neighbourTileLeft->value;
             }
             break;
         }
@@ -119,8 +119,8 @@ static void processData(const ColorIndex_t colorIndex, const int posX, const int
                 tile->value |= 1;
             else
             {
-                Tile_t neighbourTileRight = field[posX + 1][posY];
-                tile->value |= neighbourTileRight.value;
+                Tile_t *neighbourTileRight = &field[posX + 1][posY];
+                tile->value |= neighbourTileRight->value;
             }
             break;
         }
@@ -130,8 +130,8 @@ static void processData(const ColorIndex_t colorIndex, const int posX, const int
                 tile->value |= 1;
             else
             {
-                Tile_t neighbourTileLeft = field[posX - 1][posY];
-                tile->value |= neighbourTileLeft.value;
+                Tile_t *neighbourTileLeft = &field[posX - 1][posY];
+                tile->value |= neighbourTileLeft->value;
             }
             break;
         }
