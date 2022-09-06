@@ -21,3 +21,5 @@ obj/
 cmake-build-debug/
 *.gch
 secasy
+.idea/
+.vscode/
