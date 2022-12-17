@@ -132,6 +132,11 @@ static void createTile(const int posX, const int posY)
 
 static FILE* readFile(const char* filename)
 {
+    if(filename == NULL){
+        fprintf(stderr, "<Input Error> File not found. Providing a file is mandatory. You can provide a file with option -f <inputFile>.\n Use option -h to see all supported usage arguments. \n");
+        exit(EXIT_FAILURE); 
+    }
+
     FILE* file;
     file = fopen(filename, "rb");
     if (file == NULL)

@@ -30,6 +30,8 @@ static void readAndStoreNumberOfBitsOption();
 
 static void readAndStoreFilenameOption();
 
+static void printHelperText();
+
 static void printCommandLineOptions();
 
 static void printStatistics(clock_t tStart);
@@ -69,7 +71,7 @@ int main(int argc, char** argv)
 static void readInCommandLineOptions(int argc, char** argv)
 {
     int opt;
-    while ((opt = getopt(argc, argv, "r:i:n:f:")) != -1)
+    while ((opt = getopt(argc, argv, "r:i:n:f:h")) != -1)
     {
         switch (opt)
         {
@@ -93,9 +95,14 @@ static void readInCommandLineOptions(int argc, char** argv)
                 readAndStoreFilenameOption();
                 break;
             }
+            case 'h':
+            {
+                printHelperText();
+                exit(EXIT_SUCCESS);
+            }
             default:
             {
-                fprintf(stderr, "Usage: %s allowed arguments [-r] [-i] [-n] [-f]. \n", argv[0]);
+                fprintf(stderr, "Usage: %s supported arguments [-r] [-i] [-n] [-f] [-h]. \n", argv[0]);
                 exit(EXIT_FAILURE);
             }
         }
@@ -147,11 +154,23 @@ static void readAndStoreFilenameOption()
     if (path == NULL || lengthOfPath <= 0)
     {
         printf("Missing file. Please specify a file. \n");
-        fprintf(stderr, "Usage: allowed arguments [-r] [-i] [-n] [-f].\n");
+        printHelperText();
         exit(EXIT_FAILURE);
     }
     inputFilename = (char*) calloc(lengthOfPath, sizeof(char));
     strncpy(inputFilename, path, lengthOfPath);
+}
+
+static void printHelperText(){
+    printf("\n");
+    printf("+--------------------------------------------------------------------------------------------------------------------+\n");
+    printf("| Following arguments are available: [-r] [-i] [-n] [-f] [-h]                                                        |\n");
+    printf("| n: bit size of hash value. e.g. -n 1024                                                                            |\n");
+    printf("| i: max prime index for calculation of prime numbers. e.g. -i 100 (25 prime numbers in the range from 1 to 100)     |\n");
+    printf("| r: number of rounds during hashing step. e.g -r 1000                                                               |\n");
+    printf("| f: path of filename: e.g. -f input                                                                                 |\n");
+    printf("| h: shows this help text                                                                                            |\n");
+    printf("+--------------------------------------------------------------------------------------------------------------------+\n\n");
 }
 
 static void printCommandLineOptions()

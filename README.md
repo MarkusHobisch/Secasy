@@ -13,6 +13,8 @@ The algorithm is based on the principle of a deterministic chaotic system, meani
 
 + gcc -Ofast *.c *.h -lm -o secasy
 
+Precompiled binaries for Windows and Linux are provided and can be found in bin folder.
+
 Tested on Windows platform and Windows WSL (Ubuntu 22.04.1 LTS). \
 GCC version 11.2.0 (Ubuntu 11.2.0-19ubuntu1)
 

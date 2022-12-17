@@ -38,7 +38,7 @@ static int *initPrimeSieve(const unsigned int maxPrimeIndex)
     int *primeSieve = calloc(maxPrimeIndex + 1, sizeof(int));
     assert(primeSieve != NULL && "mem alloc failed!");
 
-    // initially assume all integers are primes.c
+    // initially assume all integers are primes
     for (int i = 2; i <= maxPrimeIndex; i++)
     {
         primeSieve[i] = true;
