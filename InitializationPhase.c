@@ -5,6 +5,7 @@
 #include "InitializationPhase.h"
 #include "SieveOfEratosthenes.h"
 #include "primes.h"
+#include "string.h"
 
 #define ONE_MB 1048576
 
@@ -44,8 +45,6 @@ static void addNumbersToField(const int* directions);
 static int nextPrimeNumber(Tile_t* tile);
 
 static void writeNextNumberOnMove(int direction);
-
-static int fastModulus(int dividend, int divisor);
 
 static void initPrimeNumbers(unsigned long maxPrimeIndex);
 
@@ -94,6 +93,8 @@ void readAndProcessFile(const char* filename)
             addNumbersToField(directions);
         }
     }
+
+    fclose(file);
     setPrimeNumberOfLastTile();
     lastPrime = field[pos.x][pos.y].value;
 }
@@ -178,8 +179,7 @@ static int logicalShiftRight(const int a, const int b)
 
 static void doNotSetAnyDirections(int* directions)
 {
-    for (int i = 0; i < DIRECTIONS; i++)
-        directions[i] = 0;
+   memset(directions, 0, DIRECTIONS * sizeof(int));
 }
 
 static void addNumbersToField(const int* directions)
@@ -216,7 +216,7 @@ static void writeNextNumberOnMove(const int direction)
         case UP:
         {
             newPos = pos.y - oldPrime + SQUARE_AVOIDANCE_VALUE;
-            pos.y = fastModulus(fastModulus(newPos, SIZE) + SIZE, SIZE);
+            pos.y = (newPos + SIZE) & (SIZE - 1); // pos.y = fastModulus(fastModulus(newPos, SIZE) + SIZE, SIZE);
 #if DEBUG_MODE
             printf(" UP\n");
 #endif
@@ -225,7 +225,7 @@ static void writeNextNumberOnMove(const int direction)
         case DOWN:
         {
             newPos = pos.y + oldPrime;
-            pos.y = fastModulus(fastModulus(newPos, SIZE) + SIZE, SIZE);
+            pos.y = (newPos + SIZE) & (SIZE - 1);
 #if DEBUG_MODE
             printf(" DOWN\n");
 #endif
@@ -234,7 +234,7 @@ static void writeNextNumberOnMove(const int direction)
         case LEFT:
         {
             newPos = pos.x - oldPrime;
-            pos.x = fastModulus(fastModulus(newPos, SIZE) + SIZE, SIZE);
+            pos.x = (newPos + SIZE) & (SIZE - 1);
 #if DEBUG_MODE
             printf(" LEFT\n");
 #endif
@@ -243,7 +243,7 @@ static void writeNextNumberOnMove(const int direction)
         case RIGHT:
         {
             newPos = pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE;
-            pos.x = fastModulus(fastModulus(newPos, SIZE) + SIZE, SIZE);
+            pos.x = (newPos + SIZE) & (SIZE - 1);
 #if DEBUG_MODE
             printf(" RIGHT\n");
 #endif
@@ -279,9 +279,4 @@ static void updateColorAndPrimeIndexOfTile(Tile_t* tile)
 
     tile->primeIndex = primeIndex;
     tile->colorIndex = colorIndex;
-}
-
-static int fastModulus(const int dividend, const int divisor)
-{
-    return dividend & (divisor - 1);
 }

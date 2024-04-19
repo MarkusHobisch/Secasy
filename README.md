@@ -11,7 +11,7 @@ The algorithm is based on the principle of a deterministic chaotic system, meani
 
 ## Compilation
 
-+ gcc -Ofast *.c *.h -lm -o secasy
++  gcc -Ofast -march=native -mtune=native -funroll-loops *.c -lm -o secasy
 
 Precompiled binaries for Windows and Linux are provided and can be found in bin folder.
 
@@ -34,4 +34,15 @@ At least the argument of the filename must be specified.
 + numberOfBits (n): 512
 + maximumPrimeIndex (i): 16.000.000
 + numberOfRounds (r): 100.000
+
+## Security Disclaimer
+
+Please be advised that the cryptographic functionality implemented in this software has not yet been reviewed by security professionals. 
+It is intended for research and development purposes only and should be used with caution. 
+Users are encouraged to conduct their own security assessments before deploying this software in a production environment. 
+We welcome contributions from the community, especially in terms of security improvements and reviews.
+
+## Contact Information
+
+For any questions or inquiries regarding this software, please contact me at markus.hobisch@gmx.at.
 

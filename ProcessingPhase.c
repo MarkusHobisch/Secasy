@@ -42,7 +42,7 @@ char* calculateHashValue()
         {
             for (int j = 0; j < SIZE; j++)
             {
-                Tile_t* tile = &field[(posX + i) % SIZE][(posY + j) % SIZE];
+                Tile_t* tile = &field[(posX + i) & (SIZE - 1)][(posY + j) & (SIZE - 1)];
                 // printf("%d : %d\n", (posX + i) % SIZE, (posY + j) % SIZE);
                 processData(tile->colorIndex, i, j);
             }
