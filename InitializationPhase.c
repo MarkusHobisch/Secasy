@@ -199,7 +199,7 @@ static void addNumbersToField(const int* directions)
  * the field range (number of tiles per horizontal or vertical direction) then we start at the opposite direction again
  * (RIGHT -> LEFT, LEFT -> RIGHT, BOTTOM -> UP, UP -> BOTTOM. We realize this with the modulus operand.
  */
-static void writeNextNumberOnMove(const int direction)
+static void writeNextNumberOnMove(const int move)
 {
     Tile_t* tile = &field[pos.x][pos.y];
     int oldPrime = tile->value;
@@ -207,16 +207,16 @@ static void writeNextNumberOnMove(const int direction)
     tile->value = nextPrime;
 #if DEBUG_MODE
     printf("old prime: %d -> new prime: %d ", oldPrime, nextPrime);
-    printf("dir: %d", direction);
+    printf("dir: %d", move);
 #endif
 
     int newPos;
-    switch (direction)
+    switch (move)
     {
         case UP:
         {
-            newPos = pos.y - oldPrime + SQUARE_AVOIDANCE_VALUE;
-            pos.y = (newPos + SIZE) & (SIZE - 1); // pos.y = fastModulus(fastModulus(newPos, SIZE) + SIZE, SIZE);
+            // calculates the new position and keeps it in the range of the field by the efficient version of module: &(SIZE - 1)
+            pos.y = (pos.y - oldPrime + SQUARE_AVOIDANCE_VALUE) & (SIZE - 1);
 #if DEBUG_MODE
             printf(" UP\n");
 #endif
@@ -224,8 +224,7 @@ static void writeNextNumberOnMove(const int direction)
         }
         case DOWN:
         {
-            newPos = pos.y + oldPrime;
-            pos.y = (newPos + SIZE) & (SIZE - 1);
+            pos.y = (pos.y + oldPrime) & (SIZE - 1);
 #if DEBUG_MODE
             printf(" DOWN\n");
 #endif
@@ -233,8 +232,7 @@ static void writeNextNumberOnMove(const int direction)
         }
         case LEFT:
         {
-            newPos = pos.x - oldPrime;
-            pos.x = (newPos + SIZE) & (SIZE - 1);
+            pos.x = (pos.x - oldPrime) & (SIZE - 1);
 #if DEBUG_MODE
             printf(" LEFT\n");
 #endif
@@ -242,8 +240,7 @@ static void writeNextNumberOnMove(const int direction)
         }
         case RIGHT:
         {
-            newPos = pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE;
-            pos.x = (newPos + SIZE) & (SIZE - 1);
+            pos.x = (pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE) & (SIZE - 1);
 #if DEBUG_MODE
             printf(" RIGHT\n");
 #endif

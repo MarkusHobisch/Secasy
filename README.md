@@ -11,12 +11,25 @@ The algorithm is based on the principle of a deterministic chaotic system, meani
 
 ## Compilation
 
-+  gcc -Ofast -march=native -mtune=native -funroll-loops *.c -lm -o secasy
+To compile the source code, use the following command in the terminal:
 
-Precompiled binaries for Windows and Linux are provided and can be found in bin folder.
+```bash
+gcc -Ofast -march=native -mtune=native -funroll-loops *.c -lm -o secasy
+```
+
+Precompiled binaries for Windows and Linux are provided and can be found in the bin folder.
 
 Tested on Windows platform and Windows WSL (Ubuntu 22.04.1 LTS). \
 GCC version 11.2.0 (Ubuntu 11.2.0-19ubuntu1)
+
+### Additional Instructions for Windows Users:
+If you are using Windows and prefer to compile the code within the Windows Subsystem for Linux (WSL), it is recommended to use Windows PowerShell to launch WSL. Prefix the GCC command with `wsl` to ensure it executes under Linux compatibility within Windows, as shown below:
+
+```bash
+wsl gcc -Ofast -march=native -mtune=native -funroll-loops *.c -lm -o secasy
+```
+
+This command ensures that the GCC compiler runs within the Linux environment provided by WSL, leveraging the same performance optimizations and dependencies as if running on a native Linux system.
 
 ## Usage
 
@@ -42,7 +55,39 @@ It is intended for research and development purposes only and should be used wit
 Users are encouraged to conduct their own security assessments before deploying this software in a production environment. 
 We welcome contributions from the community, especially in terms of security improvements and reviews.
 
+## Profiling with `gprof`
+
+To analyze the performance of the program and identify potential bottlenecks, we use `gprof`, a performance analysis tool for Unix applications. To enable profiling, the program must be compiled with the `-pg` flag, which allows `gprof` to collect data on the program's execution. Additional flags optimize performance further and tailor the build to the specific architecture of the machine.
+
+### Steps for Profiling:
+
+#### 1. Compile the program with necessary options:
+Compile your program with the `-pg` flag alongside other optimization flags to integrate profiling support into the executable.
+
+**Compile command:**
+```bash
+gcc -pg -Ofast -march=native -mtune=native -funroll-loops *.c -lm -o secasy
+```
+
+#### 2. Run the program:
+Execute the compiled program as usual. This run will generate a file named `gmon.out` in the same directory, containing profiling information.
+
+**Run command:**
+```bash
+./secasy -f fileToHash
+```
+
+#### 3. Analyze the profiling data:
+Use `gprof` to read the `gmon.out` file and produce an analysis report. You can redirect this output to a text file for easier examination.
+
+**Analysis command:**
+```bash
+gprof ./secasy gmon.out > analysis.txt
+```
+
+### Reading the Report:
+The `gprof` output in `analysis.txt` will provide a list of the functions called during the execution, along with the time spent in each function and the number of times each function was called. This information is crucial for identifying performance bottlenecks and understanding the behavior of the program.
+
 ## Contact Information
 
 For any questions or inquiries regarding this software, please contact me at markus.hobisch@gmx.at.
-
