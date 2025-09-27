@@ -10,9 +10,7 @@ extern int lastPrime;
 
 void printField()
 {
-    printf("\n------------------------------------ Prime Field ---------------------------------------\n");
-    printf("\t --------------- Origin matrix - ");
-    printf("last position: [%d,%d] ---------------\n", pos.x, pos.y);
+    printf("\n------------------------------------ Prime Field ---------------------------------------\n\t --------------- Origin matrix - last position: [%d,%d] ---------------\n", pos.x, pos.y);
 
     int rowSums[FIELD_SIZE];
     int columnsSums[FIELD_SIZE];
@@ -99,6 +97,6 @@ void printDatatypeMaxValues()
     printf("\n\n**************/////// MAX VALUES OF DATATYPES ///////**************\n");
     printf("+ LONG_MAX                 %ld\n", LONG_MAX);
     printf("+ INT_MAX                  %i\n", INT_MAX);
-    printf("+ LONG_LONG_MAX            %llu\n", LLONG_MAX);
+    printf("+ LONG_LONG_MAX            %lld\n", (long long)LLONG_MAX); // corrected format for signed long long
     printf("*******************************************************************\n\n");
 }

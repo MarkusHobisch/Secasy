@@ -13,6 +13,9 @@
 // Field dimension (must remain a power of two)
 #define FIELD_SIZE 8 // 8 x 8 -> 1.000.000 over 64 = 10^294 >> 2^512
 
+// Default I/O block size
+#define DEFAULT_IO_BLOCK_SIZE (4 * 1024 * 1024) // 4 MB default read chunk size
+
 typedef struct
 {
     int x;
@@ -21,7 +24,7 @@ typedef struct
 
 typedef enum
 {
-    AND = 0,
+    ADD = 0,
     SUB = 1,
     XOR = 2,
     BITWISE_AND = 3,

@@ -11,11 +11,23 @@ The algorithm is based on the principle of a deterministic chaotic system, meani
 
 ## Compilation
 
-To compile the source code, use the following command in the terminal:
+To compile the source code, use one of the following commands in the terminal:
+
+Standard (heuristic prime truncation enabled for speed):
 
 ```bash
 gcc -Ofast -march=native -mtune=native -funroll-loops *.c -lm -o secasy
 ```
+
+Full prime range (no truncation; slower for very large max prime index). Build flag `SECASY_PRIMES_FULL` disables the heuristic reduction in the sieve:
+
+```bash
+gcc -DSECASY_PRIMES_FULL -Ofast -march=native -mtune=native -funroll-loops *.c -lm -o secasy
+```
+
+Effect of `-DSECASY_PRIMES_FULL`:
+- Without the flag (default): the prime list may be truncated heuristically to reduce memory and speed up processing for huge `-i` values.
+- With the flag: the sieve keeps the full range up to the provided maximum prime index (`-i`).
 
 Precompiled binaries for Windows and Linux are provided and can be found in the bin folder.
 
@@ -27,6 +39,12 @@ If you are using Windows and prefer to compile the code within the Windows Subsy
 
 ```bash
 wsl gcc -Ofast -march=native -mtune=native -funroll-loops *.c -lm -o secasy
+```
+
+Or with full prime range:
+
+```bash
+wsl gcc -DSECASY_PRIMES_FULL -Ofast -march=native -mtune=native -funroll-loops *.c -lm -o secasy
 ```
 
 This command ensures that the GCC compiler runs within the Linux environment provided by WSL, leveraging the same performance optimizations and dependencies as if running on a native Linux system.
@@ -48,12 +66,30 @@ At least the argument of the filename must be specified.
 + maximumPrimeIndex (i): 16.000.000
 + numberOfRounds (r): 100.000
 
+## Color Operations (Field Update Semantics)
+The 2D field is updated per tile using a color (operation) associated with each tile value. Current operations:
+
+| Code        | Meaning                                  | Edge Handling |
+|-------------|-------------------------------------------|---------------|
+| ADD         | Add neighbour (above) or +1 at top row    | Top row: +1   |
+| SUB         | Subtract neighbour (below) or -1 at bottom| Bottom: -1    |
+| XOR         | XOR with left neighbour or XOR 1 at left edge | Left edge: ^=1 |
+| BITWISE_AND | Bitwise AND with right neighbour; at right edge no change (logical AND with 0x..FF) | Right edge: unchanged |
+| BITWISE_OR  | Bitwise OR with left neighbour; at left edge OR 1 | Left edge: \|=1 |
+| INVERT      | Bitwise NOT (value = ~value)              | N/A           |
+
+Notes:
+- Negative intermediate values are allowed (SUB, INVERT) and intentionally not clamped.
+- The wrapping in movement logic uses bit masks (`FIELD_SIZE` must remain a power of two) for efficiency.
+
 ## Security Disclaimer
 
 Please be advised that the cryptographic functionality implemented in this software has not yet been reviewed by security professionals. 
 It is intended for research and development purposes only and should be used with caution. 
 Users are encouraged to conduct their own security assessments before deploying this software in a production environment. 
 We welcome contributions from the community, especially in terms of security improvements and reviews.
+
+**Important:** The current hash construction is experimental and MUST NOT be used for real-world security purposes (e.g. password hashing, digital signatures, integrity guarantees in production). Its collision and preimage resistance have not been formally analyzed and future changes (e.g. operation semantics, prime handling) may alter outputs without notice.
 
 ## Profiling with `gprof`
 

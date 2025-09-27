@@ -6,8 +6,10 @@
 #include "SieveOfEratosthenes.h"
 #include "primes.h"
 #include "string.h"
+#include "util.h"
 
-#define ONE_MB 1048576
+// Ensure field size remains a power of two at compile time
+_Static_assert((FIELD_SIZE & (FIELD_SIZE - 1)) == 0, "FIELD_SIZE must be a power of two");
 
 /* Directions:
  00 -> up   --> state 0 ; state == value
@@ -33,12 +35,12 @@ int lastPrime = 1;
 static int numberOfPrimes = NUMBER_OF_PRIMES;
 static int colorLen = 5;
 static int primeIndex = 0;
-static ColorIndex_t colorIndex = AND;
+static ColorIndex_t colorIndex = ADD;
 static int* primeArray = storedPrimesArray;
 
 static void calcAndSetDirections(int byte, int* directions);
 
-static int logicalShiftRight(int a, int b);
+static inline int logicalShiftRight(int a, int b);
 
 static void addNumbersToField(const int* directions);
 
@@ -71,17 +73,23 @@ void initFieldWithDefaultNumbers(const unsigned long maxPrimeIndex)
 
 void readAndProcessFile(const char* filename)
 {
-    unsigned char buffer[ONE_MB];
+    /* Allocate large buffer (4MB) on heap to avoid stack overflow on some platforms */
+    unsigned char* buffer = (unsigned char*) malloc(DEFAULT_IO_BLOCK_SIZE);
+    if (!buffer)
+    {
+        LOG_ERROR("Failed to allocate %u bytes buffer", (unsigned)DEFAULT_IO_BLOCK_SIZE);
+        exit(EXIT_FAILURE);
+    }
     size_t bytesRead;
     int directions[DIRECTIONS]; // LEFT, RIGHT, TOP, DOWN
 
     FILE* file = readFile(filename);
-    while ((bytesRead = fread(buffer, sizeof(char), sizeof(buffer), file)) > 0)
+    while ((bytesRead = fread(buffer, 1, DEFAULT_IO_BLOCK_SIZE, file)) > 0)
     {
         int byte; // must be int
-        for (int i = 0; i < bytesRead; ++i)
+        for (size_t i = 0; i < bytesRead; ++i)
         {
-            byte = buffer[i] & 0xFF; // byte to int conversation
+            byte = buffer[i] & 0xFF; // byte to int conversion
             if (byte != 0)
             {
                 calcAndSetDirections(byte, directions);
@@ -93,8 +101,15 @@ void readAndProcessFile(const char* filename)
             addNumbersToField(directions);
         }
     }
-
+    if (ferror(file))
+    {
+        LOG_ERROR("I/O error while reading file '%s'", filename ? filename : "<null>");
+        free(buffer);
+        fclose(file);
+        exit(EXIT_FAILURE);
+    }
     fclose(file);
+    free(buffer);
     setPrimeNumberOfLastTile();
     lastPrime = field[pos.x][pos.y].value;
 }
@@ -104,6 +119,11 @@ static void initPrimeNumbers(const unsigned long maxPrimeIndex)
     if (maxPrimeIndex > DEFAULT_MAX_PRIME_INDEX)
     {
         primeArray = generatePrimeNumbers(&numberOfPrimes, maxPrimeIndex);
+        if (!primeArray || numberOfPrimes <= 0)
+        {
+            LOG_ERROR("Prime generation failed for maxPrimeIndex=%lu", maxPrimeIndex);
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -127,22 +147,21 @@ static void createTile(const int posX, const int posY)
     tile.posY = posY;
     tile.value = FIRST_PRIME;
     tile.primeIndex = 0;
-    tile.colorIndex = AND;
+    tile.colorIndex = ADD;
     field[posX][posY] = tile;
 }
 
 static FILE* readFile(const char* filename)
 {
-    if(filename == NULL){
-        fprintf(stderr, "<Input Error> File not found. Providing a file is mandatory. You can provide a file with option -f <inputFile>.\n Use option -h to see all supported usage arguments. \n");
-        exit(EXIT_FAILURE); 
+    if (filename == NULL)
+    {
+        LOG_ERROR("Input file not provided (-f <file> required)");
+        exit(EXIT_FAILURE);
     }
-
-    FILE* file;
-    file = fopen(filename, "rb");
+    FILE* file = fopen(filename, "rb");
     if (file == NULL)
     {
-        fprintf(stderr, "Could not open file with filename: %s\n", filename);
+        LOG_ERROR("Could not open file: %s", filename);
         exit(EXIT_FAILURE);
     }
     return file;
@@ -162,19 +181,19 @@ static FILE* readFile(const char* filename)
  */
 static void calcAndSetDirections(int byte, int* directions)
 {
+    memset(directions, 0, DIRECTIONS * sizeof(int));
     int index = 0;
-    while (byte != 0)
+    // Extract up to 4 direction pairs (2 bits each)
+    while (byte != 0 && index < DIRECTIONS)
     {
-        directions[index++] = (byte & 3); // max byte length is always 8 bits, otherwise assertion will fail.
-        byte = logicalShiftRight(byte, 2); // is the same as byte >>>= 2 in Java
-        assert(index <= 4 && "index is negative!");
+        directions[index++] = (byte & 3);
+        byte = logicalShiftRight(byte, 2);
     }
-
 }
 
-static int logicalShiftRight(const int a, const int b)
+static inline int logicalShiftRight(const int a, const int b)
 {
-    return (int) ((unsigned int) a >> b);
+    return (int)((unsigned int)a >> b);
 }
 
 static void doNotSetAnyDirections(int* directions)
@@ -202,55 +221,41 @@ static void addNumbersToField(const int* directions)
 static void writeNextNumberOnMove(const int move)
 {
     Tile_t* tile = &field[pos.x][pos.y];
-    int oldPrime = tile->value;
-    int nextPrime = nextPrimeNumber(tile);
+    const int oldPrime = tile->value;
+    const int nextPrime = nextPrimeNumber(tile);
     tile->value = nextPrime;
 #if DEBUG_MODE
-    printf("old prime: %d -> new prime: %d ", oldPrime, nextPrime);
-    printf("dir: %d", move);
+    printf("old prime: %d -> new prime: %d dir: %d", oldPrime, nextPrime, move);
 #endif
-
-    int newPos;
     switch (move)
     {
         case UP:
-        {
-            // calculates new position and keeps it in range via bit mask (FIELD_SIZE - 1)
             pos.y = (pos.y - oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
             printf(" UP\n");
 #endif
             break;
-        }
         case DOWN:
-        {
             pos.y = (pos.y + oldPrime) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
             printf(" DOWN\n");
 #endif
             break;
-        }
         case LEFT:
-        {
             pos.x = (pos.x - oldPrime) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
             printf(" LEFT\n");
 #endif
             break;
-        }
         case RIGHT:
-        {
             pos.x = (pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
             printf(" RIGHT\n");
 #endif
             break;
-        }
         default:
-        {
             printf("UNKNOWN POSITION !!\n");
             break;
-        }
     }
 }
 

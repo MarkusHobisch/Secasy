@@ -6,6 +6,7 @@
 #include "Defines.h"
 #include "ProcessingPhase.h"
 #include "Calculations.h"
+#include "util.h"
 
 extern Position_t pos;
 extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
@@ -22,16 +23,19 @@ static void setPositionsToZeroIfOutOfRange(int* posX, int* posY);
 
 static void storeHashValueInBuffer(char* buffer);
 
-static void concatenateHashStrings(char* hashValue);
-
 char* calculateHashValue()
 {
-    printf("\n-------------- Processing Data --------------------\n");
     int posX = pos.x;
     int posY = pos.y;
+    const int mask = FIELD_SIZE - 1;
     double iterations = numberOfBits / 64.0;
     int sizeOfOneIteration = (int) ceil(numberOfRounds / iterations + 0.5);
+    if (sizeOfOneIteration <= 0) sizeOfOneIteration = 1;
+
     char* hashValue = initHashValueBuffer();
+    size_t writePos = 0;
+    size_t capacity = (size_t)numberOfBits;
+
     int roundCounter;
     for (roundCounter = 0; roundCounter < numberOfRounds; roundCounter++)
     {
@@ -39,29 +43,46 @@ char* calculateHashValue()
         {
             for (int j = 0; j < FIELD_SIZE; j++)
             {
-                Tile_t* tile = &field[(posX + i) & (FIELD_SIZE - 1)][(posY + j) & (FIELD_SIZE - 1)];
+                Tile_t* tile = &field[(posX + i) & mask][(posY + j) & mask];
                 processData(tile->colorIndex, i, j);
             }
         }
         setPositionsToZeroIfOutOfRange(&posX, &posY);
         if (isPartialRoundCompleted(roundCounter, sizeOfOneIteration))
         {
-            printf("Partial hash value #%d: ", roundCounter / sizeOfOneIteration);
-            concatenateHashStrings(hashValue);
+            LOG_DEBUG("partial segment %d", roundCounter / sizeOfOneIteration);
+            char segment[64];
+            storeHashValueInBuffer(segment);
+            size_t segLen = strlen(segment);
+            if (writePos + segLen + 1 < capacity) {
+                memcpy(hashValue + writePos, segment, segLen + 1);
+                writePos += segLen;
+            } else {
+                LOG_ERROR("hash buffer capacity exceeded (needed %zu, cap %zu)", writePos + segLen + 1, capacity);
+                break;
+            }
         }
     }
     int numberOfLastRound = roundCounter > 1 ? roundCounter / sizeOfOneIteration + 1 : 1;
-    printf("Partial hash value #%d: ", numberOfLastRound);
-    concatenateHashStrings(hashValue);
+    LOG_DEBUG("final partial segment %d", numberOfLastRound);
+    char finalSeg[64];
+    storeHashValueInBuffer(finalSeg);
+    size_t fLen = strlen(finalSeg);
+    if (writePos + fLen + 1 < capacity) {
+        memcpy(hashValue + writePos, finalSeg, fLen + 1);
+        writePos += fLen;
+    } else {
+        LOG_ERROR("hash buffer capacity exceeded on final segment (needed %zu, cap %zu)", writePos + fLen + 1, capacity);
+    }
     return hashValue;
 }
 
 static char* initHashValueBuffer()
 {
-    char* buffer = calloc(numberOfBits, sizeof(char));
+    char* buffer = (char*)calloc((size_t)numberOfBits, 1);
     if (!buffer)
     {
-        printf("Not enough memory!\n");
+        LOG_ERROR("Out of memory allocating hash buffer (%d bytes)", numberOfBits);
         exit(EXIT_FAILURE);
     }
     return buffer;
@@ -72,7 +93,7 @@ static void processData(const ColorIndex_t colorIndex, const int posX, const int
     Tile_t* tile = &field[posX][posY];
     switch (colorIndex)
     {
-        case AND:
+        case ADD:
         {
             if (posY == 0)
                 tile->value += 1;
@@ -107,12 +128,11 @@ static void processData(const ColorIndex_t colorIndex, const int posX, const int
         }
         case BITWISE_AND:
         {
-            if (posX == (FIELD_SIZE - 1))
-                tile->value |= 1;
-            else
+
+            if (posX != (FIELD_SIZE - 1))
             {
                 Tile_t *neighbourTileRight = &field[posX + 1][posY];
-                tile->value |= neighbourTileRight->value;
+                tile->value &= neighbourTileRight->value;
             }
             break;
         }
@@ -134,7 +154,7 @@ static void processData(const ColorIndex_t colorIndex, const int posX, const int
         }
         default:
         {
-            printf("function not found! %d\n", colorIndex);
+            LOG_ERROR("unknown color index %d", (int)colorIndex);
         }
     }
 }
@@ -156,16 +176,8 @@ static bool isPartialRoundCompleted(const int roundCounter, const int sizeOfOneI
     return roundCounter > 0 && roundCounter % sizeOfOneIteration == 0;
 }
 
-static void concatenateHashStrings(char* hashValue)
-{
-    char buffer[64];
-    storeHashValueInBuffer(buffer);
-    strcat(hashValue, buffer);
-    printf("%s\n", buffer);
-}
-
 static void storeHashValueInBuffer(char* buffer)
 {
     long long partialHashValue = generateHashValue();
-    sprintf(buffer, "%llx", partialHashValue);
+    snprintf(buffer, 64, "%llx", partialHashValue);
 }
