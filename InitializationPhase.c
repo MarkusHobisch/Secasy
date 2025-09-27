@@ -27,7 +27,7 @@
 #define SQUARE_AVOIDANCE_VALUE 1
 
 Position_t pos;
-Tile_t field[SIZE][SIZE];
+Tile_t field[FIELD_SIZE][FIELD_SIZE];
 int lastPrime = 1;
 
 static int numberOfPrimes = NUMBER_OF_PRIMES;
@@ -63,7 +63,7 @@ static void createTile(int posX, int posY);
 void initFieldWithDefaultNumbers(const unsigned long maxPrimeIndex)
 {
     //first check if the size of the field is power of 2!
-    assert((SIZE & (SIZE - 1)) == 0);
+    assert((FIELD_SIZE & (FIELD_SIZE - 1)) == 0);
 
     initPrimeNumbers(maxPrimeIndex);
     initSquareFieldWithDefaultValue();
@@ -109,9 +109,9 @@ static void initPrimeNumbers(const unsigned long maxPrimeIndex)
 
 static void initSquareFieldWithDefaultValue()
 {
-    for (int i = 0; i < SIZE; i++)
+    for (int i = 0; i < FIELD_SIZE; i++)
     {
-        for (int j = 0; j < SIZE; j++)
+        for (int j = 0; j < FIELD_SIZE; j++)
         {
             createTile(i, j);
         }
@@ -120,7 +120,7 @@ static void initSquareFieldWithDefaultValue()
 
 static void createTile(const int posX, const int posY)
 {
-    if (posX >= SIZE || posY >= SIZE)
+    if (posX >= FIELD_SIZE || posY >= FIELD_SIZE)
         return;
     Tile_t tile;
     tile.posX = posX;
@@ -215,8 +215,8 @@ static void writeNextNumberOnMove(const int move)
     {
         case UP:
         {
-            // calculates the new position and keeps it in the range of the field by the efficient version of module: &(SIZE - 1)
-            pos.y = (pos.y - oldPrime + SQUARE_AVOIDANCE_VALUE) & (SIZE - 1);
+            // calculates new position and keeps it in range via bit mask (FIELD_SIZE - 1)
+            pos.y = (pos.y - oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
             printf(" UP\n");
 #endif
@@ -224,7 +224,7 @@ static void writeNextNumberOnMove(const int move)
         }
         case DOWN:
         {
-            pos.y = (pos.y + oldPrime) & (SIZE - 1);
+            pos.y = (pos.y + oldPrime) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
             printf(" DOWN\n");
 #endif
@@ -232,7 +232,7 @@ static void writeNextNumberOnMove(const int move)
         }
         case LEFT:
         {
-            pos.x = (pos.x - oldPrime) & (SIZE - 1);
+            pos.x = (pos.x - oldPrime) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
             printf(" LEFT\n");
 #endif
@@ -240,7 +240,7 @@ static void writeNextNumberOnMove(const int move)
         }
         case RIGHT:
         {
-            pos.x = (pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE) & (SIZE - 1);
+            pos.x = (pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
             printf(" RIGHT\n");
 #endif

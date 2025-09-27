@@ -1,7 +1,7 @@
 #include "Calculations.h"
 #include "Defines.h"
 
-extern Tile_t field[SIZE][SIZE];
+extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 extern int lastPrime;
 
 static long long calcSumOfField();
@@ -16,9 +16,9 @@ long long generateHashValue()
 void calcSumOfRows(int* rowSums)
 {
     int sum = 0;
-    for (int j = 0; j < SIZE; j++)
+    for (int j = 0; j < FIELD_SIZE; j++)
     {
-        for (int i = 0; i < SIZE; i++)
+        for (int i = 0; i < FIELD_SIZE; i++)
         {
             sum += field[i][j].value;
         }
@@ -30,9 +30,9 @@ void calcSumOfRows(int* rowSums)
 void calcSumOfColumns(int* columnsSums)
 {
     int sum = 0;
-    for (int j = 0; j < SIZE; j++)
+    for (int j = 0; j < FIELD_SIZE; j++)
     {
-        for (int i = 0; i < SIZE; i++)
+        for (int i = 0; i < FIELD_SIZE; i++)
         {
             sum += field[j][i].value;
         }
@@ -46,18 +46,18 @@ long long calcSumOfProducts()
     long long productOfSumOfRows = 1;
     long long productOfSumOfColumns = 1;
 
-    int rowSums[SIZE];
-    int columnsSums[SIZE];
+    int rowSums[FIELD_SIZE];
+    int columnsSums[FIELD_SIZE];
 
     calcSumOfRows(rowSums);
     calcSumOfColumns(columnsSums);
 
-    for (int i = 0; i < SIZE; i++)
+    for (int i = 0; i < FIELD_SIZE; i++)
     {
         productOfSumOfRows *= rowSums[i];
     }
 
-    for (int i = 0; i < SIZE; i++)
+    for (int i = 0; i < FIELD_SIZE; i++)
     {
         productOfSumOfColumns *= columnsSums[i];
     }
@@ -67,9 +67,9 @@ long long calcSumOfProducts()
 static long long calcSumOfField()
 {
     long long sum = 0;
-    for (int i = 0; i < SIZE; ++i)
+    for (int i = 0; i < FIELD_SIZE; ++i)
     {
-        for (int j = 0; j < SIZE; ++j)
+        for (int j = 0; j < FIELD_SIZE; ++j)
         {
             sum += field[i][j].value;
         }

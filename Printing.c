@@ -5,7 +5,7 @@
 #include "Printing.h"
 
 extern Position_t pos;
-extern Tile_t field[SIZE][SIZE];
+extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 extern int lastPrime;
 
 void printField()
@@ -14,15 +14,15 @@ void printField()
     printf("\t --------------- Origin matrix - ");
     printf("last position: [%d,%d] ---------------\n", pos.x, pos.y);
 
-    int rowSums[SIZE];
-    int columnsSums[SIZE];
+    int rowSums[FIELD_SIZE];
+    int columnsSums[FIELD_SIZE];
 
     calcSumOfRows(rowSums);
     calcSumOfColumns(columnsSums);
 
-    for (int j = 0; j < SIZE; j++)
+    for (int j = 0; j < FIELD_SIZE; j++)
     {
-        for (int i = 0; i < SIZE; i++)
+        for (int i = 0; i < FIELD_SIZE; i++)
         {
             printf("%12d ", field[i][j].value);
         }
@@ -30,9 +30,9 @@ void printField()
     }
 
     printf("\n\t --------------- Transposed matrix --------------- \n");
-    for (int j = 0; j < SIZE; j++)
+    for (int j = 0; j < FIELD_SIZE; j++)
     {
-        for (int i = 0; i < SIZE; i++)
+        for (int i = 0; i < FIELD_SIZE; i++)
         {
             printf("%12d ", field[j][i].value);
         }
@@ -44,9 +44,9 @@ void printField()
 void printColorIndexes()
 {
     printf("-------------- ColorIndexes ------------\n");
-    for (int j = 0; j < SIZE; j++)
+    for (int j = 0; j < FIELD_SIZE; j++)
     {
-        for (int i = 0; i < SIZE; i++)
+        for (int i = 0; i < FIELD_SIZE; i++)
         {
             printf("%4d ", field[i][j].colorIndex);
         }
@@ -57,9 +57,9 @@ void printColorIndexes()
 void printPrimeIndexes()
 {
     printf("-------------- PrimeIndexes ------------\n");
-    for (int j = 0; j < SIZE; j++)
+    for (int j = 0; j < FIELD_SIZE; j++)
     {
-        for (int i = 0; i < SIZE; i++)
+        for (int i = 0; i < FIELD_SIZE; i++)
         {
             printf("%4d ", field[i][j].primeIndex);
         }
@@ -72,19 +72,19 @@ void printSumsAndValues()
     printf("\n");
     printf("- Print row sums: \n");
 
-    int rowSums[SIZE];
-    int columnsSums[SIZE];
+    int rowSums[FIELD_SIZE];
+    int columnsSums[FIELD_SIZE];
 
     calcSumOfRows(rowSums);
     calcSumOfColumns(columnsSums);
 
-    for (int i = 0; i < SIZE; ++i)
+    for (int i = 0; i < FIELD_SIZE; ++i)
     {
         printf("  Row: %d\n", rowSums[i]);
     }
     printf("\n");
     printf("- Print column sums: \n");
-    for (int j = 0; j < SIZE; ++j)
+    for (int j = 0; j < FIELD_SIZE; ++j)
     {
         printf("  Column: %d\n", columnsSums[j]);
     }

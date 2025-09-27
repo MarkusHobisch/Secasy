@@ -8,7 +8,7 @@
 #include "Calculations.h"
 
 extern Position_t pos;
-extern Tile_t field[SIZE][SIZE];
+extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 extern unsigned long numberOfRounds;
 extern int numberOfBits;
 
@@ -27,40 +27,32 @@ static void concatenateHashStrings(char* hashValue);
 char* calculateHashValue()
 {
     printf("\n-------------- Processing Data --------------------\n");
-
     int posX = pos.x;
     int posY = pos.y;
     double iterations = numberOfBits / 64.0;
     int sizeOfOneIteration = (int) ceil(numberOfRounds / iterations + 0.5);
     char* hashValue = initHashValueBuffer();
-
     int roundCounter;
     for (roundCounter = 0; roundCounter < numberOfRounds; roundCounter++)
     {
-        // printf("current pos: [%d,%d]\n", posX, posY);
-        for (int i = 0; i < SIZE; i++)
+        for (int i = 0; i < FIELD_SIZE; i++)
         {
-            for (int j = 0; j < SIZE; j++)
+            for (int j = 0; j < FIELD_SIZE; j++)
             {
-                Tile_t* tile = &field[(posX + i) & (SIZE - 1)][(posY + j) & (SIZE - 1)];
-                // printf("%d : %d\n", (posX + i) % SIZE, (posY + j) % SIZE);
+                Tile_t* tile = &field[(posX + i) & (FIELD_SIZE - 1)][(posY + j) & (FIELD_SIZE - 1)];
                 processData(tile->colorIndex, i, j);
             }
         }
-
         setPositionsToZeroIfOutOfRange(&posX, &posY);
-
         if (isPartialRoundCompleted(roundCounter, sizeOfOneIteration))
         {
             printf("Partial hash value #%d: ", roundCounter / sizeOfOneIteration);
             concatenateHashStrings(hashValue);
         }
     }
-
     int numberOfLastRound = roundCounter > 1 ? roundCounter / sizeOfOneIteration + 1 : 1;
     printf("Partial hash value #%d: ", numberOfLastRound);
     concatenateHashStrings(hashValue);
-
     return hashValue;
 }
 
@@ -93,7 +85,7 @@ static void processData(const ColorIndex_t colorIndex, const int posX, const int
         }
         case SUB:
         {
-            if (posY == (SIZE - 1))
+            if (posY == (FIELD_SIZE - 1))
                 tile->value -= 1;
             else
             {
@@ -113,9 +105,9 @@ static void processData(const ColorIndex_t colorIndex, const int posX, const int
             }
             break;
         }
-        case BITWISE_AND: // Bitwise AND (&)
+        case BITWISE_AND:
         {
-            if (posX == (SIZE - 1))
+            if (posX == (FIELD_SIZE - 1))
                 tile->value |= 1;
             else
             {
@@ -124,7 +116,7 @@ static void processData(const ColorIndex_t colorIndex, const int posX, const int
             }
             break;
         }
-        case BITWISE_OR: // Bitwise OR (|)
+        case BITWISE_OR:
         {
             if (posX == 0)
                 tile->value |= 1;
@@ -135,7 +127,7 @@ static void processData(const ColorIndex_t colorIndex, const int posX, const int
             }
             break;
         }
-        case INVERT: // Invert (~)
+        case INVERT:
         {
             tile->value = ~tile->value;
             break;
@@ -149,11 +141,10 @@ static void processData(const ColorIndex_t colorIndex, const int posX, const int
 
 static void setPositionsToZeroIfOutOfRange(int* posX, int* posY)
 {
-    if (++*posX == SIZE)
+    if (++*posX == FIELD_SIZE)
     {
         *posX = 0;
-        // highest position at bottom right corner
-        if (++*posY == SIZE)
+        if (++*posY == FIELD_SIZE)
         {
             *posY = 0;
         }
