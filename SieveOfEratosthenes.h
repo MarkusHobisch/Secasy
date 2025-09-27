@@ -3,6 +3,4 @@
 
 int* generatePrimeNumbers(int* numberOfPrimes, unsigned long maxPrimeIndex);
 
-static void printAllPrimes(int numberOfPrimes, const int *primes);
-
 #endif

@@ -1,0 +1,3 @@
+"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\SecasyAvalanche.dir/objects.a
+C:\ProgramData\mingw64\mingw64\bin\ar.exe qc CMakeFiles\SecasyAvalanche.dir/objects.a @CMakeFiles\SecasyAvalanche.dir\objects1.rsp
+C:\ProgramData\mingw64\mingw64\bin\gcc.exe -O3 -DNDEBUG -Wl,--whole-archive CMakeFiles\SecasyAvalanche.dir/objects.a -Wl,--no-whole-archive -o SecasyAvalanche.exe -Wl,--out-implib,libSecasyAvalanche.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\SecasyAvalanche.dir\linkLibs.rsp

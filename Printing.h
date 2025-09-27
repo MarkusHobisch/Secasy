@@ -1,14 +1,14 @@
 #ifndef SECASY_PRINTING_H
 #define SECASY_PRINTING_H
 
-void printField();
+void printField(void);
 
-void printColorIndexes();
+void printColorIndexes(void);
 
-void printPrimeIndexes();
+void printPrimeIndexes(void);
 
-void printSumsAndValues();
+void printSumsAndValues(void);
 
-void printDatatypeMaxValues();
+void printDatatypeMaxValues(void);
 
 #endif

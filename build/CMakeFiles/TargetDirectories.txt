@@ -1,0 +1,4 @@
+C:/Users/marku/IdeaProjects/Secasy/build/CMakeFiles/Secasy.dir
+C:/Users/marku/IdeaProjects/Secasy/build/CMakeFiles/SecasyAvalanche.dir
+C:/Users/marku/IdeaProjects/Secasy/build/CMakeFiles/edit_cache.dir
+C:/Users/marku/IdeaProjects/Secasy/build/CMakeFiles/rebuild_cache.dir

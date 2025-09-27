@@ -218,3 +218,60 @@ The `gprof` output in `analysis.txt` will provide a list of the functions called
 ## Contact Information
 
 For any questions or inquiries regarding this software, please contact me at markus.hobisch@gmx.at.
+
+---
+
+## Extended Avalanche Mode (-X) & WSL Batch
+
+The `SecasyAvalanche` tool now supports an extended analysis flag `-X` which adds:
+* Per-bit flip rate statistics (min / max / mean / standard deviation, out-of-band count for flip rates outside [0.45,0.55])
+* Output byte distribution entropy (Shannon, base 2; maximum 8.0)
+* Multi-bit flip diffusion trials (k = 2,4,8) to check stability beyond single bit flips
+
+### Quick Extended Run (example)
+```bash
+./SecasyAvalanche -X -m 5 -l 64 -B 32 -r 5000 -s 123
+```
+
+### Interpreting Extended Sections
+**Per-bit bias**: All flip rates should cluster near 0.5. Wide deviations or many bits outside 0.45–0.55 could indicate structural bias.  
+**Entropy**: Values >7.9 (with sufficiently large sample size) usually indicate near-uniform byte distribution.  
+**Multi-bit flips**: The mean ratios for k>1 should remain ~0.5; significant drift may reveal nonlinear weaknesses or saturation effects.
+
+### WSL Batch Script
+A helper script is provided at `scripts/run_extended_avalanche_wsl.sh` to build and execute a suite of representative runs.
+
+Usage:
+```bash
+chmod +x scripts/run_extended_avalanche_wsl.sh
+./scripts/run_extended_avalanche_wsl.sh
+```
+Environment overrides:
+```
+BUILD_TYPE=Debug BUILD_DIR=build-debug JOBS=4 ./scripts/run_extended_avalanche_wsl.sh
+```
+
+### Typical Flags Recap
+| Flag | Meaning |
+|------|---------|
+| -m | Number of base messages |
+| -l | Input length (bytes) |
+| -B | Bit flips per message (0 = all bits sequentially) |
+| -r | Rounds of the core hash |
+| -n | Internal hash buffer size (characters) |
+| -i | Maximum prime index |
+| -s | Seed (deterministic RNG) |
+| -H | Histogram buckets (classic avalanche ratio) |
+| -X | Extended mode features (bias, entropy, multi-bit) |
+
+### Caveats
+* Large `-l` with `-B 0` leads to very long runs (flips = 8 * length per message).
+* Entropy values require sizable sampling to be meaningful; small runs can under-estimate.
+* Multi-bit trials use a fixed small number of trials (32 per k) for speed; increase by adding a loop if needed.
+
+### Potential Future Extensions
+* CSV / JSON export for automated pipelines
+* Configurable multi-bit k-set (e.g. `-K 2,4,8,16`)
+* Bit correlation matrix / Walsh-Hadamard analysis
+* Output length normalization independent of printable hex
+
