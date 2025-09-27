@@ -22,16 +22,36 @@ set(SOURCE_FILES
 
 add_executable(Secasy ${SOURCE_FILES})
 
+# Avalanche test executable (exclude main.c, include avalanche.c)
+add_executable(SecasyAvalanche
+        avalanche.c
+        Calculations.c
+        InitializationPhase.c
+        Printing.c
+        ProcessingPhase.c
+        SieveOfEratosthenes.c
+        util.c
+        Defines.h
+        Calculations.h
+        InitializationPhase.h
+        Printing.h
+        ProcessingPhase.h
+        SieveOfEratosthenes.h
+        util.h)
+
 # Large file support for Unix-like systems
 if (NOT WIN32)
     target_compile_definitions(Secasy PRIVATE _FILE_OFFSET_BITS=64)
+    target_compile_definitions(SecasyAvalanche PRIVATE _FILE_OFFSET_BITS=64)
 endif()
 
 # Warning / optimization flags (do not force -Ofast so user can choose with CMAKE_BUILD_TYPE)
 if (MSVC)
     target_compile_options(Secasy PRIVATE /W4 /permissive-)
+    target_compile_options(SecasyAvalanche PRIVATE /W4 /permissive-)
 else()
     target_compile_options(Secasy PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
+    target_compile_options(SecasyAvalanche PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
 endif()
 
 # Optional: GTK3 (only if really needed)
@@ -48,4 +68,5 @@ endif()
 # Link math library if available (ceil used in ProcessingPhase)
 if (NOT WIN32)
     target_link_libraries(Secasy PRIVATE m)
+    target_link_libraries(SecasyAvalanche PRIVATE m)
 endif()

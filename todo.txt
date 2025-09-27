@@ -1,0 +1,131 @@
+Secasy Redesign & Analysis To-Do Roadmap
+======================================
+
+Phase 0 – Baseline
+------------------
+0.1 Tag current prototype state (e.g. v0-prototype)
+0.2 Capture baseline metrics (avalanche, speed, memory) -> metrics-baseline.md
+
+Phase 1 – Fixed Binary Output Length
+------------------------------------
+1.1 Define new API: int secasy_hash(const uint8_t* in, size_t inLen, uint8_t* out, size_t outBits)
+1.2 Remove segmented hex accumulation; keep legacy wrapper for compatibility
+1.3 Temporary extraction: derive out bytes from internal state (XOR / rotate mix)
+1.4 Adapt avalanche tool to operate directly on raw bytes (no hex normalization)
+1.5 Rename numberOfBits -> output_bits (README + code)
+Acceptance: deterministic fixed-size output (e.g. 256 or 512 bits), avalanche tool updated
+
+Phase 2 – Clean Internal State Representation
+---------------------------------------------
+2.1 Change Tile.value type int -> uint64_t (defined wrap-around)
+2.2 Audit arithmetic for implicit signed overflow removal
+2.3 (Optional) Increase FIELD_SIZE (e.g. 16) or move to lane array model
+2.4 Re-layout state (cache-friendly row-major)
+2.5 Benchmark before/after
+Acceptance: no signed overflow, tests pass
+
+Phase 3 – Remove Sum/Product Aggregation
+----------------------------------------
+3.1 Eliminate calcSumOfProducts / calcSumOfField from final hash derivation
+3.2 Introduce round_final_mix() combining lanes via XOR/rot/mul constants
+3.3 Ensure avalanche rate not severely degraded (target >0.45 interim)
+3.4 Mark generateHashValue deprecated
+Acceptance: New final mix fully replaces legacy aggregation
+
+Phase 4 – Defined Permutation Round Core
+----------------------------------------
+4.1 Draft permutation-design.md (nonlinear step + diffusion step)
+4.2 Implement round_permute(state)
+4.3 Choose round counts (e.g. 8 / 12 / 24) & benchmark avalanche vs rounds
+4.4 Refactor processing: input only absorbed, state transformed via permutation
+Acceptance: Core evolution solely via permutation rounds
+
+Phase 5 – Input Absorption & Padding
+------------------------------------
+5.1 Select padding (sponge style, e.g. 0x80 ... 0x01 or SHA-3 like 0x06 ... 0x80)
+5.2 Define rate vs capacity (e.g. state_bits = 4096, rate = 1024, capacity = 3072)
+5.3 Implement absorb loop (block XOR + permutation)
+5.4 Domain separation suffix (e.g. 0x01 hash, 0x02 future HMAC)
+5.5 Implement squeeze for output bits
+5.6 Test empty vs single 0x00 vs "abc" distinctness
+Acceptance: Formal padding documented & implemented
+
+Phase 6 – Analysis Extensions
+-----------------------------
+6.1 SAC sampling (--sac-samples=N): per input-bit flip probability for each output bit (summary: min/max/mean/std)
+6.2 Hamming distance histogram + Chi^2 vs Binomial(n,p=0.5)
+6.3 Pairwise output bit flip correlation (sampled) – report top |corr|
+6.4 Optional JSON export (--json-report)
+Acceptance: Extended avalanche tool producing reproducible metrics
+
+Phase 7 – Collision Fuzzer (Empirical)
+--------------------------------------
+7.1 Implement large-scale random input hashing (config: sample_count)
+7.2 Use hash set (64-bit fingerprint + full on collision)
+7.3 Early abort on first collision; log position
+7.4 Compare observed collision onset vs birthday expectation
+7.5 Vary rounds & output size
+Acceptance: collision-fuzz-results.md with interpretation
+
+Phase 8 – Documentation & Clarity
+---------------------------------
+8.1 Update README (rename params, architecture diagram)
+8.2 Add SECURITY.md (experimental, not for production)
+8.3 Add DESIGN.md (permutation, padding, round rationale, domain separation)
+8.4 API docs (header comments / doxygen-friendly)
+8.5 Changelog summarizing redesign phases
+Acceptance: Consistent terminology (output_bits, rate, capacity) – no legacy confusion
+
+Phase 9 – Performance & Optimization
+------------------------------------
+9.1 Benchmark suite (1 KB, 1 MB, 100 MB inputs)
+9.2 Profile (perf / callgrind) to identify hotspots
+9.3 Micro-optimizations (unroll, restrict, constant tables)
+9.4 (Optional) SIMD / intrinsics prototype
+Acceptance: speed.md comparing baseline vs redesigned core
+
+Phase 10 – Advanced Security Evaluation
+---------------------------------------
+10.1 Differential tests (structured small deltas)
+10.2 Approximate linear analysis (bit-plane heuristics)
+10.3 External review invitation (issue template)
+10.4 Fuzzing harness (AFL / libFuzzer) – stability & determinism
+Acceptance: No crashes, reproducible outputs, initial external feedback
+
+Dependencies Summary
+--------------------
+- Phase 1 before Phase 6 (cleaner metrics)
+- Phases 2 & 3 before Phase 4
+- Phase 4 before Phase 5
+- Phase 5 before meaningful collision tests (Phase 7)
+- Phase 6 after 1–5 for meaningful SAC/Chi^2
+
+Minimal Priority Path
+---------------------
+P1: Phase 1 (Fixed binary output)
+P2: Phases 2 + 3 (State cleanup, remove sums/products)
+P3: Phases 4 + 5 (Permutation + absorption)
+P4: Phase 6 (SAC, histogram, correlations)
+P5: Phase 8 (Documentation cleanup)
+
+Acceptance Criteria (Key Targets)
+---------------------------------
+- Deterministic fixed-size output (≥256 bits)
+- Avalanche mean ~0.5; 95% CI includes 0.5 at large sample sizes
+- Max SAC bias |p-0.5| < 0.05 (aspirational)
+- No large persistent bit correlations (>0.15 absolute) in samples
+- Collision onset consistent with birthday bound (no pathological early clustering)
+
+Optional Artifacts
+------------------
+- permutation-design.md
+- padding-spec.md
+- avalanche-report-sample.json
+- collision-fuzz-results.md
+- metrics-baseline.md
+- performance-comparison.md
+
+Next Action (if starting now)
+-----------------------------
+Implement Phase 1 (choose 512-bit output); create secasy_hash(), adapt avalanche tool to byte mode, deprecate hex-only API.
+

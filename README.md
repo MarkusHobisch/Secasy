@@ -11,13 +11,58 @@ The algorithm is based on the principle of a deterministic chaotic system, meani
 
 ## Compilation
 
-To compile the source code, use one of the following commands in the terminal:
+To compile the source code, use one of the following commands in the terminal.
 
-Standard (heuristic prime truncation enabled for speed):
+Important: Do NOT use a wildcard like `*.c` anymore because the project now contains two translation units with a `main` function (`main.c` and `avalanche.c`). Using `*.c` would attempt to link both and produce a "multiple definition of `main`" linker error. Build each executable explicitly as shown below.
 
+### Standard optimized builds (recommended)
 ```bash
-gcc -Ofast -march=native -mtune=native -funroll-loops *.c -lm -o secasy
+gcc -std=c11 -O3 -Wall -Wextra -o secasy \
+  main.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
+
+gcc -std=c11 -O3 -Wall -Wextra -o secasy_avalanche \
+  avalanche.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
 ```
+
+### With full prime range (may be slower)
+```bash
+gcc -std=c11 -O3 -DSECASY_PRIMES_FULL -Wall -Wextra -o secasy \
+  main.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
+
+gcc -std=c11 -O3 -DSECASY_PRIMES_FULL -Wall -Wextra -o secasy_avalanche \
+  avalanche.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
+```
+
+### Debug builds
+```bash
+gcc -std=c11 -O0 -g -Wall -Wextra -o secasy \
+  main.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
+
+gcc -std=c11 -O0 -g -Wall -Wextra -o secasy_avalanche \
+  avalanche.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
+```
+
+### Windows (WSL via PowerShell)
+```bash
+wsl gcc -std=c11 -O3 -o secasy main.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
+wsl gcc -std=c11 -O3 -o secasy_avalanche avalanche.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
+```
+
+### MinGW / MSYS2 (native Windows)
+```bash
+gcc -std=c11 -O3 -D__USE_MINGW_ANSI_STDIO -o secasy \
+  main.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c
+
+gcc -std=c11 -O3 -D__USE_MINGW_ANSI_STDIO -o secasy_avalanche \
+  avalanche.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c
+```
+
+### CMake (alternative)
+```bash
+cmake -S . -B build
+cmake --build build --config Release -- -j
+```
+This produces the executables `Secasy` and `SecasyAvalanche`.
 
 Full prime range (no truncation; slower for very large max prime index). Build flag `SECASY_PRIMES_FULL` disables the heuristic reduction in the sieve:
 
@@ -75,7 +120,7 @@ The 2D field is updated per tile using a color (operation) associated with each 
 | SUB         | Subtract neighbour (below) or -1 at bottom| Bottom: -1    |
 | XOR         | XOR with left neighbour or XOR 1 at left edge | Left edge: ^=1 |
 | BITWISE_AND | Bitwise AND with right neighbour; at right edge no change (logical AND with 0x..FF) | Right edge: unchanged |
-| BITWISE_OR  | Bitwise OR with left neighbour; at left edge OR 1 | Left edge: \|=1 |
+| BITWISE_OR  | Bitwise OR with left neighbour; at left edge OR 1 | Left edge: |=1 |
 | INVERT      | Bitwise NOT (value = ~value)              | N/A           |
 
 Notes:
@@ -90,6 +135,52 @@ Users are encouraged to conduct their own security assessments before deploying 
 We welcome contributions from the community, especially in terms of security improvements and reviews.
 
 **Important:** The current hash construction is experimental and MUST NOT be used for real-world security purposes (e.g. password hashing, digital signatures, integrity guarantees in production). Its collision and preimage resistance have not been formally analyzed and future changes (e.g. operation semantics, prime handling) may alter outputs without notice.
+
+## Avalanche Test Tool (Experimental)
+A separate executable `SecasyAvalanche` (source: `avalanche.c`) is included to measure diffusion (avalanche effect): How strongly does the hash output change when a single input bit is flipped? An ideal cryptographic hash changes ~50% of output bits when exactly one input bit is inverted.
+
+### Build (CMake)
+If you use CMake (after adding this file):
+```bash
+cmake -S . -B build
+cmake --build build --config Release -- -j
+```
+You obtain two binaries: `Secasy` and `SecasyAvalanche`.
+
+### Direct GCC build example
+```bash
+gcc -Ofast -march=native -mtune=native -funroll-loops avalanche.c Calculations.c InitializationPhase.c Printing.c ProcessingPhase.c SieveOfEratosthenes.c util.c -lm -o secasy_avalanche
+```
+
+### Usage
+```
+./SecasyAvalanche -m <messages> -l <lenBytes> -B <bitFlipsPerMessage> -r <rounds> -n <hashBufferChars> -i <maxPrimeIndex> -s <seed>
+```
+Parameter descriptions:
+- `-m` Number of random base messages (default 50)
+- `-l` Length of each input (bytes, default 64)
+- `-B` Bit flips per message (0 = flip all bits sequentially; default 64). Sampling reduces runtime.
+- `-r` Rounds in the core (same meaning as main tool)
+- `-n` Size of the internal hash character buffer (not a strict bit length; legacy naming). Recommended: 512, 1024, ...
+- `-i` Maximum prime index
+- `-s` Seed (omit for time-based)
+
+### Output Interpretation
+The tool reports among other values:
+- `Mean avalanche rate`: total flipped output bits / total compared bits (target ≈ 0.5)
+- Qualitative assessment band.
+
+### Limitations
+- Currently only an overall mean; no Strict Avalanche Criterion (SAC) matrix per input bit.
+- No variance/Chi² test against a binomial model (unless you extended the tool locally).
+- Output length is not strictly fixed by `-n` (acts as buffer cap), so measurements may be slightly biased.
+- Re-initializing state per hash increases runtime.
+
+### Planned Improvements
+- SAC & per output-bit flip probabilities
+- Pairwise correlation (bit independence)
+- Chi² goodness-of-fit vs. Binomial(n, 0.5)
+- Strict separation of desired output bit length vs. hex storage capacity
 
 ## Profiling with `gprof`
 

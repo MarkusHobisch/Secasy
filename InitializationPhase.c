@@ -67,6 +67,13 @@ void initFieldWithDefaultNumbers(const unsigned long maxPrimeIndex)
     //first check if the size of the field is power of 2!
     assert((FIELD_SIZE & (FIELD_SIZE - 1)) == 0);
 
+    // Reset global state (needed when hashing many buffers in one process, e.g. avalanche test)
+    pos.x = 0;
+    pos.y = 0;
+    lastPrime = FIRST_PRIME;
+    primeIndex = 0;
+    colorIndex = ADD;
+
     initPrimeNumbers(maxPrimeIndex);
     initSquareFieldWithDefaultValue();
 }
@@ -110,6 +117,31 @@ void readAndProcessFile(const char* filename)
     }
     fclose(file);
     free(buffer);
+    setPrimeNumberOfLastTile();
+    lastPrime = field[pos.x][pos.y].value;
+}
+
+// New: process an in-memory buffer (used for avalanche tests)
+void processBuffer(const unsigned char* data, size_t len)
+{
+    if (!data || len == 0)
+    {
+        return; // treat empty as no-op
+    }
+    int directions[DIRECTIONS];
+    for (size_t i = 0; i < len; ++i)
+    {
+        int byte = data[i] & 0xFF;
+        if (byte != 0)
+        {
+            calcAndSetDirections(byte, directions);
+        }
+        else
+        {
+            doNotSetAnyDirections(directions);
+        }
+        addNumbersToField(directions);
+    }
     setPrimeNumberOfLastTile();
     lastPrime = field[pos.x][pos.y].value;
 }
