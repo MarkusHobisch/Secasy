@@ -41,13 +41,32 @@ add_executable(SecasyAvalanche
         SieveOfEratosthenes.h
         util.h)
 
+# Collision test executable
+add_executable(SecasyCollision
+    tests/collision/collision.c
+        Calculations.c
+        InitializationPhase.c
+        Printing.c
+        ProcessingPhase.c
+        SieveOfEratosthenes.c
+        util.c
+        Defines.h
+        Calculations.h
+        InitializationPhase.h
+        Printing.h
+        ProcessingPhase.h
+        SieveOfEratosthenes.h
+        util.h)
+
 # Ensure subdirectory test sources can include headers at project root
 target_include_directories(SecasyAvalanche PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(SecasyCollision PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Large file support for Unix-like systems
 if (NOT WIN32)
     target_compile_definitions(Secasy PRIVATE _FILE_OFFSET_BITS=64)
     target_compile_definitions(SecasyAvalanche PRIVATE _FILE_OFFSET_BITS=64)
+    target_compile_definitions(SecasyCollision PRIVATE _FILE_OFFSET_BITS=64)
 endif()
 
 # Warning / optimization flags (do not force -Ofast so user can choose with CMAKE_BUILD_TYPE)
@@ -57,10 +76,12 @@ if (MSVC)
 else()
     target_compile_options(Secasy PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
     target_compile_options(SecasyAvalanche PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
+    target_compile_options(SecasyCollision PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
     # Enable ANSI stdio on MinGW so %zu etc. are recognized and reduce format warnings
     if (MINGW)
-        target_compile_definitions(Secasy PRIVATE __USE_MINGW_ANSI_STDIO=1)
-        target_compile_definitions(SecasyAvalanche PRIVATE __USE_MINGW_ANSI_STDIO=1)
+    target_compile_definitions(Secasy PRIVATE __USE_MINGW_ANSI_STDIO=1)
+    target_compile_definitions(SecasyAvalanche PRIVATE __USE_MINGW_ANSI_STDIO=1)
+    target_compile_definitions(SecasyCollision PRIVATE __USE_MINGW_ANSI_STDIO=1)
     endif()
 endif()
 
@@ -79,4 +100,5 @@ endif()
 if (NOT WIN32)
     target_link_libraries(Secasy PRIVATE m)
     target_link_libraries(SecasyAvalanche PRIVATE m)
+    target_link_libraries(SecasyCollision PRIVATE m)
 endif()

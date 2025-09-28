@@ -1,3 +1,37 @@
+/*
+ * Secasy Avalanche / Diffusion Harness (Experimental)
+ * ---------------------------------------------------
+ * Purpose:
+ *   Measure first-order diffusion: the probability each output bit flips
+ *   when a single input bit is inverted (ideal ≈ 0.5), and sanity‑check
+ *   small multi-bit perturbation behavior.
+ *
+ * What it reports:
+ *   - Global mean avalanche rate
+ *   - (Extended -X) Per-bit flip frequencies (bias band detection)
+ *   - (Extended -X) Multi-bit flip diffusion (k = 2,4,8) for saturation check
+ *   - (Extended -X) Experimental entropy sampler (currently unreliable)
+ *
+ * Security intent:
+ *   Strong avalanche is a necessary diffusion property for a modern hash
+ *   but not sufficient to establish collision, preimage, or second-preimage
+ *   resistance. Results here are only an early health indicator.
+ *
+ * Not covered:
+ *   - Strict Avalanche Criterion (full input-bit ↔ output-bit matrix)
+ *   - Higher-order correlations / linear or differential cryptanalysis
+ *   - Structured / adversarial input classes
+ *   - Formal statistical independence or uniformity proofs
+ *
+ * Usage notes:
+ *   Use sampled flips (-B > 0) for speed or exhaustive (-B 0) for precision.
+ *   Increase rounds to test diffusion depth scaling. Interpret entropy field
+ *   cautiously until the sampler is replaced.
+ *
+ * Status:
+ *   Research diagnostic only; passing metrics DO NOT imply production-grade
+ *   cryptographic strength. Further analyses required before any claims.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -102,8 +102,16 @@ static inline uint32_t mix32(uint32_t x) {
     return x;
 }
 
+static inline uint32_t fmix32(uint32_t h) {
+    h ^= h >> 16; h *= 0x7feb352dU;
+    h ^= h >> 13; h *= 0x846ca68bU;
+    h ^= h >> 16; return h;
+}
+
 static inline int finalize_value(uint32_t x) {
-    return (int)(x & 0x7fffffff); /* keep positive */
+    /* map into a better distributed 31-bit domain */
+    uint32_t z = fmix32(x);
+    return (int)(z & 0x7fffffff);
 }
 
 static void processData(const ColorIndex_t colorIndex, const uint32_t posX, const uint32_t posY)
@@ -215,6 +223,22 @@ static bool isPartialRoundCompleted(const unsigned long roundCounter, const int 
 
 static void storeHashValueInBuffer(char* buffer)
 {
-    long long partialHashValue = generateHashValue();
-    snprintf(buffer, 64, "%llx", partialHashValue);
+    /* Base value */
+    long long base = generateHashValue();
+    /* Derive two additional 64-bit accumulators from base via split/mix */
+    uint64_t v = (uint64_t)base;
+    uint64_t a = v + 0x9e3779b185ebca87ULL;
+    uint64_t b = v ^ 0xc2b2ae3d27d4eb4fULL;
+    /* 64-bit fmix similar to Murmur final */
+    #define FMIX64(x) do { \
+        x ^= x >> 30; x *= 0xbf58476d1ce4e5b9ULL; \
+        x ^= x >> 27; x *= 0x94d049bb133111ebULL; \
+        x ^= x >> 31; } while(0)
+    FMIX64(v); FMIX64(a); FMIX64(b);
+    uint64_t c = v ^ rotl32((uint32_t)a, 13) ^ (a + (b<<1));
+    uint64_t d = a ^ (b + 0x632be59bd9b4e019ULL) ^ (v>>1);
+    FMIX64(c); FMIX64(d);
+    /* Combine into 128 bits (c||d) and format with leading zeros to 32 hex chars */
+    /* (reduces structure in the highest nibble) */
+    snprintf(buffer, 64, "%016llx%016llx", (unsigned long long)c, (unsigned long long)d);
 }
