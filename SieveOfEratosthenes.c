@@ -17,7 +17,9 @@ static unsigned int optimizePrimeIndexMaxSize(unsigned int maxPrimeIndex);
 
 static int *getAllPrimes(int *numberOfPrimes, unsigned int maxPrimeIndex, const int *primeSieve);
 
+#if DEBUG_MODE
 static void printAllPrimes(int numberOfPrimes, const int *primes);
+#endif
 
 int *generatePrimeNumbers(int *numberOfPrimes, const unsigned long maxPrimeIndex)
 {
@@ -141,6 +143,7 @@ static int *getAllPrimes(int *numberOfPrimes, const unsigned int maxPrimeIndex, 
     return primeNumbers;
 }
 
+#if DEBUG_MODE
 static void printAllPrimes(const int numberOfPrimes, const int *primes)
 {
     if (!primes)
@@ -162,3 +165,4 @@ static void printAllPrimes(const int numberOfPrimes, const int *primes)
     }
     printf("\n");
 }
+#endif

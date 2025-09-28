@@ -10,7 +10,7 @@ extern int lastPrime;
 
 void printField()
 {
-    printf("\n------------------------------------ Prime Field ---------------------------------------\n\t --------------- Origin matrix - last position: [%d,%d] ---------------\n", pos.x, pos.y);
+    printf("\n------------------------------------ Prime Field ---------------------------------------\n\t --------------- Origin matrix - last position: [%u,%u] ---------------\n", pos.x, pos.y);
 
     int rowSums[FIELD_SIZE];
     int columnsSums[FIELD_SIZE];
@@ -88,7 +88,7 @@ void printSumsAndValues()
     }
     printf("\n");
     printf("- Last prime was %d\n", lastPrime);
-    printf("- Last position was [%d,%d]\n", pos.x, pos.y);
+    printf("- Last position was [%u,%u]\n", pos.x, pos.y);
     printf("- Sum of multiplied values is %lli\n", calcSumOfProducts());
 }
 

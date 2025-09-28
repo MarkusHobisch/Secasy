@@ -22,3 +22,35 @@ cmake-build-debug/
 *.gch
 .idea/
 .vscode/
+
+# Added by cleanup
+build/
+build-*/
+bin/
+*.d
+*.o
+*.dll
+*.pdb
+*.ilk
+core
+Core.*
+*.stackdump
+
+# CMake user files
+CMakeFiles/
+CMakeCache.txt
+Testing/
+_deps/
+install_manifest.txt
+
+# Generated executables (already have *.exe above)
+secasy
+SecasyAvalanche
+
+# Reports / transient analysis outputs (adjust if you later want to track)
+gmon.out
+
+# OS / editor
+*.swp
+*.DS_Store
+Thumbs.db

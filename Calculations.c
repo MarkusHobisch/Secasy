@@ -4,7 +4,7 @@
 extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 extern int lastPrime;
 
-static long long calcSumOfField();
+static long long calcSumOfField(void);
 
 long long generateHashValue()
 {
@@ -64,7 +64,7 @@ long long calcSumOfProducts()
     return productOfSumOfRows + productOfSumOfColumns;
 }
 
-static long long calcSumOfField()
+static long long calcSumOfField(void)
 {
     long long sum = 0;
     for (int i = 0; i < FIELD_SIZE; ++i)

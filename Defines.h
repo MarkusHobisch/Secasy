@@ -2,6 +2,7 @@
 #define SECASY_DEFINES_H
 
 // Default configuration values
+#include <stdint.h>
 #define DEFAULT_NUMBER_OF_ROUNDS 100000
 #define DEFAULT_BIT_SIZE 512
 #define DEFAULT_MAX_PRIME_INDEX 16000000
@@ -18,8 +19,8 @@
 
 typedef struct
 {
-    int x;
-    int y;
+    uint32_t x;
+    uint32_t y;
 } Position_t;
 
 typedef enum
@@ -34,11 +35,11 @@ typedef enum
 
 typedef struct
 {
-    int posX;
-    int posY;
-    int value;
+    uint32_t posX;
+    uint32_t posY;
+    int32_t  value;       /* value may become negative during ops; keep signed */
     ColorIndex_t colorIndex;
-    int primeIndex;
+    uint32_t primeIndex;
 } Tile_t;
 
 // Debug toggles

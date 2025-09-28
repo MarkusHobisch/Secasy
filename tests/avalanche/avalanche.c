@@ -39,9 +39,9 @@ static double g_sumSqRatios = 0.0;
 static unsigned long long g_histBuckets[10] = {0};
 
 static uint64_t rng_state = 0;
-static void rng_seed(uint64_t s) { if (s==0) s = 0x9e3779b97f4a7c15ULL ^ (uint64_t)time(NULL); rng_state = s; }
-static uint64_t rng_next() { uint64_t x = rng_state; x ^= x >> 12; x ^= x << 25; x ^= x >> 27; rng_state = x; return x * 0x2545F4914F6CDD1DULL; }
-static uint32_t rng_u32() { return (uint32_t)(rng_next() >> 32); }
+static void rng_seed(uint64_t s) { if (s==0) { s = 0x9e3779b97f4a7c15ULL ^ (uint64_t)time(NULL); } rng_state = s; }
+static uint64_t rng_next(void) { uint64_t x = rng_state; x ^= x >> 12; x ^= x << 25; x ^= x >> 27; rng_state = x; return x * 0x2545F4914F6CDD1DULL; }
+static uint32_t rng_u32(void) { return (uint32_t)(rng_next() >> 32); }
 static size_t rng_index(size_t maxExclusive) { return (size_t)(rng_next() % (uint64_t)maxExclusive); }
 
 static unsigned long long *g_bitChanged = NULL;
@@ -131,16 +131,100 @@ static void normalize_hex(const char* a, const char* b, char** outA, char** outB
 static void single_hash(const unsigned char* data, size_t len, char** outHex) { initFieldWithDefaultNumbers(maximumPrimeIndex); processBuffer(data,len); char* h = calculateHashValue(); *outHex=h; }
 
 static void record_sample(int hd, int bitsCompared) {
-    if (bitsCompared <= 0) return; double ratio = (double)hd / (double)bitsCompared; g_sumRatios += ratio; g_sumSqRatios += ratio*ratio; int bucket = (int)(ratio*10.0); if (bucket>9) bucket=9; if (bucket<0) bucket=0; g_histBuckets[bucket]++; }
+    if (bitsCompared <= 0) {
+        return;
+    }
+    double ratio = (double)hd / (double)bitsCompared;
+    g_sumRatios += ratio;
+    g_sumSqRatios += ratio * ratio;
+    int bucket = (int)(ratio * 10.0);
+    if (bucket > 9) bucket = 9;
+    if (bucket < 0) bucket = 0;
+    g_histBuckets[bucket]++;
+}
 
 static void extended_record_bitwise(const unsigned char* a, const unsigned char* b, size_t bitsUsed) {
-    if (!g_flagExtended || bitsUsed==0) return; ensure_bit_capacity(bitsUsed); size_t fullBytes=bitsUsed/8; size_t remBits=bitsUsed%8; size_t bitIndex=0; for (size_t i=0;i<fullBytes;i++){ unsigned char d=(unsigned char)(a[i]^b[i]); for(int bb=0;bb<8;bb++){ g_bitCompared[bitIndex]++; if (d & (1u<<bb)) g_bitChanged[bitIndex]++; bitIndex++; }} if (remBits){ unsigned char d=(unsigned char)(a[fullBytes]^b[fullBytes]); for(size_t bb=0; bb<remBits; bb++){ g_bitCompared[bitIndex]++; if(d & (1u<<bb)) g_bitChanged[bitIndex]++; bitIndex++; }} }
+    if (!g_flagExtended || bitsUsed == 0) {
+        return;
+    }
+    ensure_bit_capacity(bitsUsed);
+    size_t fullBytes = bitsUsed / 8;
+    size_t remBits = bitsUsed % 8;
+    size_t bitIndex = 0;
+    for (size_t i = 0; i < fullBytes; i++) {
+        unsigned char d = (unsigned char)(a[i] ^ b[i]);
+        for (int bb = 0; bb < 8; bb++) {
+            g_bitCompared[bitIndex]++;
+            if (d & (1u << bb)) g_bitChanged[bitIndex]++;
+            bitIndex++;
+        }
+    }
+    if (remBits) {
+        unsigned char d = (unsigned char)(a[fullBytes] ^ b[fullBytes]);
+        for (size_t bb = 0; bb < remBits; bb++) {
+            g_bitCompared[bitIndex]++;
+            if (d & (1u << bb)) g_bitChanged[bitIndex]++;
+            bitIndex++;
+        }
+    }
+}
 
 static void extended_record_bytes(const unsigned char* a, const unsigned char* b, size_t bytes) {
-    if (!g_flagExtended) return; for (size_t i=0;i<bytes;i++){ g_byteFreq[a[i]]++; g_byteFreq[b[i]]++; g_totalHistogramBytes += 2ULL; } }
+    if (!g_flagExtended) {
+        return;
+    }
+    for (size_t i = 0; i < bytes; i++) {
+        g_byteFreq[a[i]]++;
+        g_byteFreq[b[i]]++;
+        g_totalHistogramBytes += 2ULL;
+    }
+}
 
 static void perform_multi_bit_trials(const unsigned char* base, size_t lenBytes, const char* baseHex) {
-    if (!g_flagExtended) return; unsigned int totalBits=(unsigned int)(lenBytes*8); const int maxTrials=32; for (int ki=0; ki<g_multiKCount; ++ki) { int k=g_multiKVals[ki]; if ((int)totalBits < k) continue; for (int t=0;t<maxTrials;t++){ unsigned char* temp=(unsigned char*)malloc(lenBytes); if(!temp){fprintf(stderr,"OOM temp multi\n"); exit(EXIT_FAILURE);} memcpy(temp,base,lenBytes); for(int flips=0; flips<k; ++flips){ unsigned int bitPos=(unsigned int)rng_index(totalBits); unsigned int byteIndex=bitPos/8; unsigned int bitInByte=bitPos%8; temp[byteIndex]^=(unsigned char)(1u<<bitInByte);} char* modHex=NULL; single_hash(temp,lenBytes,&modHex); if(!modHex){free(temp); continue;} char *normA=NULL,*normB=NULL; size_t hexLen=0; normalize_hex(baseHex,modHex,&normA,&normB,&hexLen); unsigned char *bytesA=NULL,*bytesB=NULL; size_t bitsA=hex_to_bits(normA,&bytesA); size_t bitsB=hex_to_bits(normB,&bytesB); int hd; int usedBits; if(bitsA!=bitsB){ size_t minBits=bitsA<bitsB?bitsA:bitsB; size_t minBytes=(minBits+7)/8; hd=hamming_bits(bytesA,bytesB,minBytes); usedBits=(int)(minBytes*8);} else { size_t bytes=(bitsA+7)/8; hd=hamming_bits(bytesA,bytesB,bytes); usedBits=(int)bitsA; } g_multiHammingBits[ki]+=(unsigned long long)hd; g_multiBitsCompared[ki]+=(unsigned long long)usedBits; g_multiTotalFlips[ki]++; free(bytesA); free(bytesB); free(normA); free(normB); free(modHex); free(temp);} } }
+    if (!g_flagExtended) {
+        return;
+    }
+    unsigned int totalBits = (unsigned int)(lenBytes * 8);
+    const int maxTrials = 32;
+    for (int ki = 0; ki < g_multiKCount; ++ki) {
+        int k = g_multiKVals[ki];
+        if ((int)totalBits < k) continue;
+        for (int t = 0; t < maxTrials; t++) {
+            unsigned char* temp = (unsigned char*)malloc(lenBytes);
+            if (!temp) { fprintf(stderr, "OOM temp multi\n"); exit(EXIT_FAILURE); }
+            memcpy(temp, base, lenBytes);
+            for (int flips = 0; flips < k; ++flips) {
+                unsigned int bitPos = (unsigned int)rng_index(totalBits);
+                unsigned int byteIndex = bitPos / 8;
+                unsigned int bitInByte = bitPos % 8;
+                temp[byteIndex] ^= (unsigned char)(1u << bitInByte);
+            }
+            char* modHex = NULL;
+            single_hash(temp, lenBytes, &modHex);
+            if (!modHex) { free(temp); continue; }
+            char *normA = NULL, *normB = NULL; size_t hexLen = 0;
+            normalize_hex(baseHex, modHex, &normA, &normB, &hexLen);
+            unsigned char *bytesA = NULL, *bytesB = NULL;
+            size_t bitsA = hex_to_bits(normA, &bytesA);
+            size_t bitsB = hex_to_bits(normB, &bytesB);
+            int hd; int usedBits;
+            if (bitsA != bitsB) {
+                size_t minBits = bitsA < bitsB ? bitsA : bitsB;
+                size_t minBytes = (minBits + 7) / 8;
+                hd = hamming_bits(bytesA, bytesB, minBytes);
+                usedBits = (int)(minBytes * 8);
+            } else {
+                size_t bytes = (bitsA + 7) / 8;
+                hd = hamming_bits(bytesA, bytesB, bytes);
+                usedBits = (int)bitsA;
+            }
+            g_multiHammingBits[ki] += (unsigned long long)hd;
+            g_multiBitsCompared[ki] += (unsigned long long)usedBits;
+            g_multiTotalFlips[ki]++;
+            free(bytesA); free(bytesB); free(normA); free(normB); free(modHex); free(temp);
+        }
+    }
+}
 
 int main(int argc, char** argv) {
     parse_args(argc, argv);
@@ -163,7 +247,7 @@ int main(int argc, char** argv) {
     if (!g_flagQuiet){ if (meanAvalanche < 0.40) printf("Assessment: Low diffusion under tested parameters (substantially below 0.5).\n"); else if (meanAvalanche < 0.47) printf("Assessment: Moderate diffusion (below ideal).\n"); else if (meanAvalanche < 0.53) printf("Assessment: Near target diffusion.\n"); else printf("Assessment: >0.53 (could be acceptable or indicate structural artifacts).\n"); }
     if (g_flagHistogram){ printf("Histogram (ratio buckets 0.0-0.1 ... 0.9-1.0):\n"); unsigned long long total=g_totalFlipsPerformed?g_totalFlipsPerformed:1ULL; for(int i=0;i<10;i++){ double pct=(double)g_histBuckets[i]*100.0/(double)total; printf("  [%d] %.2f%% (%llu)\n", i, pct, (unsigned long long)g_histBuckets[i]); } }
     if (g_flagExtended){ if (g_bitCapacity>0){ double sumP=0.0,sumSqP=0.0; double minP=1.0,maxP=0.0; unsigned long long countedBits=0; unsigned long long outOfBand=0; for (size_t i=0;i<g_bitCapacity;i++){ unsigned long long comp=g_bitCompared[i]; if(!comp) continue; double pv=(double)g_bitChanged[i]/(double)comp; sumP += pv; sumSqP += pv*pv; if (pv<minP) minP=pv; if(pv>maxP) maxP=pv; countedBits++; if (pv<0.45||pv>0.55) outOfBand++; } if (countedBits>0){ double meanP=sumP/(double)countedBits; double varP=(sumSqP/(double)countedBits)-meanP*meanP; if (varP<0) varP=0; double sdP=sqrt(varP); printf("--- Extended: Per-bit bias ---\n"); printf("Bits observed: %llu\n", (unsigned long long)countedBits); printf("Min bit flip rate: %.4f Max: %.4f Mean: %.4f SD: %.4f Out-of-[0.45,0.55]: %llu\n", minP, maxP, meanP, sdP, (unsigned long long)outOfBand); } }
-        if (g_totalHistogramBytes>0){ long double H=0.0L; for(int i=0;i<256;i++){ unsigned long long c=g_byteFreq[i]; if(!c) continue; long double pbyte=(long double)c/(long double)g_totalHistogramBytes; H -= pbyte*(log(pbyte)/log(2.0L)); } long double maxH=log(256.0L)/log(2.0L); printf("--- Extended: Output byte distribution ---\n"); printf("Bytes sampled: %llu Entropy: %.4Lf / 8.0000 (%.2Lf%% of max)\n", (unsigned long long)g_totalHistogramBytes, H, (H/maxH)*100.0L); }
+    if (g_totalHistogramBytes>0){ long double H=0.0L; for(int i=0;i<256;i++){ unsigned long long c=g_byteFreq[i]; if(!c) continue; long double pbyte=(long double)c/(long double)g_totalHistogramBytes; H -= pbyte*(logl(pbyte)/logl(2.0L)); } long double maxH=logl(256.0L)/logl(2.0L); printf("--- Extended: Output byte distribution ---\n"); printf("Bytes sampled: %llu Entropy: %.4Lf / 8.0000 (%.2Lf%% of max)\n", (unsigned long long)g_totalHistogramBytes, H, (H/maxH)*100.0L); }
         int anyMulti=0; for(int i=0;i<g_multiKCount;i++) if (g_multiTotalFlips[i]>0){ anyMulti=1; break; } if (anyMulti){ printf("--- Extended: Multi-bit flip diffusion ---\n"); for(int i=0;i<g_multiKCount;i++){ if(g_multiTotalFlips[i]==0) continue; double ratio=(g_multiBitsCompared[i]>0)? (double)g_multiHammingBits[i]/(double)g_multiBitsCompared[i]:0.0; printf("k=%d trials=%llu mean_ratio=%.6f\n", g_multiKVals[i], (unsigned long long)g_multiTotalFlips[i], ratio); } } }
     printf("Note: Ratios are influenced by variable hex length; treat results as heuristic.\n");
     free(base); free(g_bitChanged); free(g_bitCompared); return 0; }

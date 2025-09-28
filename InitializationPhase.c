@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "Defines.h"
 #include "InitializationPhase.h"
 #include "SieveOfEratosthenes.h"
@@ -33,7 +34,7 @@ Tile_t field[FIELD_SIZE][FIELD_SIZE];
 int lastPrime = 1;
 
 static int numberOfPrimes = NUMBER_OF_PRIMES;
-static int colorLen = 5;
+static unsigned int colorLen = 5U;
 static int primeIndex = 0;
 static ColorIndex_t colorIndex = ADD;
 static int* primeArray = storedPrimesArray;
@@ -50,7 +51,7 @@ static void writeNextNumberOnMove(int direction);
 
 static void initPrimeNumbers(unsigned long maxPrimeIndex);
 
-static void initSquareFieldWithDefaultValue();
+static void initSquareFieldWithDefaultValue(void);
 
 static FILE* readFile(const char* filename);
 
@@ -58,9 +59,9 @@ static void doNotSetAnyDirections(int* directions);
 
 static void updateColorAndPrimeIndexOfTile(Tile_t* tile);
 
-static void setPrimeNumberOfLastTile();
+static void setPrimeNumberOfLastTile(void);
 
-static void createTile(int posX, int posY);
+static void createTile(uint32_t posX, uint32_t posY);
 
 void initFieldWithDefaultNumbers(const unsigned long maxPrimeIndex)
 {
@@ -159,24 +160,24 @@ static void initPrimeNumbers(const unsigned long maxPrimeIndex)
     }
 }
 
-static void initSquareFieldWithDefaultValue()
+static void initSquareFieldWithDefaultValue(void)
 {
-    for (int i = 0; i < FIELD_SIZE; i++)
+    for (uint32_t i = 0; i < FIELD_SIZE; i++)
     {
-        for (int j = 0; j < FIELD_SIZE; j++)
+        for (uint32_t j = 0; j < FIELD_SIZE; j++)
         {
             createTile(i, j);
         }
     }
 }
 
-static void createTile(const int posX, const int posY)
+static void createTile(const uint32_t posX, const uint32_t posY)
 {
     if (posX >= FIELD_SIZE || posY >= FIELD_SIZE)
         return;
     Tile_t tile;
-    tile.posX = posX;
-    tile.posY = posY;
+    tile.posX = (uint32_t)posX;
+    tile.posY = (uint32_t)posY;
     tile.value = FIRST_PRIME;
     tile.primeIndex = 0;
     tile.colorIndex = ADD;
@@ -236,7 +237,7 @@ static void doNotSetAnyDirections(int* directions)
 static void addNumbersToField(const int* directions)
 {
 #if DEBUG_MODE
-    printf("start by pos[%d,%d]\n", pos.x, pos.y);
+    printf("start by pos[%u,%u]\n", pos.x, pos.y);
 #endif
     for (int i = 0; i < DIRECTIONS; i++)
     {
@@ -262,25 +263,25 @@ static void writeNextNumberOnMove(const int move)
     switch (move)
     {
         case UP:
-            pos.y = (pos.y - oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
+            pos.y = (uint32_t)(((int)pos.y - oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1));
 #if DEBUG_MODE
             printf(" UP\n");
 #endif
             break;
         case DOWN:
-            pos.y = (pos.y + oldPrime) & (FIELD_SIZE - 1);
+            pos.y = (uint32_t)(((int)pos.y + oldPrime) & (FIELD_SIZE - 1));
 #if DEBUG_MODE
             printf(" DOWN\n");
 #endif
             break;
         case LEFT:
-            pos.x = (pos.x - oldPrime) & (FIELD_SIZE - 1);
+            pos.x = (uint32_t)(((int)pos.x - oldPrime) & (FIELD_SIZE - 1));
 #if DEBUG_MODE
             printf(" LEFT\n");
 #endif
             break;
         case RIGHT:
-            pos.x = (pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
+            pos.x = (uint32_t)(((int)pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1));
 #if DEBUG_MODE
             printf(" RIGHT\n");
 #endif
@@ -291,7 +292,7 @@ static void writeNextNumberOnMove(const int move)
     }
 }
 
-static void setPrimeNumberOfLastTile()
+static void setPrimeNumberOfLastTile(void)
 {
     Tile_t* tile = &field[pos.x][pos.y];
     tile->value = nextPrimeNumber(tile);
@@ -305,12 +306,14 @@ static int nextPrimeNumber(Tile_t* tile)
 
 static void updateColorAndPrimeIndexOfTile(Tile_t* tile)
 {
-    primeIndex = tile->primeIndex;
+    primeIndex = (int)tile->primeIndex;
     colorIndex = tile->colorIndex;
 
     primeIndex = ++primeIndex < numberOfPrimes ? primeIndex : 0;
-    colorIndex = (++colorIndex < colorLen) && primeIndex != 0 ? colorIndex : 0;
+    colorIndex = (primeIndex != 0 && (unsigned int)(colorIndex + 1) < colorLen)
+                 ? (ColorIndex_t)(colorIndex + 1)
+                 : (ColorIndex_t)0;
 
-    tile->primeIndex = primeIndex;
+    tile->primeIndex = (uint32_t)primeIndex;
     tile->colorIndex = colorIndex;
 }
