@@ -65,6 +65,14 @@ static int g_flagHistogram = 0;
 static int g_flagQuiet = 0;
 static int g_flagExtended = 0;
 
+/* SAC (Strict Avalanche Criterion) Matrix Support */
+static int g_flagSAC = 0;
+static char* g_sacFilename = NULL;
+static unsigned long long** g_sacMatrix = NULL;  /* [inputBit][outputBit] flip count */
+static unsigned long long** g_sacCompared = NULL; /* [inputBit][outputBit] comparison count */
+static size_t g_sacInputBits = 0;
+static size_t g_sacOutputBits = 0;
+
 static unsigned long long g_totalFlipsPerformed = 0ULL;
 static unsigned long long g_totalHammingBits = 0ULL;
 static unsigned long long g_totalBitsCompared = 0ULL;
@@ -100,6 +108,177 @@ static void ensure_bit_capacity(size_t bits) {
     g_bitChanged = nc; g_bitCompared = nr; g_bitCapacity = newCap;
 }
 
+static void init_sac_matrix(size_t inputBits, size_t outputBits) {
+    if (!g_flagSAC) return;
+    
+    g_sacInputBits = inputBits;
+    g_sacOutputBits = outputBits;
+    
+    /* Allocate matrix rows */
+    g_sacMatrix = (unsigned long long**)calloc(inputBits, sizeof(unsigned long long*));
+    g_sacCompared = (unsigned long long**)calloc(inputBits, sizeof(unsigned long long*));
+    
+    if (!g_sacMatrix || !g_sacCompared) {
+        fprintf(stderr, "OOM: SAC matrix allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    /* Allocate columns for each row */
+    for (size_t i = 0; i < inputBits; i++) {
+        g_sacMatrix[i] = (unsigned long long*)calloc(outputBits, sizeof(unsigned long long));
+        g_sacCompared[i] = (unsigned long long*)calloc(outputBits, sizeof(unsigned long long));
+        
+        if (!g_sacMatrix[i] || !g_sacCompared[i]) {
+            fprintf(stderr, "OOM: SAC matrix row allocation failed at row %zu\n", i);
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    fprintf(stderr, "SAC matrix initialized: %zu input bits × %zu output bits\n", 
+            inputBits, outputBits);
+}
+
+static void free_sac_matrix(void) {
+    if (!g_sacMatrix && !g_sacCompared) return;
+    
+    if (g_sacMatrix) {
+        for (size_t i = 0; i < g_sacInputBits; i++) {
+            free(g_sacMatrix[i]);
+        }
+        free(g_sacMatrix);
+        g_sacMatrix = NULL;
+    }
+    
+    if (g_sacCompared) {
+        for (size_t i = 0; i < g_sacInputBits; i++) {
+            free(g_sacCompared[i]);
+        }
+        free(g_sacCompared);
+        g_sacCompared = NULL;
+    }
+}
+
+static void record_sac_flip(size_t inputBit, const unsigned char* outputA, 
+                           const unsigned char* outputB, size_t outputBits) {
+    if (!g_flagSAC || !g_sacMatrix || !g_sacCompared) return;
+    if (inputBit >= g_sacInputBits) return;
+    
+    size_t fullBytes = outputBits / 8;
+    size_t remBits = outputBits % 8;
+    size_t outBitIndex = 0;
+    
+    /* Compare full bytes */
+    for (size_t i = 0; i < fullBytes; i++) {
+        unsigned char diff = outputA[i] ^ outputB[i];
+        for (int bb = 0; bb < 8; bb++) {
+            if (outBitIndex >= g_sacOutputBits) break;
+            
+            g_sacCompared[inputBit][outBitIndex]++;
+            if (diff & (1u << bb)) {
+                g_sacMatrix[inputBit][outBitIndex]++;
+            }
+            outBitIndex++;
+        }
+    }
+    
+    /* Handle remaining bits */
+    if (remBits && outBitIndex < g_sacOutputBits) {
+        unsigned char diff = outputA[fullBytes] ^ outputB[fullBytes];
+        for (size_t bb = 0; bb < remBits; bb++) {
+            if (outBitIndex >= g_sacOutputBits) break;
+            
+            g_sacCompared[inputBit][outBitIndex]++;
+            if (diff & (1u << bb)) {
+                g_sacMatrix[inputBit][outBitIndex]++;
+            }
+            outBitIndex++;
+        }
+    }
+}
+
+static void export_sac_matrix(const char* filename) {
+    if (!g_flagSAC || !g_sacMatrix || !g_sacCompared) return;
+    
+    FILE* f = fopen(filename, "w");
+    if (!f) {
+        fprintf(stderr, "Error: Cannot open SAC matrix file '%s' for writing\n", filename);
+        return;
+    }
+    
+    fprintf(stderr, "Exporting SAC matrix to: %s\n", filename);
+    
+    /* Write header row (output bit indices) */
+    fprintf(f, "InputBit");
+    for (size_t j = 0; j < g_sacOutputBits; j++) {
+        fprintf(f, ",Out%zu", j);
+    }
+    fprintf(f, "\n");
+    
+    /* Write data rows */
+    for (size_t i = 0; i < g_sacInputBits; i++) {
+        fprintf(f, "In%zu", i);
+        for (size_t j = 0; j < g_sacOutputBits; j++) {
+            unsigned long long compared = g_sacCompared[i][j];
+            if (compared > 0) {
+                double prob = (double)g_sacMatrix[i][j] / (double)compared;
+                fprintf(f, ",%.6f", prob);
+            } else {
+                fprintf(f, ",0.000000");
+            }
+        }
+        fprintf(f, "\n");
+    }
+    
+    fclose(f);
+    fprintf(stderr, "SAC matrix export complete: %zu × %zu cells\n", 
+            g_sacInputBits, g_sacOutputBits);
+    
+    /* Print summary statistics */
+    unsigned long long totalCells = 0;
+    unsigned long long inBand = 0;
+    double sumProb = 0.0;
+    double minProb = 1.0;
+    double maxProb = 0.0;
+    
+    for (size_t i = 0; i < g_sacInputBits; i++) {
+        for (size_t j = 0; j < g_sacOutputBits; j++) {
+            unsigned long long compared = g_sacCompared[i][j];
+            if (compared == 0) continue;
+            
+            double prob = (double)g_sacMatrix[i][j] / (double)compared;
+            totalCells++;
+            sumProb += prob;
+            
+            if (prob < minProb) minProb = prob;
+            if (prob > maxProb) maxProb = prob;
+            
+            if (prob >= 0.48 && prob <= 0.52) {
+                inBand++;
+            }
+        }
+    }
+    
+    if (totalCells > 0) {
+        double meanProb = sumProb / (double)totalCells;
+        double acceptance = (double)inBand / (double)totalCells;
+        
+        fprintf(stderr, "SAC Statistics:\n");
+        fprintf(stderr, "  Cells with data: %llu / %llu\n", 
+                totalCells, g_sacInputBits * g_sacOutputBits);
+        fprintf(stderr, "  Mean flip probability: %.6f\n", meanProb);
+        fprintf(stderr, "  Min: %.6f  Max: %.6f\n", minProb, maxProb);
+        fprintf(stderr, "  Cells in [0.48, 0.52]: %llu / %llu (%.2f%%)\n", 
+                inBand, totalCells, acceptance * 100.0);
+        
+        if (acceptance >= 0.95) {
+            fprintf(stderr, "  ✓ PASS: SAC acceptance ≥95%%\n");
+        } else {
+            fprintf(stderr, "  ✗ FAIL: SAC acceptance <95%% (%.2f%% deficit)\n", 
+                    (0.95 - acceptance) * 100.0);
+        }
+    }
+}
+
 static void usage(const char* prog) {
     fprintf(stderr,
         "Usage: %s [options]\n"
@@ -113,12 +292,14 @@ static void usage(const char* prog) {
         "  -H              Print histogram buckets of per-flip avalanche ratios\n"
         "  -q              Quiet (omit qualitative assessment line)\n"
         "  -X              Extended analysis (per-bit bias, byte entropy, multi-bit flips)\n"
+        "  -S <file>       Export SAC (Strict Avalanche Criterion) matrix to CSV file\n"
+        "                  (Note: Use -B 0 for exhaustive per-bit testing)\n"
         "  -h              Help\n",
         prog, g_messages, g_inputLen, g_sampledBitFlips, numberOfRounds, numberOfBits, maximumPrimeIndex);
 }
 
 static void parse_args(int argc, char** argv) {
-    int opt; while ((opt = getopt(argc, argv, "m:l:B:r:n:i:s:HqXh")) != -1) {
+    int opt; while ((opt = getopt(argc, argv, "m:l:B:r:n:i:s:S:HqXh")) != -1) {
         switch (opt) {
             case 'm': g_messages = (unsigned)strtoul(optarg, NULL, 10); break;
             case 'l': g_inputLen = (size_t)strtoull(optarg, NULL, 10); break;
@@ -127,6 +308,7 @@ static void parse_args(int argc, char** argv) {
             case 'n': numberOfBits = (int)strtoul(optarg, NULL, 10); break;
             case 'i': maximumPrimeIndex = strtoul(optarg, NULL, 10); break;
             case 's': g_seed = strtoull(optarg, NULL, 10); break;
+            case 'S': g_flagSAC = 1; g_sacFilename = optarg; break;
             case 'H': g_flagHistogram = 1; break;
             case 'q': g_flagQuiet = 1; break;
             case 'X': g_flagExtended = 1; break;
@@ -262,17 +444,105 @@ static void perform_multi_bit_trials(const unsigned char* base, size_t lenBytes,
 
 int main(int argc, char** argv) {
     parse_args(argc, argv);
-    unsigned char* base=(unsigned char*)malloc(g_inputLen); if(!base){fprintf(stderr,"OOM base\n"); return 1;}
+    
+    unsigned char* base=(unsigned char*)malloc(g_inputLen); 
+    if(!base){
+        fprintf(stderr,"OOM base\n"); 
+        return 1;
+    }
+    
+    /* Initialize SAC matrix if requested */
+    if (g_flagSAC) {
+        /* We'll determine output bits from first hash */
+        /* For now, allocate conservatively based on hash buffer parameter */
+        size_t inputBits = g_inputLen * 8;
+        size_t estimatedOutputBits = (size_t)numberOfBits * 4; /* chars to bits */
+        init_sac_matrix(inputBits, estimatedOutputBits);
+    }
+    
     double start=wall_time_seconds();
+    
     for (unsigned int m=0; m<g_messages; ++m) {
         random_buffer(base, g_inputLen);
-        char* baseHex=NULL; single_hash(base,g_inputLen,&baseHex); if(!baseHex){fprintf(stderr,"hash failed base\n"); free(base); return 1;}
-        unsigned int totalBits=(unsigned int)(g_inputLen*8); unsigned int flipsThisMsg = g_sampledBitFlips==0 ? totalBits : (g_sampledBitFlips < totalBits ? g_sampledBitFlips : totalBits);
+        char* baseHex=NULL; 
+        single_hash(base,g_inputLen,&baseHex); 
+        if(!baseHex){
+            fprintf(stderr,"hash failed base\n"); 
+            free(base); 
+            free_sac_matrix();
+            return 1;
+        }
+        
+        unsigned int totalBits=(unsigned int)(g_inputLen*8); 
+        unsigned int flipsThisMsg = g_sampledBitFlips==0 ? totalBits : (g_sampledBitFlips < totalBits ? g_sampledBitFlips : totalBits);
+        
         for (unsigned int f=0; f<flipsThisMsg; ++f) {
             unsigned int bitPos = (g_sampledBitFlips==0)? f : (unsigned int)rng_index(totalBits);
-            unsigned int byteIndex = bitPos/8; unsigned int bitInByte = bitPos%8; unsigned char original=base[byteIndex]; base[byteIndex]^=(unsigned char)(1u<<bitInByte);
-            char* modHex=NULL; single_hash(base,g_inputLen,&modHex); if(!modHex){fprintf(stderr,"hash failed mod\n"); free(baseHex); free(base); return 1;}
-            char *normA=NULL,*normB=NULL; size_t hexLen=0; normalize_hex(baseHex,modHex,&normA,&normB,&hexLen); unsigned char *bytesA=NULL,*bytesB=NULL; size_t bitsA=hex_to_bits(normA,&bytesA); size_t bitsB=hex_to_bits(normB,&bytesB); int hd; int usedBits; if (bitsA!=bitsB){ size_t minBits=bitsA<bitsB?bitsA:bitsB; size_t minBytes=(minBits+7)/8; hd=hamming_bits(bytesA,bytesB,minBytes); usedBits=(int)(minBytes*8);} else { size_t bytes=(bitsA+7)/8; hd=hamming_bits(bytesA,bytesB,bytes); usedBits=(int)bitsA;} g_totalHammingBits += (unsigned long long)hd; g_totalBitsCompared += (unsigned long long)usedBits; g_totalFlipsPerformed++; record_sample(hd, usedBits); if (g_flagExtended){ size_t bytesUsed=(size_t)usedBits/8; if ((size_t)usedBits%8) bytesUsed++; extended_record_bitwise(bytesA,bytesB,(size_t)usedBits); extended_record_bytes(bytesA,bytesB,bytesUsed);} free(bytesA); free(bytesB); free(normA); free(normB); free(modHex); base[byteIndex]=original; }
+            unsigned int byteIndex = bitPos/8; 
+            unsigned int bitInByte = bitPos%8; 
+            unsigned char original=base[byteIndex]; 
+            base[byteIndex]^=(unsigned char)(1u<<bitInByte);
+            
+            char* modHex=NULL; 
+            single_hash(base,g_inputLen,&modHex); 
+            if(!modHex){
+                fprintf(stderr,"hash failed mod\n"); 
+                free(baseHex); 
+                free(base); 
+                free_sac_matrix();
+                return 1;
+            }
+            
+            char *normA=NULL,*normB=NULL; 
+            size_t hexLen=0; 
+            normalize_hex(baseHex,modHex,&normA,&normB,&hexLen); 
+            
+            unsigned char *bytesA=NULL,*bytesB=NULL; 
+            size_t bitsA=hex_to_bits(normA,&bytesA); 
+            size_t bitsB=hex_to_bits(normB,&bytesB); 
+            
+            int hd; 
+            int usedBits; 
+            size_t usedBytes;
+            
+            if (bitsA!=bitsB){ 
+                size_t minBits=bitsA<bitsB?bitsA:bitsB; 
+                size_t minBytes=(minBits+7)/8; 
+                hd=hamming_bits(bytesA,bytesB,minBytes); 
+                usedBits=(int)(minBytes*8);
+                usedBytes=minBytes;
+            } else { 
+                size_t bytes=(bitsA+7)/8; 
+                hd=hamming_bits(bytesA,bytesB,bytes); 
+                usedBits=(int)bitsA;
+                usedBytes=bytes;
+            } 
+            
+            g_totalHammingBits += (unsigned long long)hd; 
+            g_totalBitsCompared += (unsigned long long)usedBits; 
+            g_totalFlipsPerformed++; 
+            record_sample(hd, usedBits); 
+            
+            if (g_flagExtended){ 
+                size_t bytesUsed=(size_t)usedBits/8; 
+                if ((size_t)usedBits%8) bytesUsed++; 
+                extended_record_bitwise(bytesA,bytesB,(size_t)usedBits); 
+                extended_record_bytes(bytesA,bytesB,bytesUsed);
+            } 
+            
+            /* Record SAC matrix entry */
+            if (g_flagSAC) {
+                record_sac_flip((size_t)bitPos, bytesA, bytesB, (size_t)usedBits);
+            }
+            
+            free(bytesA); 
+            free(bytesB); 
+            free(normA); 
+            free(normB); 
+            free(modHex); 
+            base[byteIndex]=original; 
+        }
+        
         if (g_flagExtended) perform_multi_bit_trials(base,g_inputLen,baseHex);
         free(baseHex);
     }
@@ -283,5 +553,19 @@ int main(int argc, char** argv) {
     if (g_flagExtended){ if (g_bitCapacity>0){ double sumP=0.0,sumSqP=0.0; double minP=1.0,maxP=0.0; unsigned long long countedBits=0; unsigned long long outOfBand=0; for (size_t i=0;i<g_bitCapacity;i++){ unsigned long long comp=g_bitCompared[i]; if(!comp) continue; double pv=(double)g_bitChanged[i]/(double)comp; sumP += pv; sumSqP += pv*pv; if (pv<minP) minP=pv; if(pv>maxP) maxP=pv; countedBits++; if (pv<0.45||pv>0.55) outOfBand++; } if (countedBits>0){ double meanP=sumP/(double)countedBits; double varP=(sumSqP/(double)countedBits)-meanP*meanP; if (varP<0) varP=0; double sdP=sqrt(varP); printf("--- Extended: Per-bit bias ---\n"); printf("Bits observed: %llu\n", (unsigned long long)countedBits); printf("Min bit flip rate: %.4f Max: %.4f Mean: %.4f SD: %.4f Out-of-[0.45,0.55]: %llu\n", minP, maxP, meanP, sdP, (unsigned long long)outOfBand); } }
     if (g_totalHistogramBytes>0){ long double H=0.0L; for(int i=0;i<256;i++){ unsigned long long c=g_byteFreq[i]; if(!c) continue; long double pbyte=(long double)c/(long double)g_totalHistogramBytes; H -= pbyte*(logl(pbyte)/logl(2.0L)); } long double maxH=logl(256.0L)/logl(2.0L); printf("--- Extended: Output byte distribution ---\n"); printf("Bytes sampled: %llu Entropy: %.4Lf / 8.0000 (%.2Lf%% of max)\n", (unsigned long long)g_totalHistogramBytes, H, (H/maxH)*100.0L); }
         int anyMulti=0; for(int i=0;i<g_multiKCount;i++) if (g_multiTotalFlips[i]>0){ anyMulti=1; break; } if (anyMulti){ printf("--- Extended: Multi-bit flip diffusion ---\n"); for(int i=0;i<g_multiKCount;i++){ if(g_multiTotalFlips[i]==0) continue; double ratio=(g_multiBitsCompared[i]>0)? (double)g_multiHammingBits[i]/(double)g_multiBitsCompared[i]:0.0; printf("k=%d trials=%llu mean_ratio=%.6f\n", g_multiKVals[i], (unsigned long long)g_multiTotalFlips[i], ratio); } } }
+    
+    /* Export SAC matrix if requested */
+    if (g_flagSAC && g_sacFilename) {
+        printf("\n");
+        export_sac_matrix(g_sacFilename);
+    }
+    
     printf("Note: Ratios are influenced by variable hex length; treat results as heuristic.\n");
-    free(base); free(g_bitChanged); free(g_bitCompared); return 0; }
+    
+    free(base); 
+    free(g_bitChanged); 
+    free(g_bitCompared); 
+    free_sac_matrix();
+    
+    return 0; 
+}
