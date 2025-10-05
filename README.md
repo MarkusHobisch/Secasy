@@ -1,10 +1,10 @@
 # Secasy
 
-## _A Cryptographic Hash Function_
+## _A Hash Function_
 
 ## Approach
 
-Secasy is a cryptographic hash function with its main target to combine security and simplicity. It uses a new approach on how to calculate the hash value and does not use any wide spread concepts like Merkle–Damgård construction. Instead of dividing the input in different blocks it uses a 2-dimensional field to calculate all its values from the input. Due to this process different inputs result in different values leading to different calculations and hash values. 
+Secasy is a hash function with its main target to combine security and simplicity. It uses a new approach on how to calculate the hash value and does not use any wide spread concepts like Merkle–Damgård construction. Instead of dividing the input in different blocks it uses a 2-dimensional field to calculate all its values from the input. Due to this process different inputs result in different values leading to different calculations and hash values. 
 
 The algorithm is based on the principle of a deterministic chaotic system, meaning that a small deviation of the input will lead to unpredictable end results. This also makes it as hard as possible for attackers to find successful attack vectors. All common ways of attacking hash functions were taken into account during the design process.
 
@@ -22,6 +22,9 @@ gcc -std=c11 -O3 -Wall -Wextra -o secasy \
 
 gcc -std=c11 -O3 -Wall -Wextra -o secasy_avalanche \
   avalanche.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
+
+gcc -std=c11 -O3 -Wall -Wextra -o secasy_preimage \
+  tests/preimage/preimage.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
 ```
 
 ### With full prime range (may be slower)
@@ -31,6 +34,9 @@ gcc -std=c11 -O3 -DSECASY_PRIMES_FULL -Wall -Wextra -o secasy \
 
 gcc -std=c11 -O3 -DSECASY_PRIMES_FULL -Wall -Wextra -o secasy_avalanche \
   avalanche.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
+
+gcc -std=c11 -O3 -DSECASY_PRIMES_FULL -Wall -Wextra -o secasy_preimage \
+  tests/preimage/preimage.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
 ```
 
 ### Debug builds
@@ -40,12 +46,16 @@ gcc -std=c11 -O0 -g -Wall -Wextra -o secasy \
 
 gcc -std=c11 -O0 -g -Wall -Wextra -o secasy_avalanche \
   avalanche.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
+
+gcc -std=c11 -O0 -g -Wall -Wextra -o secasy_preimage \
+  tests/preimage/preimage.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
 ```
 
 ### Windows (WSL via PowerShell)
 ```bash
 wsl gcc -std=c11 -O3 -o secasy main.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
 wsl gcc -std=c11 -O3 -o secasy_avalanche avalanche.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
+wsl gcc -std=c11 -O3 -o secasy_preimage tests/preimage/preimage.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
 ```
 
 ### MinGW / MSYS2 (native Windows)
@@ -136,8 +146,19 @@ We welcome contributions from the community, especially in terms of security imp
 
 **Important:** The current hash construction is experimental and MUST NOT be used for real-world security purposes (e.g. password hashing, digital signatures, integrity guarantees in production). Its collision and preimage resistance have not been formally analyzed and future changes (e.g. operation semantics, prime handling) may alter outputs without notice.
 
+### Security Analysis
+A comprehensive cryptographic evaluation plan is documented in `SECURITY_ANALYSIS_PLAN.md`. This 10-phase systematic assessment covers diffusion properties, collision resistance, differential/linear cryptanalysis, algebraic attacks, preimage security, and statistical quality. Consult this plan for detailed testing methodology, acceptance criteria, and go/no-go decision points.
+
 ## Avalanche Test Tool (Experimental)
 A separate executable `SecasyAvalanche` (source: `avalanche.c`) measures diffusion (avalanche effect): how strongly the hash output changes when a single input bit is flipped. Target: ~50% of output bits invert per single-bit input flip.
+
+**Current Security Assessment:** Recent Strict Avalanche Criterion (SAC) analysis reveals structural diffusion weaknesses. While the mean flip probability (0.499867) is excellent and near-ideal, only 38.29% of input-bit → output-bit pairs fall within the acceptable [0.48, 0.52] range (target: ≥95%). This indicates non-uniform diffusion patterns that could be exploited in cryptographic attacks.
+
+**Recommended Use Cases:**
+- ✅ **Suitable for:** Hash tables, checksums, file deduplication, data integrity verification
+- ❌ **NOT suitable for:** Cryptographic applications, digital signatures, password hashing, blockchain/mining
+
+**Note:** The hash function demonstrates good overall avalanche behavior (mean ~0.5) but shows measurable structural biases in specific bit-pair relationships. This makes it suitable for general-purpose hashing but disqualifies it from security-critical applications until diffusion uniformity is improved.
 
 ### Build (CMake)
 If you use CMake (after adding this file):
@@ -154,7 +175,7 @@ gcc -Ofast -march=native -mtune=native -funroll-loops avalanche.c Calculations.c
 
 ### Usage
 ```
-./SecasyAvalanche -m <messages> -l <lenBytes> -B <bitFlipsPerMessage> -r <rounds> -n <hashBufferChars> -i <maxPrimeIndex> -s <seed>
+./SecasyAvalanche -m <messages> -l <lenBytes> -B <bitFlipsPerMessage> -r <rounds> -n <hashBufferChars> -i <maxPrimeIndex> -s <seed> -S <file>
 ```
 Parameter descriptions:
 - `-m` Number of random base messages (default 50)
@@ -164,6 +185,7 @@ Parameter descriptions:
 - `-n` Size of the internal hash character buffer (not a strict bit length; legacy naming). Recommended: 512, 1024, ...
 - `-i` Maximum prime index
 - `-s` Seed (omit for time-based)
+- `-S` **NEW:** Export Strict Avalanche Criterion (SAC) matrix to CSV file. Measures per-input-bit → per-output-bit flip probabilities for detailed diffusion analysis.
 
 ### Output (Core Metric)
 Mean avalanche rate = flipped output bits / total compared bits (ideal ≈ 0.5). Extended mode `-X` adds per‑bit statistics and multi‑bit trial summaries.
@@ -206,6 +228,24 @@ BUILD_TYPE=Debug BUILD_DIR=build-debug JOBS=4 ./scripts/run_extended_avalanche_w
 | -s | Seed (deterministic RNG) |
 | -H | Histogram buckets (classic avalanche ratio) |
 | -X | Extended mode features (bias, entropy, multi-bit) |
+| **-S** | **SAC matrix export to CSV (input×output bit flip probabilities)** |
+
+### SAC Matrix Analysis (Advanced)
+The Strict Avalanche Criterion matrix provides detailed insight into diffusion quality:
+
+```bash
+# Production-level SAC analysis (recommended for final assessment)
+./SecasyAvalanche -m 100 -l 16 -B 0 -r 10000 -S sac_analysis.csv
+
+# Quick SAC test
+./SecasyAvalanche -m 20 -l 8 -r 1000 -S sac_quick.csv
+```
+
+**SAC Matrix Output:**
+- CSV format: rows = input bits, columns = output bits
+- Values: flip probabilities (0.0 to 1.0, ideal ≈ 0.5)
+- Statistics: mean, min, max, acceptance rate ([0.48, 0.52] band)
+- **Current Status:** 38.29% acceptance (target: ≥95%) indicates structural diffusion weaknesses
 
 ### Caveats (Abbreviated)
 Entropy sampler not yet reliable. Large `-l` with `-B 0` is slow (flips = 8 * length). Multi-bit trial count small for speed.
@@ -319,6 +359,73 @@ Full 256-bit collisions are practically unobservable for m ≤ 10^6. Truncation 
 
 ### Reference
 See `AVALANCHE_RESULTS.md` for avalanche & diffusion data; collision datasets may be added later.
+
+## Preimage & Second-Preimage Resistance Test (Experimental)
+
+The repository includes a specialized tool `SecasyPreimage` (source: `tests/preimage/preimage.c`) to evaluate the hash function's resistance against preimage attacks (finding input for given hash) and second-preimage attacks (finding different input with same hash).
+
+### Build (Direct GCC)
+```bash
+gcc -std=c11 -O3 -Wall -Wextra -o secasy_preimage \
+  tests/preimage/preimage.c Calculations.c InitializationPhase.c ProcessingPhase.c \
+  SieveOfEratosthenes.c util.c Printing.c -lm
+```
+
+### Core Concept
+**Preimage Resistance:** Given hash H, computationally infeasible to find input M such that hash(M) = H  
+**Second-Preimage Resistance:** Given input M1, computationally infeasible to find different M2 such that hash(M1) = hash(M2)
+
+The tool uses brute-force search with randomized inputs to empirically measure resistance strength. For n-bit hash output, ideal resistance requires ~2^n attempts.
+
+### Usage
+```bash
+./SecasyPreimage [options]
+```
+
+**Key Parameters:**
+- `-a <num>` Maximum attempts per test (default: 1,000,000)
+- `-l <bytes>` Input length in bytes (default: 16)
+- `-r <rounds>` Hash computation rounds (default: 10)
+- `-i <index>` Maximum prime index (default: 200)
+- `-s <seed>` Random seed for reproducible tests
+- `-P` Test only preimage resistance
+- `-S` Test only second-preimage resistance  
+- `-o <file>` Export results to CSV file
+
+### Example Commands
+```bash
+# Quick test (recommended for development)
+./SecasyPreimage -a 10000 -l 8 -i 100 -o quick_preimage.csv
+
+# Standard evaluation 
+./SecasyPreimage -a 100000 -l 12 -r 1000 -o preimage_standard.csv
+
+# Focused preimage-only test
+./SecasyPreimage -P -a 500000 -l 16 -o preimage_only.csv
+```
+
+### Interpreting Results
+**Success (Attack Found):** Indicates weakness - security estimate based on attempts required  
+**No Success:** Lower bound on security strength (log2 of attempts performed)  
+
+**Example Output:**
+```
+Preimage Test: NOT FOUND after 100000 attempts (234.5 sec)
+  Lower bound: 16.6 bits
+Second-Preimage Test: NOT FOUND after 100000 attempts (245.1 sec)  
+  Lower bound: 16.6 bits
+```
+
+### CSV Export Format
+Results exported include test type, attempts, success status, time elapsed, success rate, and theoretical security bits.
+
+### Security Assessment Context
+These tests provide **empirical resistance measurement** under brute-force attack conditions. Results are limited by:
+- Computational constraints (practical test space << theoretical attack space)
+- Brute-force methodology (does not test sophisticated cryptanalytic attacks)
+- Statistical sampling limitations
+
+**Important:** This testing does NOT constitute formal cryptographic security proof but provides valuable empirical indicators for hash function evaluation.
 
 ## Profiling with `gprof`
 
