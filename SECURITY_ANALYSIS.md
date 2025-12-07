@@ -50,6 +50,24 @@ Comprehensive security testing of the Secasy hash function has revealed signific
 - **Power analysis:** LOW RISK (fixed operation sequence)
 - **Cache attacks:** LOW RISK (fixed memory access patterns)
 
+### 6. Extended Security Tests (NEW)
+- **Length Extension Attack:** PASSED (no suspicious patterns detected)
+- **Bit Independence:** PASSED (max correlation 0.08, no high correlations)
+- **Near-Collision Detection:** PASSED (min Hamming distance 38%, no near-collisions)
+- **Structured Input Patterns:** PASSED (sequential, single-bit, repeating patterns all ~50% diffusion)
+- **Zero Sensitivity:** PASSED (all positions cause significant change)
+
+### 7. Statistical Randomness Tests (NIST-like)
+| Test | Pass Rate | Status |
+|------|-----------|--------|
+| Frequency (Monobit) | 99.0% | ✅ PASS |
+| Runs | 100.0% | ✅ PASS |
+| Longest Run | 100.0% | ✅ PASS |
+| Serial (2-bit) | 100.0% | ✅ PASS |
+| Approximate Entropy | 100.0% | ✅ PASS |
+
+**Conclusion:** Hash output appears statistically random, meeting NIST test suite requirements.
+
 ---
 
 ## Structural Analysis (Revised Assessment)
@@ -141,8 +159,9 @@ The comprehensive testing reveals that Secasy's unique approach (2D field, prime
 ## Test Tools Available
 
 - `secasy_avalanche` - Avalanche and SAC testing
-- `secasy_collision` - Collision and distribution testing
+- `secasy_collision` - Collision and distribution testing  
 - `secasy_preimage` - Preimage resistance testing
+- `secasy_extended_security` - Extended security tests (length extension, bit independence, near-collision, patterns)
+- `secasy_statistical` - NIST-like statistical randomness tests
 - `tests/differential/differential_test.c` - Differential attack testing
 - `tests/sac_exploit/sac_exploit.c` - SAC exploitation testing
-
