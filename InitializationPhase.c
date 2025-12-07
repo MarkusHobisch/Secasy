@@ -90,6 +90,7 @@ void readAndProcessFile(const char* filename)
     }
     size_t bytesRead;
     int directions[DIRECTIONS]; // LEFT, RIGHT, TOP, DOWN
+    size_t globalByteIndex = 0; // Track position across all blocks
 
     FILE* file = readFile(filename);
     while ((bytesRead = fread(buffer, 1, DEFAULT_IO_BLOCK_SIZE, file)) > 0)
@@ -98,6 +99,9 @@ void readAndProcessFile(const char* filename)
         for (size_t i = 0; i < bytesRead; ++i)
         {
             byte = buffer[i] & 0xFF; // byte to int conversion
+            // Mix byte position into value to prevent path symmetry collisions
+            byte ^= (int)((globalByteIndex * 37 + 17) & 0xFF);
+            globalByteIndex++;
             if (byte != 0)
             {
                 calcAndSetDirections(byte, directions);
@@ -133,6 +137,8 @@ void processBuffer(const unsigned char* data, size_t len)
     for (size_t i = 0; i < len; ++i)
     {
         int byte = data[i] & 0xFF;
+        // Mix byte position into value to prevent path symmetry collisions
+        byte ^= (int)((i * 37 + 17) & 0xFF);
         if (byte != 0)
         {
             calcAndSetDirections(byte, directions);
