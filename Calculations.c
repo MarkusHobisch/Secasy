@@ -13,9 +13,9 @@ long long generateHashValue()
     return checksum ^ fieldSum;
 }
 
-void calcSumOfRows(int* rowSums)
+void calcSumOfRows(long long* rowSums)
 {
-    int sum = 0;
+    long long sum = 0;
     for (int j = 0; j < FIELD_SIZE; j++)
     {
         for (int i = 0; i < FIELD_SIZE; i++)
@@ -27,9 +27,9 @@ void calcSumOfRows(int* rowSums)
     }
 }
 
-void calcSumOfColumns(int* columnsSums)
+void calcSumOfColumns(long long* columnsSums)
 {
-    int sum = 0;
+    long long sum = 0;
     for (int j = 0; j < FIELD_SIZE; j++)
     {
         for (int i = 0; i < FIELD_SIZE; i++)
@@ -46,8 +46,8 @@ long long calcSumOfProducts()
     long long productOfSumOfRows = 1;
     long long productOfSumOfColumns = 1;
 
-    int rowSums[FIELD_SIZE];
-    int columnsSums[FIELD_SIZE];
+    long long rowSums[FIELD_SIZE];
+    long long columnsSums[FIELD_SIZE];
 
     calcSumOfRows(rowSums);
     calcSumOfColumns(columnsSums);

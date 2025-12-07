@@ -3,9 +3,9 @@
 
 long long generateHashValue(void);
 
-void calcSumOfRows(int* rowSums);
+void calcSumOfRows(long long* rowSums);
 
-void calcSumOfColumns(int* columnsSums);
+void calcSumOfColumns(long long* columnsSums);
 
 long long calcSumOfProducts(void);
 

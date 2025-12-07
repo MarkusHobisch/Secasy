@@ -93,6 +93,10 @@ static inline uint32_t rotl32(uint32_t x, uint32_t r) {
     return (uint32_t)((x << r) | (x >> (32 - r)));
 }
 
+static inline uint64_t rotl64(uint64_t x, uint64_t r) {
+    return (uint64_t)((x << r) | (x >> (64 - r)));
+}
+
 static inline uint32_t mix32(uint32_t x) {
     x ^= x >> 16;
     x *= 0x7feb352dU;
@@ -102,22 +106,30 @@ static inline uint32_t mix32(uint32_t x) {
     return x;
 }
 
+static inline uint64_t mix64(uint64_t x) {
+    x ^= x >> 33;
+    x *= 0xff51afd7ed558ccdULL;
+    x ^= x >> 33;
+    x *= 0xc4ceb9fe1a85ec53ULL;
+    x ^= x >> 33;
+    return x;
+}
+
 static inline uint32_t fmix32(uint32_t h) {
     h ^= h >> 16; h *= 0x7feb352dU;
     h ^= h >> 13; h *= 0x846ca68bU;
     h ^= h >> 16; return h;
 }
 
-static inline int finalize_value(uint32_t x) {
-    /* map into a better distributed 31-bit domain */
-    uint32_t z = fmix32(x);
-    return (int)(z & 0x7fffffff);
+static inline uint64_t finalize_value(uint64_t x) {
+    /* map into a better distributed 64-bit domain using 64-bit mixing */
+    return mix64(x);
 }
 
 static void processData(const ColorIndex_t colorIndex, const uint32_t posX, const uint32_t posY)
 {
     Tile_t* tile = &field[posX][posY];
-    uint32_t neighbourSample = 0U; /* will store one neighbour value to fold into post-mix */
+    uint64_t neighbourSample = 0ULL; /* will store one neighbour value to fold into post-mix */
     switch (colorIndex)
     {
         case ADD:
@@ -128,7 +140,7 @@ static void processData(const ColorIndex_t colorIndex, const uint32_t posX, cons
             {
                 Tile_t *neighbourTileAbove = &field[posX][posY - 1];
                 tile->value += neighbourTileAbove->value;
-                neighbourSample = (uint32_t)neighbourTileAbove->value;
+                neighbourSample = (uint64_t)neighbourTileAbove->value;
             }
             break;
         }
@@ -140,7 +152,7 @@ static void processData(const ColorIndex_t colorIndex, const uint32_t posX, cons
             {
                 Tile_t *neighbourTileBelow = &field[posX][posY + 1];
                 tile->value -= neighbourTileBelow->value;
-                neighbourSample = (uint32_t)neighbourTileBelow->value;
+                neighbourSample = (uint64_t)neighbourTileBelow->value;
             }
             break;
         }
@@ -152,7 +164,7 @@ static void processData(const ColorIndex_t colorIndex, const uint32_t posX, cons
             {
                 Tile_t *neighbourTileLeft = &field[posX - 1][posY];
                 tile->value ^= neighbourTileLeft->value;
-                neighbourSample = (uint32_t)neighbourTileLeft->value;
+                neighbourSample = (uint64_t)neighbourTileLeft->value;
             }
             break;
         }
@@ -163,7 +175,7 @@ static void processData(const ColorIndex_t colorIndex, const uint32_t posX, cons
             {
                 Tile_t *neighbourTileRight = &field[posX + 1][posY];
                 tile->value &= neighbourTileRight->value;
-                neighbourSample = (uint32_t)neighbourTileRight->value;
+                neighbourSample = (uint64_t)neighbourTileRight->value;
             }
             break;
         }
@@ -175,7 +187,7 @@ static void processData(const ColorIndex_t colorIndex, const uint32_t posX, cons
             {
                 Tile_t *neighbourTileLeft = &field[posX - 1][posY];
                 tile->value |= neighbourTileLeft->value;
-                neighbourSample = (uint32_t)neighbourTileLeft->value;
+                neighbourSample = (uint64_t)neighbourTileLeft->value;
             }
             break;
         }
@@ -190,16 +202,16 @@ static void processData(const ColorIndex_t colorIndex, const uint32_t posX, cons
         }
     }
 
-    /* increase diffusion: Nonlinear post-mix */
+    /* increase diffusion: Nonlinear post-mix (64-bit) */
     {
-    uint32_t base = (uint32_t)tile->value;
-    uint32_t spice = ((uint32_t)colorIndex << 25) ^ ((uint32_t)tile->primeIndex << 11);
-    uint32_t v = base ^ spice ^ neighbourSample;
-    v = rotl32(v + 0x9E3779B1u, (uint32_t)((colorIndex * 5) + 7) & 31u);
-        v ^= (v >> 15);
-        v *= 0x85EBCA77u;
-        v ^= (v >> 13);
-        v = mix32(rotl32(v, 13));
+    uint64_t base = (uint64_t)tile->value;
+    uint64_t spice = ((uint64_t)colorIndex << 53) ^ ((uint64_t)tile->primeIndex << 27);
+    uint64_t v = base ^ spice ^ (uint64_t)neighbourSample;
+    v = rotl64(v + 0x9E3779B97F4A7C15ULL, (uint64_t)((colorIndex * 7) + 13) & 63u);
+        v ^= (v >> 33);
+        v *= 0xff51afd7ed558ccdULL;
+        v ^= (v >> 29);
+        v = mix64(rotl64(v, 31));
         tile->value = finalize_value(v);
     }
 }

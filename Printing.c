@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <limits.h>
+#include <inttypes.h>
 #include "Calculations.h"
 #include "Defines.h"
 #include "Printing.h"
@@ -12,8 +13,8 @@ void printField()
 {
     printf("\n------------------------------------ Prime Field ---------------------------------------\n\t --------------- Origin matrix - last position: [%u,%u] ---------------\n", pos.x, pos.y);
 
-    int rowSums[FIELD_SIZE];
-    int columnsSums[FIELD_SIZE];
+    long long rowSums[FIELD_SIZE];
+    long long columnsSums[FIELD_SIZE];
 
     calcSumOfRows(rowSums);
     calcSumOfColumns(columnsSums);
@@ -22,9 +23,9 @@ void printField()
     {
         for (int i = 0; i < FIELD_SIZE; i++)
         {
-            printf("%12d ", field[i][j].value);
+            printf("%16" PRIu64 " ", (uint64_t)field[i][j].value);
         }
-        printf("\t sum row: %d\n", rowSums[j]);
+        printf("\t sum row: %" PRId64 "\n", (int64_t)rowSums[j]);
     }
 
     printf("\n\t --------------- Transposed matrix --------------- \n");
@@ -32,9 +33,9 @@ void printField()
     {
         for (int i = 0; i < FIELD_SIZE; i++)
         {
-            printf("%12d ", field[j][i].value);
+            printf("%16" PRIu64 " ", (uint64_t)field[j][i].value);
         }
-        printf("\t sum column: %d\n", columnsSums[j]);
+        printf("\t sum column: %" PRId64 "\n", (int64_t)columnsSums[j]);
     }
     printf("\n\n");
 }
@@ -70,21 +71,21 @@ void printSumsAndValues()
     printf("\n");
     printf("- Print row sums: \n");
 
-    int rowSums[FIELD_SIZE];
-    int columnsSums[FIELD_SIZE];
+    long long rowSums[FIELD_SIZE];
+    long long columnsSums[FIELD_SIZE];
 
     calcSumOfRows(rowSums);
     calcSumOfColumns(columnsSums);
 
     for (int i = 0; i < FIELD_SIZE; ++i)
     {
-        printf("  Row: %d\n", rowSums[i]);
+        printf("  Row: %" PRId64 "\n", (int64_t)rowSums[i]);
     }
     printf("\n");
     printf("- Print column sums: \n");
     for (int j = 0; j < FIELD_SIZE; ++j)
     {
-        printf("  Column: %d\n", columnsSums[j]);
+        printf("  Column: %" PRId64 "\n", (int64_t)columnsSums[j]);
     }
     printf("\n");
     printf("- Last prime was %d\n", lastPrime);

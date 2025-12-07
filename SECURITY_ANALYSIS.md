@@ -142,9 +142,11 @@ Secasy demonstrates **significantly better cryptographic properties** than initi
 - ✅ Low side-channel risk
 
 **Remaining Concerns:**
-- ⚠️ Variable output length (should be standardized)
-- ⚠️ Signed integer overflow (undefined behavior)
 - ⚠️ No formal cryptographic proof
+
+**Recent Improvements:**
+- ✅ Configurable output length via `-n` parameter (similar to SHAKE/BLAKE3 XOF concept)
+- ✅ Upgraded to 64-bit internal state (`int64_t`) for defined overflow behavior and larger entropy
 
 **Updated Assessment:**
 - **For learning and experimentation:** ✅ Excellent project

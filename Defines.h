@@ -37,7 +37,7 @@ typedef struct
 {
     uint32_t posX;
     uint32_t posY;
-    int32_t  value;       /* value may become negative during ops; keep signed */
+    uint64_t value;       /* unsigned 64-bit for defined wrap-around overflow behavior */
     ColorIndex_t colorIndex;
     uint32_t primeIndex;
 } Tile_t;
