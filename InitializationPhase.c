@@ -9,8 +9,8 @@
 #include "string.h"
 #include "util.h"
 
-// Ensure field size remains a power of two at compile time
-_Static_assert((FIELD_SIZE & (FIELD_SIZE - 1)) == 0, "FIELD_SIZE must be a power of two");
+// Field size must be power of 2 for bitmask optimization
+_Static_assert((FIELD_SIZE & (FIELD_SIZE - 1)) == 0, "FIELD_SIZE must be a power of 2");
 
 /* Directions:
  00 -> up   --> state 0 ; state == value
@@ -65,8 +65,8 @@ static void createTile(uint32_t posX, uint32_t posY);
 
 void initFieldWithDefaultNumbers(const unsigned long maxPrimeIndex)
 {
-    //first check if the size of the field is power of 2!
-    assert((FIELD_SIZE & (FIELD_SIZE - 1)) == 0);
+    // Field size must be at least 8
+    assert(FIELD_SIZE >= 8);
 
     // Reset global state (needed when hashing many buffers in one process, e.g. avalanche test)
     pos.x = 0;
@@ -269,25 +269,33 @@ static void writeNextNumberOnMove(const int move)
     switch (move)
     {
         case UP:
-            pos.y = (uint32_t)(((int)pos.y - oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1));
+            // Break commutativity: vertical movement also affects X based on current Y
+            pos.y = (pos.y - oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
+            pos.x = (pos.x + (pos.y >> 1) + 1) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
             printf(" UP\n");
 #endif
             break;
         case DOWN:
-            pos.y = (uint32_t)(((int)pos.y + oldPrime) & (FIELD_SIZE - 1));
+            // Break commutativity: vertical movement also affects X based on current Y
+            pos.y = (pos.y + oldPrime) & (FIELD_SIZE - 1);
+            pos.x = (pos.x + (pos.y >> 1) + 3) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
             printf(" DOWN\n");
 #endif
             break;
         case LEFT:
-            pos.x = (uint32_t)(((int)pos.x - oldPrime) & (FIELD_SIZE - 1));
+            // Break commutativity: horizontal movement also affects Y based on current X
+            pos.x = (pos.x - oldPrime) & (FIELD_SIZE - 1);
+            pos.y = (pos.y + (pos.x >> 1) + 2) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
             printf(" LEFT\n");
 #endif
             break;
         case RIGHT:
-            pos.x = (uint32_t)(((int)pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1));
+            // Break commutativity: horizontal movement also affects Y based on current X
+            pos.x = (pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
+            pos.y = (pos.y + (pos.x >> 1) + 4) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
             printf(" RIGHT\n");
 #endif

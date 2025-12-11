@@ -11,8 +11,8 @@
 #define MIN_HASH_BITS 64
 #define BYTES_PER_MB 1048576.0
 
-// Field dimension (must remain a power of two)
-#define FIELD_SIZE 8 // 8 x 8 -> 1.000.000 over 64 = 10^294 >> 2^512
+// Field dimension (must be power of 2 for bitmask optimization)
+#define FIELD_SIZE 16 // 16 x 16 = 256 cells
 
 // Default I/O block size
 #define DEFAULT_IO_BLOCK_SIZE (4 * 1024 * 1024) // 4 MB default read chunk size
@@ -43,7 +43,7 @@ typedef struct
 } Tile_t;
 
 // Debug toggles
-#define DEBUG_MODE 0
-#define DEBUG_LOG_EXTENDED 0
+#define DEBUG_MODE 1
+#define DEBUG_LOG_EXTENDED 1
 
 #endif

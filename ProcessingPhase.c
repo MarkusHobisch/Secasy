@@ -28,7 +28,6 @@ char* calculateHashValue()
 {
     uint32_t posX = pos.x;
     uint32_t posY = pos.y;
-    const uint32_t mask = FIELD_SIZE - 1U;
     double iterations = numberOfBits / 64.0;
     int sizeOfOneIteration = (int) ceil(numberOfRounds / iterations + 0.5);
     if (sizeOfOneIteration <= 0) sizeOfOneIteration = 1;
@@ -44,7 +43,7 @@ char* calculateHashValue()
         {
             for (uint32_t j = 0; j < FIELD_SIZE; j++)
             {
-                Tile_t* tile = &field[(posX + i) & mask][(posY + j) & mask];
+                Tile_t* tile = &field[(posX + i) & (FIELD_SIZE - 1)][(posY + j) & (FIELD_SIZE - 1)];
                 processData(tile->colorIndex, i, j);
             }
         }

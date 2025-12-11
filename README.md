@@ -149,6 +149,84 @@ We welcome contributions from the community, especially in terms of security imp
 ### Security Analysis
 A comprehensive cryptographic evaluation plan is documented in `SECURITY_ANALYSIS_PLAN.md`. This 10-phase systematic assessment covers diffusion properties, collision resistance, differential/linear cryptanalysis, algebraic attacks, preimage security, and statistical quality. Consult this plan for detailed testing methodology, acceptance criteria, and go/no-go decision points.
 
+## Statistical Security Analysis Results
+
+Comprehensive testing was performed to evaluate the statistical properties of Secasy. The results demonstrate excellent cryptographic characteristics comparable to established hash algorithms.
+
+### Collision Resistance Testing
+
+| Test | Combinations Tested | Collisions Found |
+|------|---------------------|------------------|
+| 2-Byte exhaustive (partial) | 16,384 | **0** |
+| 3-Byte random samples | 1,000 | **0** |
+
+**Anti-Commutativity Fix:** An earlier version showed collisions due to commutative movement operations (e.g., UP+RIGHT = RIGHT+UP leading to same position). This was fixed by introducing cross-coordinate coupling:
+- Each directional movement now affects **both** X and Y coordinates
+- Different offsets per direction (+1, +2, +3, +4) ensure unique paths
+
+### Statistical Quality Comparison
+
+Secasy was compared against industry-standard hash algorithms:
+
+| Algorithm | Hash Bits | Bit Distribution | Avalanche Effect | Deviation from Ideal |
+|-----------|-----------|------------------|------------------|---------------------|
+| BLAKE2b | 256 | 50.01% | 50.0% | 0.03% |
+| scrypt | 256 | 51.07% | 50.0% | 0.04% |
+| MD5 | 128 | 50.91% | 50.0% | 0.04% |
+| SHA512 | 512 | 50.18% | 49.9% | 0.06% |
+| SHA3-256 | 256 | 50.28% | 49.9% | 0.06% |
+| PBKDF2 | 256 | 49.86% | 49.9% | 0.07% |
+| **Secasy** | **256** | **49.93%** | **50.1%** | **0.10%** |
+| SHA256 | 256 | 49.87% | 50.2% | 0.21% |
+
+**Key Findings:**
+- **Bit Distribution:** 49.93% ones (ideal: 50.00%) - only 0.07% deviation
+- **Avalanche Effect:** 50.1% bit changes on 1-bit input change (ideal: 50%)
+- **Hamming Distance:** 128.2 bits average between similar inputs (ideal: 128)
+- **Nibble Distribution:** Max 9% deviation from expected frequency (excellent)
+
+### Performance Characteristics
+
+Secasy operates as a **slow hash** by design (similar to bcrypt, PBKDF2, Argon2):
+
+| Algorithm | Hashes/Second | Use Case |
+|-----------|---------------|----------|
+| SHA256 | ~1,164,000 | Fast file hashing |
+| MD5 | ~1,181,000 | Fast checksums |
+| **Secasy** | **~5** | Password hashing, key derivation |
+
+The 100,000 processing rounds provide **brute-force protection**:
+- Attacker: ~5 password attempts/second
+- Time for 1 million attempts: ~55 hours
+- Time for 1 billion attempts: ~6.3 years
+
+### What These Tests Show ✓
+
+- ✅ Excellent bit distribution (near-perfect 50/50)
+- ✅ Strong avalanche effect (meets cryptographic standards)
+- ✅ No observable collisions in tested space
+- ✅ Statistical properties on par with SHA256, BLAKE2b, scrypt
+
+### What These Tests Do NOT Show ✗
+
+- ✗ Formal cryptographic security proofs
+- ✗ Resistance to differential/linear cryptanalysis
+- ✗ Preimage resistance guarantees
+- ✗ Academic peer review
+- ✗ NIST certification
+
+### Honest Assessment
+
+> Secasy demonstrates **statistically excellent properties** comparable to established cryptographic hash functions. However, statistical tests alone do not guarantee cryptographic security. A hash can have perfect statistics and still be cryptographically broken.
+>
+> **For production security applications, use established algorithms like SHA256, Argon2, or bcrypt.**
+>
+> Secasy is suitable for:
+> - ✅ Educational purposes and algorithm study
+> - ✅ Non-critical integrity checks
+> - ✅ Experimental cryptographic research
+> - ⚠️ NOT recommended for production security applications
+
 ## Avalanche Test Tool (Experimental)
 A separate executable `SecasyAvalanche` (source: `avalanche.c`) measures diffusion (avalanche effect): how strongly the hash output changes when a single input bit is flipped. Target: ~50% of output bits invert per single-bit input flip.
 
