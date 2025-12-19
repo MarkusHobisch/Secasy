@@ -13,29 +13,27 @@ void printField()
 {
     printf("\n------------------------------------ Prime Field ---------------------------------------\n\t --------------- Origin matrix - last position: [%u,%u] ---------------\n", pos.x, pos.y);
 
-    long long rowSums[FIELD_SIZE];
-    long long columnsSums[FIELD_SIZE];
-
-    calcSumOfRows(rowSums);
-    calcSumOfColumns(columnsSums);
-
     for (int j = 0; j < FIELD_SIZE; j++)
     {
+        long long rowSum = 0;
         for (int i = 0; i < FIELD_SIZE; i++)
         {
             printf("%16" PRIu64 " ", (uint64_t)field[i][j].value);
+            rowSum += field[i][j].value;
         }
-        printf("\t sum row: %" PRId64 "\n", (int64_t)rowSums[j]);
+        printf("\t sum row: %" PRId64 "\n", (int64_t)rowSum);
     }
 
     printf("\n\t --------------- Transposed matrix --------------- \n");
     for (int j = 0; j < FIELD_SIZE; j++)
     {
+        long long colSum = 0;
         for (int i = 0; i < FIELD_SIZE; i++)
         {
             printf("%16" PRIu64 " ", (uint64_t)field[j][i].value);
+            colSum += field[j][i].value;
         }
-        printf("\t sum column: %" PRId64 "\n", (int64_t)columnsSums[j]);
+        printf("\t sum column: %" PRId64 "\n", (int64_t)colSum);
     }
     printf("\n\n");
 }
@@ -71,21 +69,25 @@ void printSumsAndValues()
     printf("\n");
     printf("- Print row sums: \n");
 
-    long long rowSums[FIELD_SIZE];
-    long long columnsSums[FIELD_SIZE];
-
-    calcSumOfRows(rowSums);
-    calcSumOfColumns(columnsSums);
-
-    for (int i = 0; i < FIELD_SIZE; ++i)
+    for (int j = 0; j < FIELD_SIZE; ++j)
     {
-        printf("  Row: %" PRId64 "\n", (int64_t)rowSums[i]);
+        long long rowSum = 0;
+        for (int i = 0; i < FIELD_SIZE; ++i)
+        {
+            rowSum += field[i][j].value;
+        }
+        printf("  Row: %" PRId64 "\n", (int64_t)rowSum);
     }
     printf("\n");
     printf("- Print column sums: \n");
     for (int j = 0; j < FIELD_SIZE; ++j)
     {
-        printf("  Column: %" PRId64 "\n", (int64_t)columnsSums[j]);
+        long long colSum = 0;
+        for (int i = 0; i < FIELD_SIZE; ++i)
+        {
+            colSum += field[j][i].value;
+        }
+        printf("  Column: %" PRId64 "\n", (int64_t)colSum);
     }
     printf("\n");
     printf("- Last prime was %d\n", lastPrime);

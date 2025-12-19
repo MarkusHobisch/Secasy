@@ -3,10 +3,6 @@
 
 long long generateHashValue(void);
 
-void calcSumOfRows(long long* rowSums);
-
-void calcSumOfColumns(long long* columnsSums);
-
 long long calcSumOfProducts(void);
 
 #endif

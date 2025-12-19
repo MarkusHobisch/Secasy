@@ -7,25 +7,6 @@ extern int lastPrime;
 
 static long long calcSumOfField(void);
 
-/* 64-bit mixing function (MurmurHash3-style) */
-static inline uint64_t mix64(uint64_t x) {
-    x ^= x >> 33;
-    x *= 0xff51afd7ed558ccdULL;
-    x ^= x >> 33;
-    x *= 0xc4ceb9fe1a85ec53ULL;
-    x ^= x >> 33;
-    return x;
-}
-
-/* Non-commutative accumulator: order matters! */
-static inline uint64_t accumulate(uint64_t acc, uint64_t val, int pos) {
-    /* Rotate accumulator by position-dependent amount */
-    int rot = (pos * 7 + 3) % 64;
-    uint64_t rotated = (acc << rot) | (acc >> (64 - rot));
-    /* Mix in the value with position encoding */
-    return mix64(rotated ^ val ^ ((uint64_t)(pos + 1) * 0x9E3779B97F4A7C15ULL));
-}
-
 long long generateHashValue()
 {
     const long long checksum = calcSumOfProducts() ^ lastPrime;
@@ -33,67 +14,31 @@ long long generateHashValue()
     return checksum ^ fieldSum;
 }
 
-void calcSumOfRows(long long* rowSums)
-{
-    long long sum = 0;
-    for (int j = 0; j < FIELD_SIZE; j++)
-    {
-        for (int i = 0; i < FIELD_SIZE; i++)
-        {
-            sum += field[i][j].value;
-        }
-        rowSums[j] = sum;
-        sum = 0;
-    }
-}
-
-void calcSumOfColumns(long long* columnsSums)
-{
-    long long sum = 0;
-    for (int j = 0; j < FIELD_SIZE; j++)
-    {
-        for (int i = 0; i < FIELD_SIZE; i++)
-        {
-            sum += field[j][i].value;
-        }
-        columnsSums[j] = sum;
-        sum = 0;
-    }
-}
-
 long long calcSumOfProducts()
 {
-    long long rowSums[FIELD_SIZE];
-    long long columnsSums[FIELD_SIZE];
-
-    calcSumOfRows(rowSums);
-    calcSumOfColumns(columnsSums);
-
     /*
-     * FIX v2: Use non-commutative accumulation instead of multiplication.
-     * 
-     * Problem: product = a * b * c is commutative (order doesn't matter)
-     * Solution: Use position-dependent rotation + mixing
-     * 
-     * This ensures:
-     * - [17,17,17,16,16,16,17,17] produces different hash than
-     * - [17,17,17,17,16,16,16,17] even though they have same product
+     * Simple position-dependent accumulation.
+     * The position (x,y) is incorporated directly, making the
+     * order of values relevant (non-commutative).
      */
-    uint64_t accRow = 0x243F6A8885A308D3ULL;  /* Seed: first digits of Pi */
-    uint64_t accCol = 0x13198A2E03707344ULL;  /* Seed: more Pi digits */
-
-    for (int i = 0; i < FIELD_SIZE; i++)
+    long long acc = 0;
+    
+    for (int x = 0; x < FIELD_SIZE; x++)
     {
-        accRow = accumulate(accRow, (uint64_t)rowSums[i], i);
-    }
-
-    for (int i = 0; i < FIELD_SIZE; i++)
-    {
-        accCol = accumulate(accCol, (uint64_t)columnsSums[i], i);
+        for (int y = 0; y < FIELD_SIZE; y++)
+        {
+            /* Position as unique index */
+            long long pos = (long long)(x * FIELD_SIZE + y + 1);
+            
+            /* XOR with position-weighted value */
+            acc ^= field[x][y].value * pos;
+            
+            /* Simple 7-bit rotation */
+            acc = (acc << 7) | ((unsigned long long)acc >> 57);
+        }
     }
     
-    /* Combine the two accumulators */
-    return (long long)(mix64(accRow ^ accCol));
+    return acc;
 }
 
 static long long calcSumOfField(void)
