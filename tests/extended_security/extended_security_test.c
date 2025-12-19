@@ -29,13 +29,13 @@
 
 /* Global variables required by Secasy */
 unsigned long numberOfRounds = DEFAULT_ROUNDS;
-int numberOfBits = 128;
+int hashLengthInBits = 128;
 
 /* ========== Hash Wrapper ========== */
 
 static int g_rounds = DEFAULT_ROUNDS;
 static int g_primeIndex = DEFAULT_PRIME_INDEX;
-static int g_hashBits = 128;
+static int g_hashParam = 128; /* forwarded to Secasy's global hashLengthInBits */
 
 void compute_hash(const uint8_t *input, size_t len, char *hashOut) {
     /* Write to temp file */
@@ -46,7 +46,7 @@ void compute_hash(const uint8_t *input, size_t len, char *hashOut) {
     
     /* Compute hash */
     numberOfRounds = g_rounds;
-    numberOfBits = g_hashBits;
+    hashLengthInBits = g_hashParam;
     initFieldWithDefaultNumbers(g_primeIndex);
     readAndProcessFile("_ext_sec_temp.bin");
     
@@ -150,8 +150,7 @@ int test_length_extension(int trials) {
 int test_bit_independence(int trials) {
     printf("\n=== TEST 2: Bit Independence (Correlation) ===\n");
     
-    int hashBits = g_hashBits;
-    int maxBits = hashBits < 64 ? hashBits : 64; /* Limit for performance */
+    int maxBits = 64; /* Limit for performance */
     
     /* Correlation matrix between bit pairs */
     int *both_flip = calloc(maxBits * maxBits, sizeof(int));
@@ -331,8 +330,18 @@ int test_structured_inputs(void) {
     int count = 0;
     int minDist = 9999, maxDist = 0;
     
+    int fastMode = 0;
+    {
+        const char* fast = getenv("SECASY_EXT_FAST");
+        fastMode = (fast && fast[0] && strcmp(fast, "0") != 0);
+    }
+
+    uint32_t seqIters = fastMode ? 200U : 1000U;
+    int singleBitIters = fastMode ? 32 : 64;
+    int numPatterns = fastMode ? 4 : 6;
+
     printf("\n4a. Sequential counters (0, 1, 2, ...):\n");
-    for (uint32_t i = 0; i < 1000; i++) {
+    for (uint32_t i = 0; i < seqIters; i++) {
         uint8_t msg[4] = {
             (i >> 24) & 0xFF,
             (i >> 16) & 0xFF,
@@ -363,7 +372,7 @@ int test_structured_inputs(void) {
     totalDist = 0; count = 0; minDist = 9999; maxDist = 0;
     hash_prev[0] = 0;
     
-    for (int bit = 0; bit < 64; bit++) {
+    for (int bit = 0; bit < singleBitIters; bit++) {
         uint8_t msg[8] = {0};
         msg[bit / 8] = 1 << (bit % 8);
         compute_hash(msg, 8, hash_curr);
@@ -387,7 +396,6 @@ int test_structured_inputs(void) {
     
     printf("\n4c. Repeating patterns (AAAA..., ABAB..., etc):\n");
     const char *patterns[] = {"AAAA", "ABAB", "ABCD", "0000", "FFFF", "0F0F"};
-    int numPatterns = 6;
     
     char patternHashes[6][MAX_HASH_LEN];
     for (int p = 0; p < numPatterns; p++) {
@@ -493,7 +501,7 @@ int main(int argc, char *argv[]) {
         } else if (strcmp(argv[i], "-i") == 0 && i+1 < argc) {
             g_primeIndex = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-n") == 0 && i+1 < argc) {
-            g_hashBits = atoi(argv[++i]);
+            g_hashParam = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-s") == 0 && i+1 < argc) {
             seed = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-h") == 0) {
@@ -502,7 +510,7 @@ int main(int argc, char *argv[]) {
             printf("  -t <trials>  Number of trials (default: 1000)\n");
             printf("  -r <rounds>  Hash rounds (default: 1000)\n");
             printf("  -i <index>   Max prime index (default: 200)\n");
-            printf("  -n <bits>    Hash output bits (default: 128)\n");
+            printf("  -n <param>   Secasy hashLengthInBits parameter (default: 128)\n");
             printf("  -s <seed>    Random seed\n");
             return 0;
         }
@@ -514,7 +522,16 @@ int main(int argc, char *argv[]) {
     printf("   EXTENDED SECURITY TESTS FOR SECASY HASH\n");
     printf("==============================================\n");
     printf("Trials: %d, Rounds: %d, Seed: %d\n", trials, g_rounds, seed);
-    printf("Hash bits: %d, Prime index: %d\n", g_hashBits, g_primeIndex);
+    printf("hashLengthInBits param: %d, Prime index: %d\n", g_hashParam, g_primeIndex);
+
+    /* Probe actual output length for this configuration */
+    {
+        uint8_t probe[1] = {0};
+        char probeHash[MAX_HASH_LEN];
+        compute_hash(probe, sizeof(probe), probeHash);
+        int hexChars = (int)strlen(probeHash);
+        printf("Produced hash length: %d hex chars (%d bits)\n", hexChars, hexChars * 4);
+    }
     
     int passed = 0, total = 5;
     

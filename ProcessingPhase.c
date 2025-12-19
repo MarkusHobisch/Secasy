@@ -12,29 +12,37 @@
 extern Position_t pos;
 extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 extern unsigned long numberOfRounds;
-extern int numberOfBits;
+extern int hashLengthInBits;
 
 static void processData(ColorIndex_t colorIndex, uint32_t posX, uint32_t posY);
 
-static char* initHashValueBuffer(void);
-
-static bool isPartialRoundCompleted(unsigned long roundCounter, int sizeOfOneIteration);
+static char* initHashValueBuffer(size_t desiredCapacity, size_t* outCapacity);
 
 static void setPositionsToZeroIfOutOfRange(uint32_t* posX, uint32_t* posY);
 
-static void storeHashValueInBuffer(char* buffer);
+static void storeHashValueInBufferFromBase(uint64_t base, uint64_t tweak, char* buffer);
 
 char* calculateHashValue()
 {
     uint32_t posX = pos.x;
     uint32_t posY = pos.y;
-    double iterations = numberOfBits / 64.0;
-    int sizeOfOneIteration = (int) ceil(numberOfRounds / iterations + 0.5);
-    if (sizeOfOneIteration <= 0) sizeOfOneIteration = 1;
 
-    char* hashValue = initHashValueBuffer();
+    /*
+     * `hashLengthInBits` defines the produced hash length in *bits*.
+     * Output is returned as hex, so bits/4 hex chars.
+     * Enforce minimum 64 bits; CLI already validates power-of-two.
+     */
+    int effectiveNumberOfBits = hashLengthInBits;
+    if (effectiveNumberOfBits < MIN_HASH_OUTPUT_BITS) {
+        effectiveNumberOfBits = MIN_HASH_OUTPUT_BITS;
+    }
+
+    const size_t outHexChars = (size_t)effectiveNumberOfBits / 4U;
+    const size_t outCapacityBytes = outHexChars + 1U;
+
+    size_t capacity = 0;
+    char* hashValue = initHashValueBuffer(outCapacityBytes, &capacity);
     size_t writePos = 0;
-    size_t capacity = (size_t)numberOfBits;
 
     unsigned long roundCounter;
     for (roundCounter = 0; roundCounter < numberOfRounds; roundCounter++)
@@ -48,42 +56,44 @@ char* calculateHashValue()
             }
         }
         setPositionsToZeroIfOutOfRange(&posX, &posY);
-        if (isPartialRoundCompleted(roundCounter, sizeOfOneIteration))
-        {
-            LOG_DEBUG("partial segment %lu", roundCounter / (unsigned long)sizeOfOneIteration);
-            char segment[64];
-            storeHashValueInBuffer(segment);
-            size_t segLen = strlen(segment);
-            if (writePos + segLen + 1 < capacity) {
-                memcpy(hashValue + writePos, segment, segLen + 1);
-                writePos += segLen;
-            } else {
-                LOG_ERROR("hash buffer capacity exceeded (needed %zu, cap %zu)", writePos + segLen + 1, capacity);
-                break;
-            }
-        }
     }
-    unsigned long numberOfLastRound = roundCounter > 1 ? roundCounter / (unsigned long)sizeOfOneIteration + 1UL : 1UL;
-    LOG_DEBUG("final partial segment %lu", numberOfLastRound);
-    char finalSeg[64];
-    storeHashValueInBuffer(finalSeg);
-    size_t fLen = strlen(finalSeg);
-    if (writePos + fLen + 1 < capacity) {
-        memcpy(hashValue + writePos, finalSeg, fLen + 1);
-        writePos += fLen;
-    } else {
-        LOG_ERROR("hash buffer capacity exceeded on final segment (needed %zu, cap %zu)", writePos + fLen + 1, capacity);
+
+    /* Expand from the final state into as many 128-bit blocks as needed. */
+    const uint64_t base = (uint64_t)generateHashValue();
+    size_t producedHex = 0;
+    for (uint64_t block = 0; producedHex < outHexChars; block++)
+    {
+        char seg[64];
+        storeHashValueInBufferFromBase(base, block, seg);
+        const size_t segLen = strlen(seg); /* should be 32 */
+        const size_t remaining = outHexChars - producedHex;
+        const size_t take = (segLen < remaining) ? segLen : remaining;
+        if (writePos + take + 1U <= capacity) {
+            memcpy(hashValue + writePos, seg, take);
+            writePos += take;
+            hashValue[writePos] = '\0';
+            producedHex += take;
+        } else {
+            LOG_ERROR("hash buffer capacity exceeded during expansion (needed %zu, cap %zu)", writePos + take + 1U, capacity);
+            break;
+        }
     }
     return hashValue;
 }
 
-static char* initHashValueBuffer(void)
+static char* initHashValueBuffer(size_t desiredCapacity, size_t* outCapacity)
 {
-    char* buffer = (char*)calloc((size_t)numberOfBits, 1);
+    size_t capacity = desiredCapacity;
+
+    char* buffer = (char*)calloc(capacity, 1);
     if (!buffer)
     {
-        LOG_ERROR("Out of memory allocating hash buffer (%d bytes)", numberOfBits);
+        LOG_ERROR("Out of memory allocating hash buffer (%zu bytes)", capacity);
         exit(EXIT_FAILURE);
+    }
+
+    if (outCapacity) {
+        *outCapacity = capacity;
     }
     return buffer;
 }
@@ -227,17 +237,11 @@ static void setPositionsToZeroIfOutOfRange(uint32_t* posX, uint32_t* posY)
     }
 }
 
-static bool isPartialRoundCompleted(const unsigned long roundCounter, const int sizeOfOneIteration)
-{
-    return roundCounter > 0 && roundCounter % (unsigned long)sizeOfOneIteration == 0UL;
-}
 
-static void storeHashValueInBuffer(char* buffer)
+static void storeHashValueInBufferFromBase(uint64_t base, uint64_t tweak, char* buffer)
 {
-    /* Base value */
-    long long base = generateHashValue();
-    /* Derive two additional 64-bit accumulators from base via split/mix */
-    uint64_t v = (uint64_t)base;
+    /* Derive two additional 64-bit accumulators from base via split/mix plus a per-block tweak */
+    uint64_t v = (uint64_t)base ^ (mix64(tweak + 0x9e3779b185ebca87ULL));
     uint64_t a = v + 0x9e3779b185ebca87ULL;
     uint64_t b = v ^ 0xc2b2ae3d27d4eb4fULL;
     /* 64-bit fmix similar to Murmur final */

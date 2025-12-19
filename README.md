@@ -108,7 +108,7 @@ This command ensures that the GCC compiler runs within the Linux environment pro
 
 Secasy is a command line tool. It supports 3 arguments.
 
-+ n: bit size of hash value. e.g. -n 1024
++ n: bit size of hash value (power of two, >= 64). e.g. -n 256
 + i: max prime index for calculation of prime numbers. e.g. -i 100 (25 prime numbers in the range from 1 to 100)
 + r: number of rounds during hashing step. e.g -r 1000
 + f: path of filename: e.g. -f input.pdf
@@ -117,7 +117,7 @@ At least the argument of the filename must be specified.
 
 ### Default values
 
-+ numberOfBits (n): 512
++ hashLengthInBits (n): 512
 + maximumPrimeIndex (i): 16.000.000
 + numberOfRounds (r): 100.000
 
@@ -263,14 +263,14 @@ gcc -Ofast -march=native -mtune=native -funroll-loops avalanche.c Calculations.c
 
 ### Usage
 ```
-./SecasyAvalanche -m <messages> -l <lenBytes> -B <bitFlipsPerMessage> -r <rounds> -n <hashBufferChars> -i <maxPrimeIndex> -s <seed> -S <file>
+./SecasyAvalanche -m <messages> -l <lenBytes> -B <bitFlipsPerMessage> -r <rounds> -n <bits> -i <maxPrimeIndex> -s <seed> -S <file>
 ```
 Parameter descriptions:
 - `-m` Number of random base messages (default 50)
 - `-l` Length of each input (bytes, default 64)
 - `-B` Bit flips per message (0 = flip all bits sequentially; default 64). Sampling reduces runtime.
 - `-r` Rounds in the core (same meaning as main tool)
-- `-n` Size of the internal hash character buffer (not a strict bit length; legacy naming). Recommended: 512, 1024, ...
+- `-n` Hash output bit size (power of two, >= 64). e.g. 64, 128, 256, 512
 - `-i` Maximum prime index
 - `-s` Seed (omit for time-based)
 - `-S` **NEW:** Export Strict Avalanche Criterion (SAC) matrix to CSV file. Measures per-input-bit → per-output-bit flip probabilities for detailed diffusion analysis.
@@ -311,7 +311,7 @@ BUILD_TYPE=Debug BUILD_DIR=build-debug JOBS=4 ./scripts/run_extended_avalanche_w
 | -l | Input length (bytes) |
 | -B | Bit flips per message (0 = all bits sequentially) |
 | -r | Rounds of the core hash |
-| -n | Internal hash buffer size (characters) |
+| -n | Hash output bit size (power of two, >= 64) |
 | -i | Maximum prime index |
 | -s | Seed (deterministic RNG) |
 | -H | Histogram buckets (classic avalanche ratio) |
@@ -368,7 +368,7 @@ Generate `m` random messages (fixed length), hash each, insert the hexadecimal s
 ### Invocation (primary flags)
 ```
 ./SecasyCollision \
-  -m <messages>      # Number of random messages (default 5000)\n  -l <lenBytes>      # Message length in bytes (default 64)\n  -r <rounds>        # Core rounds (same meaning as main hash)\n  -n <hashBufBits>   # Internal hash buffer (chars *4 ≈ upper bit bound)\n  -s <seed>          # Seed for deterministic RNG\n  -T <truncBits>     # Use only first <truncBits> bits for collision detection\n  -F                 # Global hex symbol frequency + Chi^2 (0-f)\n  -P                 # Positional hex frequency + Chi^2 per position\n  -p <pos>           # Detailed single position output\n  -B <nBytes>        # Leading byte distribution + Chi^2 (256 classes)\n  -X <list>          # Sweep: multiple truncation bit sizes (comma separated)
+  -m <messages>      # Number of random messages (default 5000)\n  -l <lenBytes>      # Message length in bytes (default 64)\n  -r <rounds>        # Core rounds (same meaning as main hash)\n  -n <bits>          # Hash output bit size (power of two, >= 64)\n  -s <seed>          # Seed for deterministic RNG\n  -T <truncBits>     # Use only first <truncBits> bits for collision detection\n  -F                 # Global hex symbol frequency + Chi^2 (0-f)\n  -P                 # Positional hex frequency + Chi^2 per position\n  -p <pos>           # Detailed single position output\n  -B <nBytes>        # Leading byte distribution + Chi^2 (256 classes)\n  -X <list>          # Sweep: multiple truncation bit sizes (comma separated)
 ```
 
 ### Sweep Mode (-X)

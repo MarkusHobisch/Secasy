@@ -9,6 +9,7 @@
 
 // Added readability / reuse constants
 #define MIN_HASH_BITS 64
+#define MIN_HASH_OUTPUT_BITS 64
 #define BYTES_PER_MB 1048576.0
 
 // Field dimension (must be power of 2 for bitmask optimization)
@@ -43,7 +44,14 @@ typedef struct
 } Tile_t;
 
 // Debug toggles
-#define DEBUG_MODE 1
-#define DEBUG_LOG_EXTENDED 1
+// Default: OFF for faster runs and clean output.
+// Override at compile time, e.g. -DDEBUG_MODE=1 -DDEBUG_LOG_EXTENDED=1
+#ifndef DEBUG_MODE
+#define DEBUG_MODE 0
+#endif
+
+#ifndef DEBUG_LOG_EXTENDED
+#define DEBUG_LOG_EXTENDED 0
+#endif
 
 #endif

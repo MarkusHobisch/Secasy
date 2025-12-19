@@ -21,7 +21,7 @@ extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 
 // Define globals that main.c normally defines
 unsigned long numberOfRounds = 100000;  // Standard setting
-int numberOfBits = 128;
+int hashLengthInBits = 128;
 
 // Store hash results
 typedef struct {
@@ -90,7 +90,7 @@ static void compute_hash(unsigned char* input, size_t len, char* out_hash) {
 
 int main(int argc, char* argv[]) {
     printf("=== Secasy Collision Attack ===\n");
-    printf("Rounds: %lu, Bits: %d\n", numberOfRounds, numberOfBits);
+    printf("Rounds: %lu, Bits: %d\n", numberOfRounds, hashLengthInBits);
     printf("Attempting to find collisions...\n\n");
     
     entries = (HashEntry*)calloc(MAX_ENTRIES, sizeof(HashEntry));

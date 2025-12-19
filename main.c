@@ -23,7 +23,7 @@
 // maRkus -> 57dc2a5605a7d4ef
 // -n 64
 unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
-int numberOfBits = DEFAULT_BIT_SIZE;
+int hashLengthInBits = DEFAULT_BIT_SIZE;
 static unsigned long maximumPrimeIndex = DEFAULT_MAX_PRIME_INDEX;
 static char* inputFilename = NULL;
 static unsigned long long inputFileSize = 0ULL;
@@ -158,17 +158,17 @@ static void readAndStoreNumberOfBitsOption()
         LOG_ERROR("Invalid value for bit size");
         exit(EXIT_FAILURE);
     }
-    if (val < MIN_HASH_BITS)
+    if (val < MIN_HASH_OUTPUT_BITS)
     {
-        LOG_ERROR("Bit size lower than %d not supported", MIN_HASH_BITS);
+        LOG_ERROR("Bit size lower than %d not supported", MIN_HASH_OUTPUT_BITS);
         exit(EXIT_FAILURE);
     }
     if (!is_power_of_two(val))
     {
-        LOG_ERROR("Bit size must be a power of two");
+        LOG_ERROR("Bit size must be a power of two (64, 128, 256, ...)");
         exit(EXIT_FAILURE);
     }
-    numberOfBits = (int)val;
+    hashLengthInBits = (int)val;
 }
 
 static void readAndStoreFilenameOption()
@@ -193,7 +193,8 @@ static void printHelperText()
     printf("\n");
     printf("+--------------------------------------------------------------------------------------------------+\n");
     printf("| Arguments: [-r] [-i] [-n] [-f] [-h]                                                             |\n");
-    printf("|  -n <bits>  : bit size of hash value (power of two, >= %d)                                       |\n", MIN_HASH_BITS);
+    printf("|  -n <bits>  : bit size of hash value (power of two, >= %d)                                     |\n",
+           MIN_HASH_OUTPUT_BITS);
     printf("|  -i <index> : max prime index for calculation of prime numbers                                  |\n");
     printf("|  -r <rounds>: number of processing rounds                                                        |\n");
     printf("|  -f <file>  : input filename                                                                     |\n");
@@ -206,7 +207,7 @@ static void printCommandLineOptions()
     LOG_INFO("inputFilename: %s", inputFilename ? inputFilename : "(null)");
     LOG_INFO("numberOfRounds: %lu", numberOfRounds);
     LOG_INFO("maximumPrimeIndex: %lu", maximumPrimeIndex);
-    LOG_INFO("numberOfBits: %d", numberOfBits);
+    LOG_INFO("hashLengthInBits: %d", hashLengthInBits);
     if (inputFileSize)
     {
         LOG_INFO("detected file size: %llu bytes", (unsigned long long)inputFileSize);

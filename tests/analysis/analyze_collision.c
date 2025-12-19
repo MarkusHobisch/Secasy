@@ -15,7 +15,7 @@ extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 extern Position_t pos;
 extern int lastPrime;
 unsigned long numberOfRounds = 100000;
-int numberOfBits = 128;
+int hashLengthInBits = 128;
 
 int main(void) {
     printf("=== Analyzing WHY collision occurs ===\n\n");

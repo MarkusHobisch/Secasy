@@ -58,15 +58,72 @@ add_executable(SecasyCollision
         SieveOfEratosthenes.h
         util.h)
 
+# Differential security test executable
+add_executable(SecasyDifferential
+    tests/differential/differential_test.c
+        Calculations.c
+        InitializationPhase.c
+        Printing.c
+        ProcessingPhase.c
+        SieveOfEratosthenes.c
+        util.c
+        Defines.h
+        Calculations.h
+        InitializationPhase.h
+        Printing.h
+        ProcessingPhase.h
+        SieveOfEratosthenes.h
+        util.h)
+
+# Extended security test executable
+add_executable(SecasyExtendedSecurity
+    tests/extended_security/extended_security_test.c
+        Calculations.c
+        InitializationPhase.c
+        Printing.c
+        ProcessingPhase.c
+        SieveOfEratosthenes.c
+        util.c
+        Defines.h
+        Calculations.h
+        InitializationPhase.h
+        Printing.h
+        ProcessingPhase.h
+        SieveOfEratosthenes.h
+        util.h)
+
+# Truncation collision PoC executable
+add_executable(SecasyTruncCollisionPoC
+    tests/poc/trunc_collision_poc.c
+        Calculations.c
+        InitializationPhase.c
+        Printing.c
+        ProcessingPhase.c
+        SieveOfEratosthenes.c
+        util.c
+        Defines.h
+        Calculations.h
+        InitializationPhase.h
+        Printing.h
+        ProcessingPhase.h
+        SieveOfEratosthenes.h
+        util.h)
+
 # Ensure subdirectory test sources can include headers at project root
 target_include_directories(SecasyAvalanche PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(SecasyCollision PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(SecasyDifferential PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(SecasyExtendedSecurity PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(SecasyTruncCollisionPoC PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Large file support for Unix-like systems
 if (NOT WIN32)
     target_compile_definitions(Secasy PRIVATE _FILE_OFFSET_BITS=64)
     target_compile_definitions(SecasyAvalanche PRIVATE _FILE_OFFSET_BITS=64)
     target_compile_definitions(SecasyCollision PRIVATE _FILE_OFFSET_BITS=64)
+    target_compile_definitions(SecasyDifferential PRIVATE _FILE_OFFSET_BITS=64)
+    target_compile_definitions(SecasyExtendedSecurity PRIVATE _FILE_OFFSET_BITS=64)
+    target_compile_definitions(SecasyTruncCollisionPoC PRIVATE _FILE_OFFSET_BITS=64)
 endif()
 
 # Warning / optimization flags (do not force -Ofast so user can choose with CMAKE_BUILD_TYPE)
@@ -77,11 +134,17 @@ else()
     target_compile_options(Secasy PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
     target_compile_options(SecasyAvalanche PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
     target_compile_options(SecasyCollision PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
+    target_compile_options(SecasyDifferential PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
+    target_compile_options(SecasyExtendedSecurity PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
+    target_compile_options(SecasyTruncCollisionPoC PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
     # Enable ANSI stdio on MinGW so %zu etc. are recognized and reduce format warnings
     if (MINGW)
     target_compile_definitions(Secasy PRIVATE __USE_MINGW_ANSI_STDIO=1)
     target_compile_definitions(SecasyAvalanche PRIVATE __USE_MINGW_ANSI_STDIO=1)
     target_compile_definitions(SecasyCollision PRIVATE __USE_MINGW_ANSI_STDIO=1)
+    target_compile_definitions(SecasyDifferential PRIVATE __USE_MINGW_ANSI_STDIO=1)
+    target_compile_definitions(SecasyExtendedSecurity PRIVATE __USE_MINGW_ANSI_STDIO=1)
+    target_compile_definitions(SecasyTruncCollisionPoC PRIVATE __USE_MINGW_ANSI_STDIO=1)
     endif()
 endif()
 
@@ -101,4 +164,7 @@ if (NOT WIN32)
     target_link_libraries(Secasy PRIVATE m)
     target_link_libraries(SecasyAvalanche PRIVATE m)
     target_link_libraries(SecasyCollision PRIVATE m)
+    target_link_libraries(SecasyDifferential PRIVATE m)
+    target_link_libraries(SecasyExtendedSecurity PRIVATE m)
+    target_link_libraries(SecasyTruncCollisionPoC PRIVATE m)
 endif()

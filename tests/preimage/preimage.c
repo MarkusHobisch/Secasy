@@ -61,7 +61,7 @@
 
 // Global variables required by Secasy components (from main.c)
 unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
-int numberOfBits = DEFAULT_BIT_SIZE;
+int hashLengthInBits = DEFAULT_BIT_SIZE;
 
 // Global test parameters
 static int g_maxAttempts = 1000000;

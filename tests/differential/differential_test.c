@@ -21,7 +21,7 @@
 
 // Globals required by Secasy
 unsigned long numberOfRounds = 1000;
-int numberOfBits = 256;
+int hashLengthInBits = 256;
 
 // Compute hash and return hex string
 char* compute_hash(const unsigned char* data, size_t len, int maxPrimeIndex) {
@@ -49,6 +49,10 @@ int hamming_distance_hex(const char* h1, const char* h2) {
     return dist;
 }
 
+static size_t hex_hash_bits(const char* hex) {
+    return strlen(hex) * 4U;
+}
+
 // Test 1: Sequential counter inputs (0, 1, 2, 3, ...)
 void test_sequential_inputs(int count, int inputLen, int maxPrimeIndex) {
     printf("\n=== TEST 1: Sequential Counter Inputs ===\n");
@@ -61,6 +65,7 @@ void test_sequential_inputs(int count, int inputLen, int maxPrimeIndex) {
     int comparisons = 0;
     int min_hamming = INT_MAX;
     int max_hamming = 0;
+    size_t hash_bits = 0;
     
     for (int i = 0; i < count; i++) {
         // Set input as counter value
@@ -69,6 +74,10 @@ void test_sequential_inputs(int count, int inputLen, int maxPrimeIndex) {
         }
         
         char* hash = compute_hash(input, inputLen, maxPrimeIndex);
+
+        if (hash_bits == 0) {
+            hash_bits = hex_hash_bits(hash);
+        }
         
         if (prev_hash) {
             int dist = hamming_distance_hex(prev_hash, hash);
@@ -85,17 +94,18 @@ void test_sequential_inputs(int count, int inputLen, int maxPrimeIndex) {
     if (prev_hash) free(prev_hash);
     
     double mean = total_hamming / comparisons;
-    size_t hash_bits = numberOfBits * 4; // Approximate bit count
-    double expected = hash_bits * 0.5;
+    double expected = (double)hash_bits * 0.5;
     
     printf("Results:\n");
     printf("  Comparisons: %d\n", comparisons);
     printf("  Mean Hamming distance: %.2f bits\n", mean);
     printf("  Expected (ideal): %.2f bits\n", expected);
     printf("  Min: %d, Max: %d\n", min_hamming, max_hamming);
-    printf("  Deviation from ideal: %.2f%%\n", fabs(mean - expected) / expected * 100);
+    if (expected > 0.0) {
+        printf("  Deviation from ideal: %.2f%%\n", fabs(mean - expected) / expected * 100);
+    }
     
-    if (fabs(mean - expected) / expected < 0.1) {
+    if (expected > 0.0 && fabs(mean - expected) / expected < 0.1) {
         printf("  Status: ✓ PASS - Good diffusion for sequential inputs\n");
     } else {
         printf("  Status: ⚠ WARNING - Potential weakness detected\n");
@@ -114,6 +124,7 @@ void test_single_bit_pairs(int count, int inputLen, int maxPrimeIndex) {
     double total_hamming = 0;
     int min_hamming = INT_MAX;
     int max_hamming = 0;
+    size_t hash_bits = 0;
     
     for (int i = 0; i < count; i++) {
         // Generate random input
@@ -129,6 +140,10 @@ void test_single_bit_pairs(int count, int inputLen, int maxPrimeIndex) {
         
         char* hash1 = compute_hash(input1, inputLen, maxPrimeIndex);
         char* hash2 = compute_hash(input2, inputLen, maxPrimeIndex);
+
+        if (hash_bits == 0) {
+            hash_bits = hex_hash_bits(hash1);
+        }
         
         int dist = hamming_distance_hex(hash1, hash2);
         total_hamming += dist;
@@ -143,17 +158,18 @@ void test_single_bit_pairs(int count, int inputLen, int maxPrimeIndex) {
     free(input2);
     
     double mean = total_hamming / count;
-    size_t hash_bits = numberOfBits * 4;
-    double expected = hash_bits * 0.5;
+    double expected = (double)hash_bits * 0.5;
     
     printf("Results:\n");
     printf("  Pairs tested: %d\n", count);
     printf("  Mean Hamming distance: %.2f bits\n", mean);
     printf("  Expected (ideal): %.2f bits\n", expected);
     printf("  Min: %d, Max: %d\n", min_hamming, max_hamming);
-    printf("  Deviation from ideal: %.2f%%\n", fabs(mean - expected) / expected * 100);
+    if (expected > 0.0) {
+        printf("  Deviation from ideal: %.2f%%\n", fabs(mean - expected) / expected * 100);
+    }
     
-    if (min_hamming < expected * 0.3) {
+    if (expected > 0.0 && min_hamming < expected * 0.3) {
         printf("  Status: ⚠ WARNING - Low minimum distance found!\n");
     } else {
         printf("  Status: ✓ PASS - Good minimum distance\n");
@@ -191,8 +207,8 @@ void test_related_inputs(int count, int inputLen, int maxPrimeIndex) {
     // Check for collisions or near-collisions
     int collisions = 0;
     int near_collisions = 0; // < 10% of expected distance
-    size_t hash_bits = numberOfBits * 4;
-    double threshold = hash_bits * 0.1;
+    size_t hash_bits = (count > 0 && hashes[0]) ? hex_hash_bits(hashes[0]) : 0U;
+    double threshold = (double)hash_bits * 0.1;
     
     for (int i = 0; i < count; i++) {
         for (int j = i + 1; j < count; j++) {
@@ -231,14 +247,6 @@ void test_sparse_inputs(int maxPrimeIndex) {
     int inputLen = 32;
     unsigned char* input = calloc(inputLen, 1);
     
-    // Test various sparse patterns
-    struct {
-        const char* name;
-        void (*setup)(unsigned char*, int);
-    } patterns[] = {
-        {"All zeros", NULL},
-    };
-    
     // All zeros
     memset(input, 0x00, inputLen);
     char* hash_zeros = compute_hash(input, inputLen, maxPrimeIndex);
@@ -260,8 +268,8 @@ void test_sparse_inputs(int maxPrimeIndex) {
     int dist_zeros_single = hamming_distance_hex(hash_zeros, hash_single);
     int dist_zeros_alt = hamming_distance_hex(hash_zeros, hash_alt);
     
-    size_t hash_bits = numberOfBits * 4;
-    double expected = hash_bits * 0.5;
+    size_t hash_bits = hex_hash_bits(hash_zeros);
+    double expected = (double)hash_bits * 0.5;
     
     printf("Results:\n");
     printf("  Zeros vs Ones: %d bits (expected: %.0f)\n", dist_zeros_ones, expected);
@@ -301,8 +309,8 @@ void test_length_extension(int maxPrimeIndex) {
     int dist_1_3 = hamming_distance_hex(hash1, hash3);
     int dist_2_3 = hamming_distance_hex(hash2, hash3);
     
-    size_t hash_bits = numberOfBits * 4;
-    double expected = hash_bits * 0.5;
+    size_t hash_bits = hex_hash_bits(hash1);
+    double expected = (double)hash_bits * 0.5;
     
     printf("Results:\n");
     printf("  hash(M) vs hash(M||AAAA): %d bits (expected: %.0f)\n", dist_1_2, expected);
@@ -327,21 +335,33 @@ int main(int argc, char* argv[]) {
     
     int maxPrimeIndex = 500;
     numberOfRounds = 1000;
-    numberOfBits = 256;
+    hashLengthInBits = 256;
     
     if (argc > 1) maxPrimeIndex = atoi(argv[1]);
     if (argc > 2) numberOfRounds = atol(argv[2]);
+    if (argc > 3) hashLengthInBits = atoi(argv[3]);
     
     printf("Configuration:\n");
     printf("  Max Prime Index: %d\n", maxPrimeIndex);
     printf("  Rounds: %lu\n", numberOfRounds);
-    printf("  Hash Bits: %d\n", numberOfBits);
+    printf("  Hash parameter (hashLengthInBits): %d\n", hashLengthInBits);
+
+    int seqCount = 1000;
+    int singlePairs = 500;
+    int relatedCount = 100;
+    const char* fast = getenv("SECASY_DIFF_FAST");
+    if (fast && fast[0] && strcmp(fast, "0") != 0) {
+        seqCount = 200;
+        singlePairs = 150;
+        relatedCount = 60;
+        printf("  Mode: FAST (SECASY_DIFF_FAST=%s)\n", fast);
+    }
     
     clock_t start = clock();
     
-    test_sequential_inputs(1000, 16, maxPrimeIndex);
-    test_single_bit_pairs(500, 16, maxPrimeIndex);
-    test_related_inputs(100, 32, maxPrimeIndex);
+    test_sequential_inputs(seqCount, 16, maxPrimeIndex);
+    test_single_bit_pairs(singlePairs, 16, maxPrimeIndex);
+    test_related_inputs(relatedCount, 32, maxPrimeIndex);
     test_sparse_inputs(maxPrimeIndex);
     test_length_extension(maxPrimeIndex);
     

@@ -22,7 +22,7 @@
 
 // Re-declare global parameters used by the core (they are defined in main.c there, here we provide our own)
 unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS; // overridden by -r
-int numberOfBits = DEFAULT_BIT_SIZE;                      // overridden by -n (acts as char capacity of hex buffer)
+int hashLengthInBits = DEFAULT_BIT_SIZE;                      // overridden by -n (acts as char capacity of hex buffer)
 static unsigned long maximumPrimeIndex = DEFAULT_MAX_PRIME_INDEX; // -i
 
 // Configuration specific to avalanche test
@@ -93,14 +93,14 @@ static void usage(const char* prog) {
         "  -l <lenBytes>   Length of each input message in bytes (default %zu)\n"
         "  -B <bitFlips>   Bit flips sampled per message (0=all, default %u)\n"
         "  -r <rounds>     Number of rounds for hash core (default %lu)\n"
-        "  -n <hashBuf>    Hash internal buffer size (characters, default %d)\n"
+        "  -n <bits>       Hash output bit size (power of two, >= 64, default %d)\n"
         "  -i <primeIdx>   Max prime index (default %lu)\n"
         "  -s <seed>       Seed for RNG (default time-based)\n"
         "  -H              Print histogram buckets of per-flip avalanche ratios\n"
         "  -q              Quiet (omit qualitative assessment line)\n"
         "  -X              Extended analysis (per-bit bias, byte entropy, multi-bit flips)\n"
         "  -h              Help\n",
-        prog, g_messages, g_inputLen, g_sampledBitFlips, numberOfRounds, numberOfBits, maximumPrimeIndex);
+        prog, g_messages, g_inputLen, g_sampledBitFlips, numberOfRounds, hashLengthInBits, maximumPrimeIndex);
 }
 
 static void parse_args(int argc, char** argv) {
@@ -111,7 +111,7 @@ static void parse_args(int argc, char** argv) {
             case 'l': g_inputLen = (size_t)strtoull(optarg, NULL, 10); break;
             case 'B': g_sampledBitFlips = (unsigned)strtoul(optarg, NULL, 10); break;
             case 'r': numberOfRounds = strtoul(optarg, NULL, 10); break;
-            case 'n': numberOfBits = (int)strtoul(optarg, NULL, 10); break;
+            case 'n': hashLengthInBits = (int)strtoul(optarg, NULL, 10); break;
             case 'i': maximumPrimeIndex = strtoul(optarg, NULL, 10); break;
             case 's': g_seed = strtoull(optarg, NULL, 10); break;
             case 'H': g_flagHistogram = 1; break;
@@ -124,7 +124,8 @@ static void parse_args(int argc, char** argv) {
     if (g_messages == 0) { fprintf(stderr, "Messages must be > 0\n"); exit(EXIT_FAILURE); }
     if (g_inputLen == 0) { fprintf(stderr, "Input length must be > 0\n"); exit(EXIT_FAILURE); }
     if (numberOfRounds == 0) { fprintf(stderr, "Rounds must be > 0\n"); exit(EXIT_FAILURE); }
-    if (numberOfBits < MIN_HASH_BITS) { fprintf(stderr, "Hash buffer size < min (%d)\n", MIN_HASH_BITS); exit(EXIT_FAILURE); }
+    if (hashLengthInBits < MIN_HASH_BITS) { fprintf(stderr, "Hash bit size < min (%d)\n", MIN_HASH_BITS); exit(EXIT_FAILURE); }
+    if (!is_power_of_two(hashLengthInBits)) { fprintf(stderr, "Hash bit size must be a power of two (64, 128, 256, ...)\n"); exit(EXIT_FAILURE); }
     rng_seed(g_seed);
 }
 
@@ -378,7 +379,7 @@ int main(int argc, char** argv) {
     printf("Input length (bytes): %zu\n", g_inputLen);
     printf("Bit flips per message: %u\n", g_sampledBitFlips);
     printf("Rounds: %lu\n", numberOfRounds);
-    printf("Hash buffer size parameter (chars): %d\n", numberOfBits);
+    printf("Hash buffer size parameter (chars): %d\n", hashLengthInBits);
     printf("Total flips performed: %llu\n", (unsigned long long)g_totalFlipsPerformed);
     printf("Total bits compared: %llu\n", (unsigned long long)g_totalBitsCompared);
     printf("Total flipped bits observed: %llu\n", (unsigned long long)g_totalHammingBits);

@@ -54,7 +54,7 @@
 #endif
 
 unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
-int numberOfBits = DEFAULT_BIT_SIZE;
+int hashLengthInBits = DEFAULT_BIT_SIZE;
 static unsigned long maximumPrimeIndex = DEFAULT_MAX_PRIME_INDEX;
 
 static unsigned int g_messages = 50;
@@ -286,7 +286,7 @@ static void usage(const char* prog) {
         "  -l <lenBytes>   Length of each input message in bytes (default %zu)\n"
         "  -B <bitFlips>   Bit flips sampled per message (0=all, default %u)\n"
         "  -r <rounds>     Number of rounds for hash core (default %lu)\n"
-        "  -n <hashBuf>    Hash internal buffer size (characters, default %d)\n"
+        "  -n <bits>       Hash output bit size (power of two, >= 64, default %d)\n"
         "  -i <primeIdx>   Max prime index (default %lu)\n"
         "  -s <seed>       Seed for RNG (default time-based)\n"
         "  -H              Print histogram buckets of per-flip avalanche ratios\n"
@@ -295,7 +295,7 @@ static void usage(const char* prog) {
         "  -S <file>       Export SAC (Strict Avalanche Criterion) matrix to CSV file\n"
         "                  (Note: Use -B 0 for exhaustive per-bit testing)\n"
         "  -h              Help\n",
-        prog, g_messages, g_inputLen, g_sampledBitFlips, numberOfRounds, numberOfBits, maximumPrimeIndex);
+        prog, g_messages, g_inputLen, g_sampledBitFlips, numberOfRounds, hashLengthInBits, maximumPrimeIndex);
 }
 
 static void parse_args(int argc, char** argv) {
@@ -305,7 +305,7 @@ static void parse_args(int argc, char** argv) {
             case 'l': g_inputLen = (size_t)strtoull(optarg, NULL, 10); break;
             case 'B': g_sampledBitFlips = (unsigned)strtoul(optarg, NULL, 10); break;
             case 'r': numberOfRounds = strtoul(optarg, NULL, 10); break;
-            case 'n': numberOfBits = (int)strtoul(optarg, NULL, 10); break;
+            case 'n': hashLengthInBits = (int)strtoul(optarg, NULL, 10); break;
             case 'i': maximumPrimeIndex = strtoul(optarg, NULL, 10); break;
             case 's': g_seed = strtoull(optarg, NULL, 10); break;
             case 'S': g_flagSAC = 1; g_sacFilename = optarg; break;
@@ -317,7 +317,8 @@ static void parse_args(int argc, char** argv) {
         }
     }
     if (g_messages == 0 || g_inputLen == 0 || numberOfRounds == 0) { fprintf(stderr, "Invalid zero parameter\n"); exit(EXIT_FAILURE); }
-    if (numberOfBits < MIN_HASH_BITS) { fprintf(stderr, "Hash buffer size < min (%d)\n", MIN_HASH_BITS); exit(EXIT_FAILURE); }
+    if (hashLengthInBits < MIN_HASH_BITS) { fprintf(stderr, "Hash bit size < min (%d)\n", MIN_HASH_BITS); exit(EXIT_FAILURE); }
+    if (!is_power_of_two(hashLengthInBits)) { fprintf(stderr, "Hash bit size must be a power of two (64, 128, 256, ...)\n"); exit(EXIT_FAILURE); }
     rng_seed(g_seed);
 }
 
@@ -456,7 +457,7 @@ int main(int argc, char** argv) {
         /* We'll determine output bits from first hash */
         /* For now, allocate conservatively based on hash buffer parameter */
         size_t inputBits = g_inputLen * 8;
-        size_t estimatedOutputBits = (size_t)numberOfBits * 4; /* chars to bits */
+        size_t estimatedOutputBits = (size_t)hashLengthInBits * 4; /* chars to bits */
         init_sac_matrix(inputBits, estimatedOutputBits);
     }
     
@@ -547,7 +548,7 @@ int main(int argc, char** argv) {
         free(baseHex);
     }
     double elapsed=wall_time_seconds()-start; double meanAvalanche=(g_totalBitsCompared>0)? ((double)g_totalHammingBits/(double)g_totalBitsCompared):0.0; double meanRatio=(g_totalFlipsPerformed>0)? (g_sumRatios/(double)g_totalFlipsPerformed):0.0; double variance=0.0; if (g_totalFlipsPerformed>1){ double m=meanRatio; variance=(g_sumSqRatios/(double)g_totalFlipsPerformed)-(m*m); if(variance<0) variance=0;} double stddev = (variance>0)? sqrt(variance):0.0; double p=meanAvalanche; double stderrBits = (g_totalBitsCompared>0)? sqrt(p*(1.0-p)/(double)g_totalBitsCompared):0.0; double ci95_low = p - 1.96*stderrBits; double ci95_high = p + 1.96*stderrBits; if (ci95_low<0) ci95_low=0; if (ci95_high>1) ci95_high=1; double zScore = (stderrBits>0)? (p-0.5)/stderrBits:0.0;
-    printf("=== Avalanche Test Report ===\n"); printf("Messages: %u\n", g_messages); printf("Input length (bytes): %zu\n", g_inputLen); printf("Bit flips per message: %u\n", g_sampledBitFlips); printf("Rounds: %lu\n", numberOfRounds); printf("Hash buffer size parameter (chars): %d\n", numberOfBits); printf("Total flips performed: %llu\n", (unsigned long long)g_totalFlipsPerformed); printf("Total bits compared: %llu\n", (unsigned long long)g_totalBitsCompared); printf("Total flipped bits observed: %llu\n", (unsigned long long)g_totalHammingBits); printf("Mean avalanche rate (bit-level): %.6f\n", meanAvalanche); printf("Mean per-flip ratio: %.6f\n", meanRatio); printf("Stddev per-flip ratio: %.6f\n", stddev); printf("95%% CI (bit-level p): [%.6f , %.6f]\n", ci95_low, ci95_high); printf("Z-score vs 0.5: %.6f\n", zScore); printf("(DEBUG) raw_fraction = %llu / %llu = %.6f\n", (unsigned long long)g_totalHammingBits, (unsigned long long)g_totalBitsCompared, meanAvalanche); printf("Time: %.3f s (%.2f flips/s)\n", elapsed, elapsed>0? (double)g_totalFlipsPerformed/elapsed:0.0);
+    printf("=== Avalanche Test Report ===\n"); printf("Messages: %u\n", g_messages); printf("Input length (bytes): %zu\n", g_inputLen); printf("Bit flips per message: %u\n", g_sampledBitFlips); printf("Rounds: %lu\n", numberOfRounds); printf("Hash buffer size parameter (chars): %d\n", hashLengthInBits); printf("Total flips performed: %llu\n", (unsigned long long)g_totalFlipsPerformed); printf("Total bits compared: %llu\n", (unsigned long long)g_totalBitsCompared); printf("Total flipped bits observed: %llu\n", (unsigned long long)g_totalHammingBits); printf("Mean avalanche rate (bit-level): %.6f\n", meanAvalanche); printf("Mean per-flip ratio: %.6f\n", meanRatio); printf("Stddev per-flip ratio: %.6f\n", stddev); printf("95%% CI (bit-level p): [%.6f , %.6f]\n", ci95_low, ci95_high); printf("Z-score vs 0.5: %.6f\n", zScore); printf("(DEBUG) raw_fraction = %llu / %llu = %.6f\n", (unsigned long long)g_totalHammingBits, (unsigned long long)g_totalBitsCompared, meanAvalanche); printf("Time: %.3f s (%.2f flips/s)\n", elapsed, elapsed>0? (double)g_totalFlipsPerformed/elapsed:0.0);
     if (!g_flagQuiet){ if (meanAvalanche < 0.40) printf("Assessment: Low diffusion under tested parameters (substantially below 0.5).\n"); else if (meanAvalanche < 0.47) printf("Assessment: Moderate diffusion (below ideal).\n"); else if (meanAvalanche < 0.53) printf("Assessment: Near target diffusion.\n"); else printf("Assessment: >0.53 (could be acceptable or indicate structural artifacts).\n"); }
     if (g_flagHistogram){ printf("Histogram (ratio buckets 0.0-0.1 ... 0.9-1.0):\n"); unsigned long long total=g_totalFlipsPerformed?g_totalFlipsPerformed:1ULL; for(int i=0;i<10;i++){ double pct=(double)g_histBuckets[i]*100.0/(double)total; printf("  [%d] %.2f%% (%llu)\n", i, pct, (unsigned long long)g_histBuckets[i]); } }
     if (g_flagExtended){ if (g_bitCapacity>0){ double sumP=0.0,sumSqP=0.0; double minP=1.0,maxP=0.0; unsigned long long countedBits=0; unsigned long long outOfBand=0; for (size_t i=0;i<g_bitCapacity;i++){ unsigned long long comp=g_bitCompared[i]; if(!comp) continue; double pv=(double)g_bitChanged[i]/(double)comp; sumP += pv; sumSqP += pv*pv; if (pv<minP) minP=pv; if(pv>maxP) maxP=pv; countedBits++; if (pv<0.45||pv>0.55) outOfBand++; } if (countedBits>0){ double meanP=sumP/(double)countedBits; double varP=(sumSqP/(double)countedBits)-meanP*meanP; if (varP<0) varP=0; double sdP=sqrt(varP); printf("--- Extended: Per-bit bias ---\n"); printf("Bits observed: %llu\n", (unsigned long long)countedBits); printf("Min bit flip rate: %.4f Max: %.4f Mean: %.4f SD: %.4f Out-of-[0.45,0.55]: %llu\n", minP, maxP, meanP, sdP, (unsigned long long)outOfBand); } }

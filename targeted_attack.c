@@ -14,6 +14,10 @@
 #include "ProcessingPhase.h"
 #include "Defines.h"
 
+/* Global variables required by Secasy core (normally defined in main.c) */
+unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
+int hashLengthInBits = DEFAULT_BIT_SIZE;
+
 static char* compute_hash(const unsigned char* data, size_t len) {
     initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
     processBuffer(data, len);

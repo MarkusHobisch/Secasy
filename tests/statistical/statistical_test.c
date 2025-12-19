@@ -28,7 +28,7 @@
 
 /* Global variables required by Secasy */
 unsigned long numberOfRounds = 1000;
-int numberOfBits = 256;
+int hashLengthInBits = 256;
 
 static int g_rounds = 1000;
 static int g_primeIndex = 200;
@@ -41,7 +41,7 @@ void compute_hash(const uint8_t *input, size_t len, char *hashOut) {
     fclose(f);
     
     numberOfRounds = g_rounds;
-    numberOfBits = g_hashBits;
+    hashLengthInBits = g_hashBits;
     initFieldWithDefaultNumbers(g_primeIndex);
     readAndProcessFile("_stat_temp.bin");
     

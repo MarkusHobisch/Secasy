@@ -63,7 +63,7 @@
 #endif
 
 unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS; /* imported by core */
-int numberOfBits = DEFAULT_BIT_SIZE;                     /* internal buffer size */
+int hashLengthInBits = DEFAULT_BIT_SIZE;                     /* internal buffer size */
 
 static uint64_t rng_state = 0x9e3779b97f4a7c15ULL;
 static uint64_t rng_next(void){ uint64_t x=rng_state; x ^= x>>12; x ^= x<<25; x ^= x>>27; rng_state = x; return x * 0x2545F4914F6CDD1DULL; }
@@ -148,7 +148,7 @@ int main(int argc, char** argv){
         if(strcmp(argv[optIndex],"-m")==0 && optIndex+1 < argc){ messages = (size_t)strtoull(argv[++optIndex],NULL,10); }
         else if(strcmp(argv[optIndex],"-l")==0 && optIndex+1 < argc){ lenBytes = (size_t)strtoull(argv[++optIndex],NULL,10); }
         else if(strcmp(argv[optIndex],"-r")==0 && optIndex+1 < argc){ numberOfRounds = strtoul(argv[++optIndex],NULL,10); }
-        else if(strcmp(argv[optIndex],"-n")==0 && optIndex+1 < argc){ numberOfBits = (int)strtoul(argv[++optIndex],NULL,10); }
+        else if(strcmp(argv[optIndex],"-n")==0 && optIndex+1 < argc){ hashLengthInBits = (int)strtoul(argv[++optIndex],NULL,10); }
         else if(strcmp(argv[optIndex],"-s")==0 && optIndex+1 < argc){ seed = strtoull(argv[++optIndex],NULL,10); }
         else if(strcmp(argv[optIndex],"-T")==0 && optIndex+1 < argc){ truncBits = (int)strtol(argv[++optIndex],NULL,10); }
         else if(strcmp(argv[optIndex],"-X")==0 && optIndex+1 < argc){
@@ -289,7 +289,7 @@ int main(int argc, char** argv){
         printf("Collision test complete\n");
         printf("Messages: %zu\n", messages);
         printf("Length (bytes): %zu\n", lenBytes);
-        printf("Rounds: %lu  HashBitsParam: %d\n", (unsigned long)numberOfRounds, numberOfBits);
+        printf("Rounds: %lu  HashBitsParam: %d\n", (unsigned long)numberOfRounds, hashLengthInBits);
         printf("Unique hashes: %zu\n", tableCount);
     if(truncBits > 0) printf("(Truncation active: %d bits)\n", truncBits);
         printf("Collisions: %zu\n", collisions);
@@ -297,7 +297,7 @@ int main(int argc, char** argv){
         printf("Collision rate: %.8f\n", collisionRate);
         printf("Elapsed: %.3f s (%.2f msg/s)\n", elapsed, elapsed>0? (double)messages/elapsed:0.0);
 
-        double kbits = (double)(truncBits > 0 ? truncBits : numberOfBits);
+        double kbits = (double)(truncBits > 0 ? truncBits : hashLengthInBits);
         double space = pow(2.0, kbits);
         if(kbits <= 60.0){
             #ifndef M_PI
@@ -312,7 +312,7 @@ int main(int argc, char** argv){
         }
     } else {
         printf("Sweep Generation complete: %zu messages hashed in %.3f s (%.2f msg/s)\n", messages, elapsed, elapsed>0? (double)messages/elapsed:0.0);
-    printf("Sweep results (messages=%zu lenBytes=%zu rounds=%lu hashParamBits=%d):\n", messages, lenBytes, (unsigned long)numberOfRounds, numberOfBits);
+    printf("Sweep results (messages=%zu lenBytes=%zu rounds=%lu hashParamBits=%d):\n", messages, lenBytes, (unsigned long)numberOfRounds, hashLengthInBits);
         for(int si=0; si<sweepCount; ++si){
             int bits = sweepBits[si];
             /* init neue Tabelle */
