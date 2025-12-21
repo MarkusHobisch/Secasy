@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <limits.h>
 #include "Defines.h"
 #include "SieveOfEratosthenes.h"
 #include "util.h"
@@ -39,6 +40,12 @@ int *generatePrimeNumbers(int *numberOfPrimes, const unsigned long maxPrimeIndex
     {
         *numberOfPrimes = 0;
         return NULL; // no primes below 2
+    }
+    if (maxPrimeIndex > MAX_ALLOWED_PRIME_INDEX)
+    {
+        LOG_ERROR("maxPrimeIndex %lu exceeds practical limit of %lu", maxPrimeIndex, (unsigned long)MAX_ALLOWED_PRIME_INDEX);
+        *numberOfPrimes = 0;
+        return NULL;
     }
     if (maxPrimeIndex > UINT_MAX)
     {

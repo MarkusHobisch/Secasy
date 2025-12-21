@@ -11,98 +11,20 @@ The algorithm is based on the principle of a deterministic chaotic system, meani
 
 ## Compilation
 
-To compile the source code, use one of the following commands in the terminal.
-
-Important: Do NOT use a wildcard like `*.c` anymore because the project now contains two translation units with a `main` function (`main.c` and `avalanche.c`). Using `*.c` would attempt to link both and produce a "multiple definition of `main`" linker error. Build each executable explicitly as shown below.
-
-### Standard optimized builds (recommended)
-```bash
-gcc -std=c11 -O3 -Wall -Wextra -o secasy \
-  main.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
-
-gcc -std=c11 -O3 -Wall -Wextra -o secasy_avalanche \
-  avalanche.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
-
-gcc -std=c11 -O3 -Wall -Wextra -o secasy_preimage \
-  tests/preimage/preimage.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
-```
-
-### With full prime range (may be slower)
-```bash
-gcc -std=c11 -O3 -DSECASY_PRIMES_FULL -Wall -Wextra -o secasy \
-  main.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
-
-gcc -std=c11 -O3 -DSECASY_PRIMES_FULL -Wall -Wextra -o secasy_avalanche \
-  avalanche.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
-
-gcc -std=c11 -O3 -DSECASY_PRIMES_FULL -Wall -Wextra -o secasy_preimage \
-  tests/preimage/preimage.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
-```
-
-### Debug builds
-```bash
-gcc -std=c11 -O0 -g -Wall -Wextra -o secasy \
-  main.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
-
-gcc -std=c11 -O0 -g -Wall -Wextra -o secasy_avalanche \
-  avalanche.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
-
-gcc -std=c11 -O0 -g -Wall -Wextra -o secasy_preimage \
-  tests/preimage/preimage.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
-```
-
-### Windows (WSL via PowerShell)
-```bash
-wsl gcc -std=c11 -O3 -o secasy main.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
-wsl gcc -std=c11 -O3 -o secasy_avalanche avalanche.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
-wsl gcc -std=c11 -O3 -o secasy_preimage tests/preimage/preimage.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
-```
-
-### MinGW / MSYS2 (native Windows)
-```bash
-gcc -std=c11 -O3 -D__USE_MINGW_ANSI_STDIO -o secasy \
-  main.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c
-
-gcc -std=c11 -O3 -D__USE_MINGW_ANSI_STDIO -o secasy_avalanche \
-  avalanche.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c
-```
-
-### CMake (alternative)
+### CMake (recommended)
 ```bash
 cmake -S . -B build
 cmake --build build --config Release -- -j
 ```
-This produces the executables `Secasy` and `SecasyAvalanche`.
+Produces executables: `Secasy`, `SecasyAvalanche`, `SecasyCollision`, `SecasyPreimage`
 
-Full prime range (no truncation; slower for very large max prime index). Build flag `SECASY_PRIMES_FULL` disables the heuristic reduction in the sieve:
-
+### Direct GCC (alternative)
 ```bash
-gcc -DSECASY_PRIMES_FULL -Ofast -march=native -mtune=native -funroll-loops *.c -lm -o secasy
+gcc -std=c11 -O3 -Wall -Wextra -o secasy \
+  main.c Calculations.c InitializationPhase.c ProcessingPhase.c SieveOfEratosthenes.c util.c Printing.c -lm
 ```
 
-Effect of `-DSECASY_PRIMES_FULL`:
-- Without the flag (default): the prime list may be truncated heuristically to reduce memory and speed up processing for huge `-i` values.
-- With the flag: the sieve keeps the full range up to the provided maximum prime index (`-i`).
-
-Precompiled binaries for Windows and Linux are provided and can be found in the bin folder.
-
-Tested on Windows platform and Windows WSL (Ubuntu 22.04.1 LTS). \
-GCC version 11.2.0 (Ubuntu 11.2.0-19ubuntu1)
-
-### Additional Instructions for Windows Users:
-If you are using Windows and prefer to compile the code within the Windows Subsystem for Linux (WSL), it is recommended to use Windows PowerShell to launch WSL. Prefix the GCC command with `wsl` to ensure it executes under Linux compatibility within Windows, as shown below:
-
-```bash
-wsl gcc -Ofast -march=native -mtune=native -funroll-loops *.c -lm -o secasy
-```
-
-Or with full prime range:
-
-```bash
-wsl gcc -DSECASY_PRIMES_FULL -Ofast -march=native -mtune=native -funroll-loops *.c -lm -o secasy
-```
-
-This command ensures that the GCC compiler runs within the Linux environment provided by WSL, leveraging the same performance optimizations and dependencies as if running on a native Linux system.
+**Windows users:** Prefix commands with `wsl` when using WSL (e.g., `wsl gcc ...`)
 
 ## Usage
 
@@ -228,38 +150,18 @@ The 100,000 processing rounds provide **brute-force protection**:
 > - ⚠️ NOT recommended for production security applications
 
 ## Avalanche Test Tool (Experimental)
-A separate executable `SecasyAvalanche` (source: `avalanche.c`) measures diffusion (avalanche effect): how strongly the hash output changes when a single input bit is flipped. Target: ~50% of output bits invert per single-bit input flip.
+Measures diffusion (avalanche effect): how strongly the hash output changes when a single input bit is flipped. Target: ~50% of output bits invert per single-bit input flip.
 
-**Current Security Assessment:** Comprehensive Strict Avalanche Criterion (SAC) testing with statistically significant sample sizes (5000+ trials) demonstrates excellent diffusion properties:
-- **SAC Acceptance Rate:** 99.41% of input-bit → output-bit pairs fall within the [0.48, 0.52] range (exceeds ≥95% target)
+**Security Assessment:** Comprehensive Strict Avalanche Criterion (SAC) testing demonstrates excellent diffusion properties:
+- **SAC Acceptance Rate:** 99.41% of input-bit → output-bit pairs within [0.48, 0.52] range (exceeds ≥95% target)
 - **Mean Flip Probability:** 0.5002 (near-ideal 0.5)
 - **Maximum Bit Bias:** 0.028 (well below critical threshold)
-- **Bias Exploitation:** No practically exploitable patterns detected (prediction accuracy ~44% vs 50% random baseline)
 
-**Note:** Earlier analyses with insufficient sample sizes (< 500 trials) showed artificially low acceptance rates (~38%). With proper statistical sampling, Secasy demonstrates cryptographically sound diffusion.
-
-**Recommended Use Cases:**
-- ✅ **Suitable for:** Hash tables, checksums, file deduplication, data integrity verification
-- ✅ **Experimental cryptographic use:** Diffusion properties meet SAC requirements; however, formal cryptographic certification pending
-
-**Additional Security Testing Completed:**
-- Preimage resistance: No weaknesses found (12+ bit lower bounds in brute-force tests)
+**Additional Security Testing:**
+- Preimage resistance: 12+ bit lower bounds in brute-force tests
 - Collision resistance: Birthday-bound conformity confirmed (Chi² ≈ 0)
-- Differential attack resistance: All tests passed with ~50% diffusion
-- Side-channel risk: LOW (constant-time operations, no input-dependent branches)
-
-### Build (CMake)
-If you use CMake (after adding this file):
-```bash
-cmake -S . -B build
-cmake --build build --config Release -- -j
-```
-You obtain two binaries: `Secasy` and `SecasyAvalanche`.
-
-### Direct GCC build example
-```bash
-gcc -Ofast -march=native -mtune=native -funroll-loops avalanche.c Calculations.c InitializationPhase.c Printing.c ProcessingPhase.c SieveOfEratosthenes.c util.c -lm -o secasy_avalanche
-```
+- Differential attack resistance: ~50% diffusion
+- Side-channel risk: LOW (constant-time operations)
 
 ### Usage
 ```
@@ -337,30 +239,14 @@ The Strict Avalanche Criterion matrix provides detailed insight into diffusion q
 
 **Note on Sample Size:** SAC measurements require statistically significant sample sizes (≥1000 trials recommended) for accurate results. Small sample sizes may produce misleading variance.
 
-### Caveats (Abbreviated)
-Entropy sampler not yet reliable. Large `-l` with `-B 0` is slow (flips = 8 * length). Multi-bit trial count small for speed.
-
-### Future (Selected)
-SAC matrix, correlation tests, entropy fix, CSV/JSON export.
+### Notes
+- Large `-l` with `-B 0` is slow (flips = 8 × length)
+- Multi-bit trial count small for speed
+- SAC measurements require ≥1000 trials for statistical significance
 
 ## Collision Test & Sweep Mode (Experimental)
 
-The repository includes a dedicated tool `SecasyCollision` (source: `tests/collision/collision.c`) to evaluate collision behaviour and distribution quality of the hexadecimal hash output.
-
-### Build (CMake)
-Already integrated:
-```
-cmake -S . -B build
-cmake --build build --config Release -- -j
-```
-Produces the additional binary `SecasyCollision`.
-
-### Direct (GCC example)
-```
-gcc -std=c11 -O3 -Wall -Wextra -o secasy_collision \
-  tests/collision/collision.c Calculations.c InitializationPhase.c ProcessingPhase.c \
-  SieveOfEratosthenes.c util.c Printing.c -lm
-```
+Evaluates collision behaviour and distribution quality of the hash output.
 
 ### Core Idea
 Generate `m` random messages (fixed length), hash each, insert the hexadecimal string into an open-addressed table. Inserting an already seen (possibly truncated) hash string counts as a collision. Optional analytical modes (hex frequency, positional frequency, byte distribution, truncation, sweep) provide diagnostics.
@@ -431,37 +317,13 @@ Full 256-bit collisions are practically unobservable for m ≤ 10^6. Truncation 
 | High Chi^2 subset | Local formatting/finalization issue | Inspect finalizer |
 | Missing / rare nibble | Structural bias (prefix/mix) | Rework formatting/mix |
 
-### Implemented Improvements
-* Stronger finalization mix removed leading nibble bias (missing '0')
-* Nonlinear post-processing reduced linear diffusion artifacts
-* Sweep mode avoids repeated hashing, speeding parameter studies
 
-### Limitations
-* Open addressing: simple, not memory-optimal
-* No persistent export (CSV/JSON) yet
-* No duplication scenario (all messages random & independent)
-
-### Potential Extensions
-* CSV/JSON export (`-O csv/json`)
-* Automated tolerance gating (exit codes)
-* Threaded parallelism for very large m
-* Approximate Chi^2 p-value reporting
-
-### Reference
-See `AVALANCHE_RESULTS.md` for avalanche & diffusion data; collision datasets may be added later.
 
 ## Preimage & Second-Preimage Resistance Test (Experimental)
 
-The repository includes a specialized tool `SecasyPreimage` (source: `tests/preimage/preimage.c`) to evaluate the hash function's resistance against preimage attacks (finding input for given hash) and second-preimage attacks (finding different input with same hash).
+Evaluates resistance against preimage attacks (finding input for given hash) and second-preimage attacks (finding different input with same hash).
 
-### Build (Direct GCC)
-```bash
-gcc -std=c11 -O3 -Wall -Wextra -o secasy_preimage \
-  tests/preimage/preimage.c Calculations.c InitializationPhase.c ProcessingPhase.c \
-  SieveOfEratosthenes.c util.c Printing.c -lm
-```
-
-### Core Concept
+### Concept
 **Preimage Resistance:** Given hash H, computationally infeasible to find input M such that hash(M) = H  
 **Second-Preimage Resistance:** Given input M1, computationally infeasible to find different M2 such that hash(M1) = hash(M2)
 
@@ -509,32 +371,22 @@ Second-Preimage Test: NOT FOUND after 100000 attempts (245.1 sec)
 ### CSV Export Format
 Results exported include test type, attempts, success status, time elapsed, success rate, and theoretical security bits.
 
-### Security Assessment Context
-These tests provide **empirical resistance measurement** under brute-force attack conditions. Results are limited by:
-- Computational constraints (practical test space << theoretical attack space)
-- Brute-force methodology (does not test sophisticated cryptanalytic attacks)
-- Statistical sampling limitations
+**Note:** These tests provide empirical resistance measurement under brute-force conditions. Results do not constitute formal cryptographic security proof.
 
-**Important:** This testing does NOT constitute formal cryptographic security proof but provides valuable empirical indicators for hash function evaluation.
+## Profiling
 
-## Profiling with `gprof`
-
-To analyze performance hotspots you can compile with `-pg` and run `gprof`.
-
-### Steps
-1. Build with profiling:
+Analyze performance with `gprof`:
 ```bash
-gcc -pg -Ofast -march=native -mtune=native -funroll-loops *.c -lm -o secasy
-```
-2. Run a representative workload:
-```bash
+# Build with profiling
+gcc -pg -O3 -o secasy main.c Calculations.c InitializationPhase.c ProcessingPhase.c \
+  SieveOfEratosthenes.c util.c Printing.c -lm
+
+# Run workload
 ./secasy -f fileToHash
-```
-3. Generate report:
-```bash
+
+# Generate report
 gprof ./secasy gmon.out > analysis.txt
 ```
-The resulting report lists function call counts and self / cumulative time – use it to focus optimization (e.g. mixing loops, sieve generation, finalization).
 
 ## Contact Information
 

@@ -263,7 +263,7 @@ static void export_sac_matrix(const char* filename) {
         double acceptance = (double)inBand / (double)totalCells;
         
         fprintf(stderr, "SAC Statistics:\n");
-        fprintf(stderr, "  Cells with data: %llu / %llu\n", 
+        fprintf(stderr, "  Cells with data: %llu / %zu\n", 
                 totalCells, g_sacInputBits * g_sacOutputBits);
         fprintf(stderr, "  Mean flip probability: %.6f\n", meanProb);
         fprintf(stderr, "  Min: %.6f  Max: %.6f\n", minProb, maxProb);
@@ -504,19 +504,16 @@ int main(int argc, char** argv) {
             
             int hd; 
             int usedBits; 
-            size_t usedBytes;
             
             if (bitsA!=bitsB){ 
                 size_t minBits=bitsA<bitsB?bitsA:bitsB; 
                 size_t minBytes=(minBits+7)/8; 
                 hd=hamming_bits(bytesA,bytesB,minBytes); 
                 usedBits=(int)(minBytes*8);
-                usedBytes=minBytes;
             } else { 
                 size_t bytes=(bitsA+7)/8; 
                 hd=hamming_bits(bytesA,bytesB,bytes); 
                 usedBits=(int)bitsA;
-                usedBytes=bytes;
             } 
             
             g_totalHammingBits += (unsigned long long)hd; 

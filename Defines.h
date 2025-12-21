@@ -6,6 +6,7 @@
 #define DEFAULT_NUMBER_OF_ROUNDS 100000
 #define DEFAULT_BIT_SIZE 512
 #define DEFAULT_MAX_PRIME_INDEX 16000000
+#define MAX_ALLOWED_PRIME_INDEX 50000000UL
 
 // Added readability / reuse constants
 #define MIN_HASH_BITS 64
