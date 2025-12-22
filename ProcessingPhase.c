@@ -68,9 +68,9 @@ char* calculateHashValue()
         
         /* After each round, collect a 64-bit block if we still need more */
         if (blocksCollected < blocksNeeded) {
-            long long hashValue = generateHashValue();
+            long long hash = hashValue();
             char block[17];
-            snprintf(block, 17, "%016llx", (unsigned long long)hashValue);
+            snprintf(block, 17, "%016llx", (unsigned long long)hash);
             strcat(hashBuffer, block);
             blocksCollected++;
         }

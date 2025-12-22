@@ -37,27 +37,21 @@ static int numberOfPrimes = NUMBER_OF_PRIMES;
 static unsigned int colorLen = 5U;
 static int primeIndex = 0;
 static ColorIndex_t colorIndex = ADD;
-static int* primeArray = storedPrimesArray;
+static int *primeArray = storedPrimesArray;
 
-static void calcAndSetDirections(int byte, int* directions);
+static void calcAndSetDirections(int byte);
 
-static inline int logicalShiftRight(int a, int b);
+static int nextPrimeNumber(Tile_t *tile);
 
-static void addNumbersToField(const int* directions);
-
-static int nextPrimeNumber(Tile_t* tile);
-
-static void writeNextNumberOnMove(int direction);
+static void writeNextNumber(int direction);
 
 static void initPrimeNumbers(unsigned long maxPrimeIndex);
 
 static void initSquareFieldWithDefaultValue(void);
 
-static FILE* readFile(const char* filename);
+static FILE *readFile(const char *filename);
 
-static void doNotSetAnyDirections(int* directions);
-
-static void updateColorAndPrimeIndexOfTile(Tile_t* tile);
+static void updateColorAndPrimeIndexOfTile(Tile_t *tile);
 
 static void setPrimeNumberOfLastTile(void);
 
@@ -79,38 +73,25 @@ void initFieldWithDefaultNumbers(const unsigned long maxPrimeIndex)
     initSquareFieldWithDefaultValue();
 }
 
-void readAndProcessFile(const char* filename)
+void readAndProcessFile(const char *filename)
 {
     /* Allocate large buffer (4MB) on heap to avoid stack overflow on some platforms */
-    unsigned char* buffer = (unsigned char*) malloc(DEFAULT_IO_BLOCK_SIZE);
+    unsigned char *buffer = (unsigned char *)malloc(DEFAULT_IO_BLOCK_SIZE);
     if (!buffer)
     {
         LOG_ERROR("Failed to allocate %u bytes buffer", (unsigned)DEFAULT_IO_BLOCK_SIZE);
         exit(EXIT_FAILURE);
     }
     size_t bytesRead;
-    int directions[DIRECTIONS]; // LEFT, RIGHT, TOP, DOWN
-    size_t globalByteIndex = 0; // Track position across all blocks
 
-    FILE* file = readFile(filename);
+    FILE *file = readFile(filename);
     while ((bytesRead = fread(buffer, 1, DEFAULT_IO_BLOCK_SIZE, file)) > 0)
     {
         int byte; // must be int
         for (size_t i = 0; i < bytesRead; ++i)
         {
             byte = buffer[i] & 0xFF; // byte to int conversion
-            // Mix byte position into value to prevent path symmetry collisions
-            byte ^= (int)((globalByteIndex * 37 + 17) & 0xFF);
-            globalByteIndex++;
-            if (byte != 0)
-            {
-                calcAndSetDirections(byte, directions);
-            }
-            else
-            {
-                doNotSetAnyDirections(directions);
-            }
-            addNumbersToField(directions);
+            calcAndSetDirections(byte);
         }
     }
     if (ferror(file))
@@ -127,27 +108,17 @@ void readAndProcessFile(const char* filename)
 }
 
 // New: process an in-memory buffer (used for avalanche tests)
-void processBuffer(const unsigned char* data, size_t len)
+void processBuffer(const unsigned char *data, size_t len)
 {
     if (!data || len == 0)
     {
         return; // treat empty as no-op
     }
-    int directions[DIRECTIONS];
+
     for (size_t i = 0; i < len; ++i)
     {
         int byte = data[i] & 0xFF;
-        // Mix byte position into value to prevent path symmetry collisions
-        byte ^= (int)((i * 37 + 17) & 0xFF);
-        if (byte != 0)
-        {
-            calcAndSetDirections(byte, directions);
-        }
-        else
-        {
-            doNotSetAnyDirections(directions);
-        }
-        addNumbersToField(directions);
+        calcAndSetDirections(byte);
     }
     setPrimeNumberOfLastTile();
     lastPrime = field[pos.x][pos.y].value;
@@ -190,14 +161,14 @@ static void createTile(const uint32_t posX, const uint32_t posY)
     field[posX][posY] = tile;
 }
 
-static FILE* readFile(const char* filename)
+static FILE *readFile(const char *filename)
 {
     if (filename == NULL)
     {
         LOG_ERROR("Input file not provided (-f <file> required)");
         exit(EXIT_FAILURE);
     }
-    FILE* file = fopen(filename, "rb");
+    FILE *file = fopen(filename, "rb");
     if (file == NULL)
     {
         LOG_ERROR("Could not open file: %s", filename);
@@ -218,37 +189,12 @@ static FILE* readFile(const char* filename)
  *  Third round: 00
  *  Fourth round: 11
  */
-static void calcAndSetDirections(int byte, int* directions)
+static void calcAndSetDirections(int byte)
 {
-    memset(directions, 0, DIRECTIONS * sizeof(int));
-    int index = 0;
-    // Extract up to 4 direction pairs (2 bits each)
-    while (byte != 0 && index < DIRECTIONS)
-    {
-        directions[index++] = (byte & 3);
-        byte = logicalShiftRight(byte, 2);
-    }
-}
-
-static inline int logicalShiftRight(const int a, const int b)
-{
-    return (int)((unsigned int)a >> b);
-}
-
-static void doNotSetAnyDirections(int* directions)
-{
-   memset(directions, 0, DIRECTIONS * sizeof(int));
-}
-
-static void addNumbersToField(const int* directions)
-{
-#if DEBUG_MODE
-    printf("start by pos[%u,%u]\n", pos.x, pos.y);
-#endif
-    for (int i = 0; i < DIRECTIONS; i++)
-    {
-        writeNextNumberOnMove(directions[i]);
-    }
+    writeNextNumber(byte & 3);        // Bits 0-1
+    writeNextNumber((byte >> 2) & 3); // Bits 2-3
+    writeNextNumber((byte >> 4) & 3); // Bits 4-5
+    writeNextNumber((byte >> 6) & 3); // Bits 6-7
 }
 
 /*
@@ -257,9 +203,9 @@ static void addNumbersToField(const int* directions)
  * the field range (number of tiles per horizontal or vertical direction) then we start at the opposite direction again
  * (RIGHT -> LEFT, LEFT -> RIGHT, BOTTOM -> UP, UP -> BOTTOM. We realize this with the modulus operand.
  */
-static void writeNextNumberOnMove(const int move)
+static void writeNextNumber(const int move)
 {
-    Tile_t* tile = &field[pos.x][pos.y];
+    Tile_t *tile = &field[pos.x][pos.y];
     const int oldPrime = tile->value;
     const int nextPrime = nextPrimeNumber(tile);
     tile->value = nextPrime;
@@ -268,65 +214,65 @@ static void writeNextNumberOnMove(const int move)
 #endif
     switch (move)
     {
-        case UP:
-            // Break commutativity: vertical movement also affects X based on current Y
-            pos.y = (pos.y - oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
-            pos.x = (pos.x + (pos.y >> 1) + 1) & (FIELD_SIZE - 1);
+    case UP:
+        // Break commutativity: vertical movement also affects X based on current Y
+        pos.y = (pos.y - oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
+        pos.x = (pos.x + (pos.y >> 1) + 1) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
-            printf(" UP\n");
+        printf(" UP\n");
 #endif
-            break;
-        case DOWN:
-            // Break commutativity: vertical movement also affects X based on current Y
-            pos.y = (pos.y + oldPrime) & (FIELD_SIZE - 1);
-            pos.x = (pos.x + (pos.y >> 1) + 3) & (FIELD_SIZE - 1);
+        break;
+    case DOWN:
+        // Break commutativity: vertical movement also affects X based on current Y
+        pos.y = (pos.y + oldPrime) & (FIELD_SIZE - 1);
+        pos.x = (pos.x + (pos.y >> 1) + 3) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
-            printf(" DOWN\n");
+        printf(" DOWN\n");
 #endif
-            break;
-        case LEFT:
-            // Break commutativity: horizontal movement also affects Y based on current X
-            pos.x = (pos.x - oldPrime) & (FIELD_SIZE - 1);
-            pos.y = (pos.y + (pos.x >> 1) + 2) & (FIELD_SIZE - 1);
+        break;
+    case LEFT:
+        // Break commutativity: horizontal movement also affects Y based on current X
+        pos.x = (pos.x - oldPrime) & (FIELD_SIZE - 1);
+        pos.y = (pos.y + (pos.x >> 1) + 2) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
-            printf(" LEFT\n");
+        printf(" LEFT\n");
 #endif
-            break;
-        case RIGHT:
-            // Break commutativity: horizontal movement also affects Y based on current X
-            pos.x = (pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
-            pos.y = (pos.y + (pos.x >> 1) + 4) & (FIELD_SIZE - 1);
+        break;
+    case RIGHT:
+        // Break commutativity: horizontal movement also affects Y based on current X
+        pos.x = (pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
+        pos.y = (pos.y + (pos.x >> 1) + 4) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
-            printf(" RIGHT\n");
+        printf(" RIGHT\n");
 #endif
-            break;
-        default:
-            printf("UNKNOWN POSITION !!\n");
-            break;
+        break;
+    default:
+        printf("UNKNOWN POSITION !!\n");
+        break;
     }
 }
 
 static void setPrimeNumberOfLastTile(void)
 {
-    Tile_t* tile = &field[pos.x][pos.y];
+    Tile_t *tile = &field[pos.x][pos.y];
     tile->value = nextPrimeNumber(tile);
 }
 
-static int nextPrimeNumber(Tile_t* tile)
+static int nextPrimeNumber(Tile_t *tile)
 {
     updateColorAndPrimeIndexOfTile(tile);
     return primeArray[tile->primeIndex];
 }
 
-static void updateColorAndPrimeIndexOfTile(Tile_t* tile)
+static void updateColorAndPrimeIndexOfTile(Tile_t *tile)
 {
     primeIndex = (int)tile->primeIndex;
     colorIndex = tile->colorIndex;
 
     primeIndex = ++primeIndex < numberOfPrimes ? primeIndex : 0;
     colorIndex = (primeIndex != 0 && (unsigned int)(colorIndex + 1) < colorLen)
-                 ? (ColorIndex_t)(colorIndex + 1)
-                 : (ColorIndex_t)0;
+                     ? (ColorIndex_t)(colorIndex + 1)
+                     : (ColorIndex_t)0;
 
     tile->primeIndex = (uint32_t)primeIndex;
     tile->colorIndex = colorIndex;

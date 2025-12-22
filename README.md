@@ -111,16 +111,11 @@ Secasy was compared against industry-standard hash algorithms:
 
 Secasy operates as a **slow hash** by design (similar to bcrypt, PBKDF2, Argon2):
 
-| Algorithm | Hashes/Second | Use Case |
-|-----------|---------------|----------|
+| Algorithm | Hashes/Second (Single-Thread) | Use Case |
+|-----------|-------------------------------|----------|
 | SHA256 | ~1,164,000 | Fast file hashing |
 | MD5 | ~1,181,000 | Fast checksums |
-| **Secasy** | **~5** | Password hashing, key derivation |
-
-The 100,000 processing rounds provide **brute-force protection**:
-- Attacker: ~5 password attempts/second
-- Time for 1 million attempts: ~55 hours
-- Time for 1 billion attempts: ~6.3 years
+| **Secasy** | **~11** | Password hashing, key derivation |
 
 ### What These Tests Show ✓
 
