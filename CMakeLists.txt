@@ -109,12 +109,84 @@ add_executable(SecasyTruncCollisionPoC
         SieveOfEratosthenes.h
         util.h)
 
+# Comprehensive Security Test executable
+add_executable(SecasyComprehensiveSecurity
+    tests/analysis/comprehensive_security_test.c
+        Calculations.c
+        InitializationPhase.c
+        Printing.c
+        ProcessingPhase.c
+        SieveOfEratosthenes.c
+        util.c
+        Defines.h
+        Calculations.h
+        InitializationPhase.h
+        Printing.h
+        ProcessingPhase.h
+        SieveOfEratosthenes.h
+        util.h)
+
+# Deep Security Test executable
+add_executable(SecasyDeepSecurity
+    tests/analysis/test_deep_security.c
+        Calculations.c
+        InitializationPhase.c
+        Printing.c
+        ProcessingPhase.c
+        SieveOfEratosthenes.c
+        util.c
+        Defines.h
+        Calculations.h
+        InitializationPhase.h
+        Printing.h
+        ProcessingPhase.h
+        SieveOfEratosthenes.h
+        util.h)
+
+# Practical Exploit Test executable
+add_executable(SecasyPracticalExploit
+    tests/analysis/practical_exploit_test.c
+        Calculations.c
+        InitializationPhase.c
+        Printing.c
+        ProcessingPhase.c
+        SieveOfEratosthenes.c
+        util.c
+        Defines.h
+        Calculations.h
+        InitializationPhase.h
+        Printing.h
+        ProcessingPhase.h
+        SieveOfEratosthenes.h
+        util.h)
+
+# Statistical Randomness Test executable
+add_executable(SecasyStatisticalRandomness
+    tests/analysis/statistical_randomness_test.c
+        Calculations.c
+        InitializationPhase.c
+        Printing.c
+        ProcessingPhase.c
+        SieveOfEratosthenes.c
+        util.c
+        Defines.h
+        Calculations.h
+        InitializationPhase.h
+        Printing.h
+        ProcessingPhase.h
+        SieveOfEratosthenes.h
+        util.h)
+
 # Ensure subdirectory test sources can include headers at project root
 target_include_directories(SecasyAvalanche PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(SecasyCollision PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(SecasyDifferential PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(SecasyExtendedSecurity PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(SecasyTruncCollisionPoC PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(SecasyComprehensiveSecurity PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(SecasyDeepSecurity PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(SecasyPracticalExploit PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(SecasyStatisticalRandomness PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Large file support for Unix-like systems
 if (NOT WIN32)
@@ -124,12 +196,18 @@ if (NOT WIN32)
     target_compile_definitions(SecasyDifferential PRIVATE _FILE_OFFSET_BITS=64)
     target_compile_definitions(SecasyExtendedSecurity PRIVATE _FILE_OFFSET_BITS=64)
     target_compile_definitions(SecasyTruncCollisionPoC PRIVATE _FILE_OFFSET_BITS=64)
+    target_compile_definitions(SecasyComprehensiveSecurity PRIVATE _FILE_OFFSET_BITS=64)
+    target_compile_definitions(SecasyDeepSecurity PRIVATE _FILE_OFFSET_BITS=64)
+    target_compile_definitions(SecasyPracticalExploit PRIVATE _FILE_OFFSET_BITS=64)
+    target_compile_definitions(SecasyStatisticalRandomness PRIVATE _FILE_OFFSET_BITS=64)
 endif()
 
 # Warning / optimization flags (do not force -Ofast so user can choose with CMAKE_BUILD_TYPE)
 if (MSVC)
     target_compile_options(Secasy PRIVATE /W4 /permissive-)
     target_compile_options(SecasyAvalanche PRIVATE /W4 /permissive-)
+    target_compile_options(SecasyComprehensiveSecurity PRIVATE /W4 /permissive-)
+    target_compile_options(SecasyDeepSecurity PRIVATE /W4 /permissive-)
 else()
     target_compile_options(Secasy PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
     target_compile_options(SecasyAvalanche PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
@@ -137,6 +215,10 @@ else()
     target_compile_options(SecasyDifferential PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
     target_compile_options(SecasyExtendedSecurity PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
     target_compile_options(SecasyTruncCollisionPoC PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
+    target_compile_options(SecasyComprehensiveSecurity PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
+    target_compile_options(SecasyDeepSecurity PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
+    target_compile_options(SecasyPracticalExploit PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
+    target_compile_options(SecasyStatisticalRandomness PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
     # Enable ANSI stdio on MinGW so %zu etc. are recognized and reduce format warnings
     if (MINGW)
     target_compile_definitions(Secasy PRIVATE __USE_MINGW_ANSI_STDIO=1)
@@ -145,6 +227,10 @@ else()
     target_compile_definitions(SecasyDifferential PRIVATE __USE_MINGW_ANSI_STDIO=1)
     target_compile_definitions(SecasyExtendedSecurity PRIVATE __USE_MINGW_ANSI_STDIO=1)
     target_compile_definitions(SecasyTruncCollisionPoC PRIVATE __USE_MINGW_ANSI_STDIO=1)
+    target_compile_definitions(SecasyComprehensiveSecurity PRIVATE __USE_MINGW_ANSI_STDIO=1)
+    target_compile_definitions(SecasyDeepSecurity PRIVATE __USE_MINGW_ANSI_STDIO=1)
+    target_compile_definitions(SecasyPracticalExploit PRIVATE __USE_MINGW_ANSI_STDIO=1)
+    target_compile_definitions(SecasyStatisticalRandomness PRIVATE __USE_MINGW_ANSI_STDIO=1)
     endif()
 endif()
 
@@ -167,4 +253,8 @@ if (NOT WIN32)
     target_link_libraries(SecasyDifferential PRIVATE m)
     target_link_libraries(SecasyExtendedSecurity PRIVATE m)
     target_link_libraries(SecasyTruncCollisionPoC PRIVATE m)
+    target_link_libraries(SecasyComprehensiveSecurity PRIVATE m)
+    target_link_libraries(SecasyDeepSecurity PRIVATE m)
+    target_link_libraries(SecasyPracticalExploit PRIVATE m)
+    target_link_libraries(SecasyStatisticalRandomness PRIVATE m)
 endif()

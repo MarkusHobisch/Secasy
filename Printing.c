@@ -92,7 +92,7 @@ void printSumsAndValues()
     printf("\n");
     printf("- Last prime was %d\n", lastPrime);
     printf("- Last position was [%u,%u]\n", pos.x, pos.y);
-    printf("- Sum of multiplied values is %lli\n", calcSumOfProducts());
+    printf("- Hash value is %lli\n", hashValue());
 }
 
 void printDatatypeMaxValues()
