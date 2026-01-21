@@ -78,6 +78,13 @@ The 2D field is updated per tile using a color (operation) associated with each 
 cmake -S . -B build
 cmake --build build --config Release -- -j
 ```
+
+**Full rebuild (clean first):**
+```bash
+cmake --build build --clean-first
+```
+The `--clean-first` flag deletes all old build artifacts before compiling, ensuring a complete rebuild. Use this when header files have changed or when experiencing issues with cached object files.
+
 Produces executables: `Secasy`, `SecasyAvalanche`, `SecasyCollision`, `SecasyPreimage`
 
 **Direct GCC (alternative):**

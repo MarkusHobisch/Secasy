@@ -20,8 +20,6 @@
 #include "Printing.h"
 #include "util.h"
 
-// maRkus -> 57dc2a5605a7d4ef
-// -n 64
 unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
 int hashLengthInBits = DEFAULT_BIT_SIZE;
 static unsigned long maximumPrimeIndex = DEFAULT_MAX_PRIME_INDEX;
