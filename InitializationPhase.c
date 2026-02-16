@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include "Defines.h"
 #include "InitializationPhase.h"
 #include "SieveOfEratosthenes.h"
@@ -34,10 +35,11 @@ Tile_t field[FIELD_SIZE][FIELD_SIZE];
 int lastPrime = 1;
 
 static int numberOfPrimes = NUMBER_OF_PRIMES;
-static unsigned int colorLen = 5U;
+static unsigned int colorLen = 6U;
 static int primeIndex = 0;
 static ColorIndex_t colorIndex = ADD;
 static int *primeArray = storedPrimesArray;
+static int primeArrayDynamic = 0;
 
 static void calcAndSetDirections(int byte);
 
@@ -104,7 +106,7 @@ void readAndProcessFile(const char *filename)
     fclose(file);
     free(buffer);
     setPrimeNumberOfLastTile();
-    lastPrime = field[pos.x][pos.y].value;
+    lastPrime = (int)field[pos.x][pos.y].value;
 }
 
 // New: process an in-memory buffer (used for avalanche tests)
@@ -121,11 +123,19 @@ void processBuffer(const unsigned char *data, size_t len)
         calcAndSetDirections(byte);
     }
     setPrimeNumberOfLastTile();
-    lastPrime = field[pos.x][pos.y].value;
+    lastPrime = (int)field[pos.x][pos.y].value;
 }
 
 static void initPrimeNumbers(const unsigned long maxPrimeIndex)
 {
+    /* Free previously generated primes if called again (e.g. avalanche tests) */
+    if (primeArrayDynamic && primeArray)
+    {
+        free(primeArray);
+        primeArray = NULL;
+        primeArrayDynamic = 0;
+    }
+
     if (maxPrimeIndex > DEFAULT_MAX_PRIME_INDEX)
     {
         primeArray = generatePrimeNumbers(&numberOfPrimes, maxPrimeIndex);
@@ -134,6 +144,12 @@ static void initPrimeNumbers(const unsigned long maxPrimeIndex)
             LOG_ERROR("Prime generation failed for maxPrimeIndex=%lu", maxPrimeIndex);
             exit(EXIT_FAILURE);
         }
+        primeArrayDynamic = 1;
+    }
+    else
+    {
+        primeArray = storedPrimesArray;
+        numberOfPrimes = NUMBER_OF_PRIMES;
     }
 }
 
@@ -206,11 +222,11 @@ static void calcAndSetDirections(int byte)
 static void writeNextNumber(const int move)
 {
     Tile_t *tile = &field[pos.x][pos.y];
-    const int oldPrime = tile->value;
+    const uint64_t oldPrime = tile->value;
     const int nextPrime = nextPrimeNumber(tile);
-    tile->value = nextPrime;
+    tile->value = (uint64_t)nextPrime;
 #if DEBUG_MODE
-    printf("old prime: %d -> new prime: %d dir: %d", oldPrime, nextPrime, move);
+    printf("old prime: %" PRIu64 " -> new prime: %d dir: %d", oldPrime, nextPrime, move);
 #endif
     switch (move)
     {
@@ -255,7 +271,7 @@ static void writeNextNumber(const int move)
 static void setPrimeNumberOfLastTile(void)
 {
     Tile_t *tile = &field[pos.x][pos.y];
-    tile->value = nextPrimeNumber(tile);
+    tile->value = (uint64_t)nextPrimeNumber(tile);
 }
 
 static int nextPrimeNumber(Tile_t *tile)
@@ -270,9 +286,7 @@ static void updateColorAndPrimeIndexOfTile(Tile_t *tile)
     colorIndex = tile->colorIndex;
 
     primeIndex = ++primeIndex < numberOfPrimes ? primeIndex : 0;
-    colorIndex = (primeIndex != 0 && (unsigned int)(colorIndex + 1) < colorLen)
-                     ? (ColorIndex_t)(colorIndex + 1)
-                     : (ColorIndex_t)0;
+    colorIndex = (ColorIndex_t)((colorIndex + 1) % colorLen);
 
     tile->primeIndex = (uint32_t)primeIndex;
     tile->colorIndex = colorIndex;

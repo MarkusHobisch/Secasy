@@ -1,6 +1,8 @@
 #ifndef SECASY_CALCULATION_H
 #define SECASY_CALCULATION_H
 
-long long hashValue(void);
+#include <stdint.h>
+
+uint64_t hashValue(void);
 
 #endif

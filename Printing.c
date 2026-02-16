@@ -15,25 +15,25 @@ void printField()
 
     for (int j = 0; j < FIELD_SIZE; j++)
     {
-        long long rowSum = 0;
+        uint64_t rowSum = 0;
         for (int i = 0; i < FIELD_SIZE; i++)
         {
-            printf("%16" PRIu64 " ", (uint64_t)field[i][j].value);
+            printf("%16" PRIu64 " ", field[i][j].value);
             rowSum += field[i][j].value;
         }
-        printf("\t sum row: %" PRId64 "\n", (int64_t)rowSum);
+        printf("\t sum row: %" PRIu64 "\n", rowSum);
     }
 
     printf("\n\t --------------- Transposed matrix --------------- \n");
     for (int j = 0; j < FIELD_SIZE; j++)
     {
-        long long colSum = 0;
+        uint64_t colSum = 0;
         for (int i = 0; i < FIELD_SIZE; i++)
         {
-            printf("%16" PRIu64 " ", (uint64_t)field[j][i].value);
+            printf("%16" PRIu64 " ", field[j][i].value);
             colSum += field[j][i].value;
         }
-        printf("\t sum column: %" PRId64 "\n", (int64_t)colSum);
+        printf("\t sum column: %" PRIu64 "\n", colSum);
     }
     printf("\n\n");
 }
@@ -71,28 +71,28 @@ void printSumsAndValues()
 
     for (int j = 0; j < FIELD_SIZE; ++j)
     {
-        long long rowSum = 0;
+        uint64_t rowSum = 0;
         for (int i = 0; i < FIELD_SIZE; ++i)
         {
             rowSum += field[i][j].value;
         }
-        printf("  Row: %" PRId64 "\n", (int64_t)rowSum);
+        printf("  Row: %" PRIu64 "\n", rowSum);
     }
     printf("\n");
     printf("- Print column sums: \n");
     for (int j = 0; j < FIELD_SIZE; ++j)
     {
-        long long colSum = 0;
+        uint64_t colSum = 0;
         for (int i = 0; i < FIELD_SIZE; ++i)
         {
             colSum += field[j][i].value;
         }
-        printf("  Column: %" PRId64 "\n", (int64_t)colSum);
+        printf("  Column: %" PRIu64 "\n", colSum);
     }
     printf("\n");
     printf("- Last prime was %d\n", lastPrime);
     printf("- Last position was [%u,%u]\n", pos.x, pos.y);
-    printf("- Hash value is %lli\n", hashValue());
+    printf("- Hash value is %" PRIu64 "\n", hashValue());
 }
 
 void printDatatypeMaxValues()
