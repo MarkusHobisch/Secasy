@@ -9,7 +9,7 @@
 #include "../../ProcessingPhase.h"
 #include "../../Calculations.h"
 
-unsigned long numberOfRounds = 1000;
+unsigned long numberOfRounds = 10;
 int hashLengthInBits = 128;
 
 void test_deterministic(void) {

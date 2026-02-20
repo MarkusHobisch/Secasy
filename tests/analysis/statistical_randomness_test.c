@@ -22,13 +22,13 @@
 #include "../../Calculations.h"
 #include "../../util.h"
 
-unsigned long numberOfRounds = 10000;
+unsigned long numberOfRounds = 10;
 int hashLengthInBits = 128;
 
 extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 extern Position_t pos;
 
-#define NUM_HASHES 1000
+#define NUM_HASHES 50000
 #define BITS_PER_HASH 128
 #define TOTAL_BITS (NUM_HASHES * BITS_PER_HASH)
 
@@ -495,7 +495,7 @@ int main(void) {
     
     srand((unsigned)time(NULL));
     
-    unsigned long rounds = 10000;
+    unsigned long rounds = 10;
     
     printf("Configuration:\n");
     printf("  Rounds: %lu\n", rounds);

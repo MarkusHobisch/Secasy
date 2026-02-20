@@ -24,13 +24,11 @@ static void printAllPrimes(int numberOfPrimes, const int *primes);
 
 int *generatePrimeNumbers(int *numberOfPrimes, const unsigned long maxPrimeIndex)
 {
-    LOG_INFO("generating primes up to %lu%s", maxPrimeIndex,
 #ifdef SECASY_PRIMES_FULL
-             " (full range)"
+    LOG_INFO("generating primes up to %lu (full range)", maxPrimeIndex);
 #else
-             " (truncated heuristic possible)"
+    LOG_INFO("generating primes up to %lu (truncated heuristic possible)", maxPrimeIndex);
 #endif
-    );
     if (!numberOfPrimes)
     {
         LOG_ERROR("numberOfPrimes pointer is NULL");

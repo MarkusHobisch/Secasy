@@ -24,7 +24,7 @@
 #include "../../Calculations.h"
 #include "../../util.h"
 
-unsigned long numberOfRounds = 10000;
+unsigned long numberOfRounds = 10;
 int hashLengthInBits = 128;
 
 extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
@@ -668,7 +668,7 @@ void run_comprehensive_tests(unsigned long rounds) {
     
     // Test 1: Birthday Attack
     printf("\n[1/10] Birthday Attack Resistance\n");
-    double birthday_result = test_birthday_attack(rounds, 10000);
+    double birthday_result = test_birthday_attack(rounds, 100000);
     if (birthday_result == 0) {
         printf("  ✓ PASSED\n");
         passed++;
@@ -678,7 +678,7 @@ void run_comprehensive_tests(unsigned long rounds) {
     
     // Test 2: Preimage Attack
     printf("\n[2/10] Preimage Attack Resistance\n");
-    double preimage_result = test_preimage_resistance(rounds, 100000);
+    double preimage_result = test_preimage_resistance(rounds, 1000000);
     if (preimage_result == 0) {
         printf("  ✓ PASSED\n");
         passed++;
@@ -688,7 +688,7 @@ void run_comprehensive_tests(unsigned long rounds) {
     
     // Test 3: Second Preimage
     printf("\n[3/10] Second Preimage Attack Resistance\n");
-    double second_preimage_result = test_second_preimage(rounds, 50000);
+    double second_preimage_result = test_second_preimage(rounds, 500000);
     if (second_preimage_result == 0) {
         printf("  ✓ PASSED\n");
         passed++;
@@ -698,7 +698,7 @@ void run_comprehensive_tests(unsigned long rounds) {
     
     // Test 4: Bit Independence
     printf("\n[4/10] Bit Independence Criterion (BIC)\n");
-    double bic_result = test_bit_independence(rounds, 1000);
+    double bic_result = test_bit_independence(rounds, 10000);
     if (bic_result < 0.1) {
         printf("  ✓ PASSED (deviation < 10%%)\n");
         passed++;
@@ -710,7 +710,7 @@ void run_comprehensive_tests(unsigned long rounds) {
     
     // Test 5: Strict Avalanche Criterion
     printf("\n[5/10] Strict Avalanche Criterion (SAC)\n");
-    double sac_result = test_strict_avalanche(rounds, 640);
+    double sac_result = test_strict_avalanche(rounds, 5000);
     if (sac_result < 0.1) {
         printf("  ✓ PASSED (deviation < 10%%)\n");
         passed++;
@@ -722,7 +722,7 @@ void run_comprehensive_tests(unsigned long rounds) {
     
     // Test 6: Non-linearity
     printf("\n[6/10] Non-linearity Test\n");
-    double nonlin_result = test_nonlinearity(rounds, 500);
+    double nonlin_result = test_nonlinearity(rounds, 5000);
     if (nonlin_result < 0.05) {
         printf("  ✓ PASSED (linearity < 5%%)\n");
         passed++;
@@ -734,7 +734,7 @@ void run_comprehensive_tests(unsigned long rounds) {
     
     // Test 7: Length Extension
     printf("\n[7/10] Length Extension Attack Resistance\n");
-    double length_result = test_length_extension(rounds, 100);
+    double length_result = test_length_extension(rounds, 1000);
     if (length_result < 0.3) {
         printf("  ✓ PASSED (deviation < 30%%)\n");
         passed++;
@@ -744,7 +744,7 @@ void run_comprehensive_tests(unsigned long rounds) {
     
     // Test 8: Near-Collisions
     printf("\n[8/10] Near-Collision Resistance\n");
-    double near_coll_result = test_near_collisions(rounds, 1000);
+    double near_coll_result = test_near_collisions(rounds, 10000);
     if (near_coll_result < 0.1) {
         printf("  ✓ PASSED\n");
         passed++;
@@ -764,7 +764,7 @@ void run_comprehensive_tests(unsigned long rounds) {
     
     // Test 10: Distribution Uniformity
     printf("\n[10/10] Distribution Uniformity\n");
-    double uniform_result = test_distribution_uniformity(rounds, 10000);
+    double uniform_result = test_distribution_uniformity(rounds, 100000);
     if (uniform_result < 0.1) {
         printf("  ✓ PASSED (chi-square within limits)\n");
         passed++;
@@ -797,17 +797,17 @@ int main(void) {
     srand((unsigned)time(NULL));
     
     printf("This test suite performs deep cryptanalysis.\n");
-    printf("Expected runtime: 5-15 minutes depending on CPU.\n\n");
+    printf("Expected runtime: 2-5 minutes depending on CPU.\n\n");
     
-    // Test with default rounds
-    run_comprehensive_tests(10000);
+    // Test with default rounds (10)
+    run_comprehensive_tests(10);
     
     printf("\n\n");
     printf("╔═══════════════════════════════════════════════════════╗\n");
-    printf("║  Testing with reduced rounds (1000)                   ║\n");
+    printf("║  Testing with reduced rounds (8)                      ║\n");
     printf("╚═══════════════════════════════════════════════════════╝\n");
     
-    run_comprehensive_tests(1000);
+    run_comprehensive_tests(8);
     
     printf("\n\n=== Analysis Complete ===\n");
     

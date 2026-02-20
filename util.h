@@ -20,10 +20,10 @@ char* secasy_strdup(const char* src);
 /* Returns non-zero if v is a power of two (>0). */
 int is_power_of_two(long v);
 
-/* Logging macros */
-#define LOG_INFO(fmt, ...)  do { fprintf(stdout, "[INFO] " fmt "\n", ##__VA_ARGS__); } while(0)
-#define LOG_ERROR(fmt, ...) do { fprintf(stderr, "[ERROR] " fmt "\n", ##__VA_ARGS__); } while(0)
-#define LOG_DEBUG(fmt, ...) do { if (DEBUG_MODE) fprintf(stdout, "[DEBUG] " fmt "\n", ##__VA_ARGS__); } while(0)
+/* Logging macros — fully C11-compliant (no GNU ##__VA_ARGS__ extension). */
+#define LOG_INFO(...)  do { fprintf(stdout, "[INFO] "); fprintf(stdout, __VA_ARGS__); fprintf(stdout, "\n"); } while(0)
+#define LOG_ERROR(...) do { fprintf(stderr, "[ERROR] "); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); } while(0)
+#define LOG_DEBUG(...) do { if (DEBUG_MODE) { fprintf(stdout, "[DEBUG] "); fprintf(stdout, __VA_ARGS__); fprintf(stdout, "\n"); } } while(0)
 
 #ifdef __cplusplus
 }

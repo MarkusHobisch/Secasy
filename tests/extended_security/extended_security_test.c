@@ -24,7 +24,7 @@
 #include "../../Printing.h"
 
 #define MAX_HASH_LEN 512
-#define DEFAULT_ROUNDS 1000
+#define DEFAULT_ROUNDS 10
 #define DEFAULT_PRIME_INDEX 200
 
 /* Global variables required by Secasy */
@@ -489,7 +489,7 @@ int test_zero_sensitivity(void) {
 /* ========== Main ========== */
 
 int main(int argc, char *argv[]) {
-    int trials = 1000;
+    int trials = 10000;
     int seed = time(NULL);
     
     /* Parse arguments */
@@ -508,7 +508,7 @@ int main(int argc, char *argv[]) {
             printf("Extended Security Tests for Secasy\n");
             printf("Usage: %s [options]\n", argv[0]);
             printf("  -t <trials>  Number of trials (default: 1000)\n");
-            printf("  -r <rounds>  Hash rounds (default: 1000)\n");
+            printf("  -r <rounds>  Hash rounds (default: 10)\n");
             printf("  -i <index>   Max prime index (default: 200)\n");
             printf("  -n <param>   Secasy hashLengthInBits parameter (default: 128)\n");
             printf("  -s <seed>    Random seed\n");

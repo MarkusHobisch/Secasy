@@ -20,7 +20,7 @@
 #include "../../util.h"
 
 // Globals required by Secasy
-unsigned long numberOfRounds = 1000;
+unsigned long numberOfRounds = 10;
 int hashLengthInBits = 256;
 
 // Compute hash and return hex string
@@ -334,7 +334,7 @@ int main(int argc, char* argv[]) {
     printf("========================================\n");
     
     int maxPrimeIndex = 500;
-    numberOfRounds = 1000;
+    numberOfRounds = 10;
     hashLengthInBits = 256;
     
     if (argc > 1) maxPrimeIndex = atoi(argv[1]);
@@ -346,9 +346,9 @@ int main(int argc, char* argv[]) {
     printf("  Rounds: %lu\n", numberOfRounds);
     printf("  Hash parameter (hashLengthInBits): %d\n", hashLengthInBits);
 
-    int seqCount = 1000;
-    int singlePairs = 500;
-    int relatedCount = 100;
+    int seqCount = 10000;
+    int singlePairs = 5000;
+    int relatedCount = 1000;
     const char* fast = getenv("SECASY_DIFF_FAST");
     if (fast && fast[0] && strcmp(fast, "0") != 0) {
         seqCount = 200;

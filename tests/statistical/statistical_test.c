@@ -27,10 +27,10 @@
 #define MAX_BITS 2048
 
 /* Global variables required by Secasy */
-unsigned long numberOfRounds = 1000;
+unsigned long numberOfRounds = 10;
 int hashLengthInBits = 256;
 
-static int g_rounds = 1000;
+static int g_rounds = 10;
 static int g_primeIndex = 200;
 static int g_hashBits = 256;
 
