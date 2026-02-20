@@ -122,12 +122,12 @@ gcc -std=c11 -O3 -Wall -Wextra -o secasy \
 
 Secasy is a command line tool supporting the following arguments:
 
-| Flag | Description | Example |
-|------|-------------|---------|
-| `-n` | Hash output size in bits (power of two, ≥64) | `-n 256` |
-| `-i` | Maximum prime index | `-i 100` |
-| `-r` | Number of processing rounds | `-r 1000` |
-| `-f` | Input file path | `-f input.pdf` |
+| Flag | Description | Default | Example |
+|------|-------------|---------|---------|
+| `-n` | Hash output size in bits (power of two, ≥64) | 512 | `-n 256` |
+| `-i` | Maximum prime index | 16,000,000 | `-i 100` |
+| `-r` | Number of processing rounds | 10 | `-r 20` |
+| `-f` | Input file path | *(required)* | `-f input.pdf` |
 
 At least the filename (`-f`) must be specified.
 

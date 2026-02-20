@@ -3,7 +3,7 @@
 ## 1. Algorithm Overview
 
 Grid-based cryptographic hash function operating on a 16×16 field of `uint64_t` cells (256 cells total).  
-Three phases: **Initialization** → **Processing** (100,000 rounds) → **Extraction** (512-bit hash output).  
+Three phases: **Initialization** → **Processing** (10 rounds default) → **Extraction** (512-bit hash output).  
 Six operations: ADD, SUB, XOR, AND, OR, INVERT — applied per cell with neighbor coupling.
 
 ## 2. Empirical Security Results
@@ -54,7 +54,7 @@ Even if an attacker successfully leaks the full operation sequence and traversal
 1. **No forward simulation** — without knowing the secret input, the attacker cannot compute field values, so leaked information cannot be anchored to concrete data
 2. **No backward computation** — AND/OR are non-invertible; knowing that `a AND b = c` does not recover `a` or `b` uniquely. The operation sequence alone (without operand values) is insufficient
 3. **Data-dependent traversal** — the next position depends on the current cell value after modification, creating a feedback loop that cannot be replayed without full state knowledge
-4. **Cascading dependencies** — 100,000 rounds × 256 cells = 25.6 million chained operations with mutual feedback across the entire field
+4. **Cascading dependencies** — 10 rounds × 256 cells = 2,560 chained operations with mutual feedback across the entire field (empirically confirmed to be sufficient — see round-reduction analysis)
 
 This stands in contrast to designs like AES, where the structure is fixed and all operations are invertible — making side-channel leaks directly exploitable.
 
@@ -100,7 +100,7 @@ This could theoretically cause the field to degenerate toward all-zero or all-on
 - Data-dependent traversal ensures different neighbor pairings across rounds
 - Empirical evidence: all statistical randomness tests (10/10) pass, showing no detectable bias
 
-A formal proof that bias cancellation holds for all inputs across 100,000 rounds remains open (see Section 9).
+A formal proof that bias cancellation holds for all inputs across the processing rounds remains open (see Section 9). Empirical testing confirms no detectable bias at 10 rounds.
 
 ## 8. Quantum Resistance
 
@@ -117,7 +117,7 @@ Secasy's 512-bit output provides a **256-bit post-quantum preimage security leve
 Pathological inputs deserve consideration:
 - **Empty input (0 bytes):** No field modification occurs beyond initialization. The hash is deterministic and unique, but derived from the default field state (all cells = 2). This is by design — no padding is applied.
 - **All-zero input (e.g., 1000× `0x00`):** Byte `0x00` decodes to direction `00 00 00 00` (4× UP). Repeated identical directions could produce suboptimal field distribution. However, the prime-based jump distances and commutativity-breaking offsets ensure that even uniform directions produce distinct cell visits.
-- **Very short input (1 byte):** Only 4 traversal moves. The field remains close to its initial state, but 100,000 processing rounds still provide full diffusion.
+- **Very short input (1 byte):** Only 4 traversal moves. The field remains close to its initial state, but the processing rounds (default: 10) still provide sufficient diffusion — confirmed by round-reduction analysis down to 1 round.
 
 These cases are not security vulnerabilities — the hash remains deterministic and collision-free. Empirical validation of avalanche properties for edge-case inputs is recommended.
 
@@ -125,7 +125,7 @@ These cases are not security vulnerabilities — the hash remains deterministic 
 
 A formal proof of pseudorandom permutation (PRP) properties would require:
 - Showing that the state transition forms an **ergodic Markov chain** over the state space $\{0, \ldots, 2^{64}-1\}^{256}$
-- Bounding the **mixing time** (e.g., via coupling method) to confirm convergence well within 100,000 rounds
+- Bounding the **mixing time** (e.g., via coupling method) to confirm convergence within the default 10 rounds
 - Analyzing the **bias cancellation** of AND/OR across rounds (see Section 7)
 - Proving that the wide-pipe extraction (Section 6) preserves uniformity
 
