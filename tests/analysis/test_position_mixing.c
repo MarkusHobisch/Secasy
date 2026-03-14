@@ -15,7 +15,7 @@ extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 extern Position_t pos;
 extern int lastPrime;
 unsigned long numberOfRounds = 100000;
-int hashLengthInBits = 128;
+int hashLengthInBits = DEFAULT_BIT_SIZE;
 
 void test_repeated_bytes(void) {
     printf("\n=== Test 1: Repeated same byte ===\n");

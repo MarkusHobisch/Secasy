@@ -21,7 +21,7 @@ extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 
 // Define globals that main.c normally defines
 unsigned long numberOfRounds = 100000;  // Standard setting
-int hashLengthInBits = 128;
+int hashLengthInBits = DEFAULT_BIT_SIZE;
 
 // Store hash results
 typedef struct {

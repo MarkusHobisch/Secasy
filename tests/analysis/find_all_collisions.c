@@ -11,7 +11,7 @@
 
 extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 unsigned long numberOfRounds = 100000;
-int hashLengthInBits = 128;
+int hashLengthInBits = DEFAULT_BIT_SIZE;
 
 int main(void) {
     char hashes[256][256];

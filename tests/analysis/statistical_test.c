@@ -28,11 +28,11 @@
 
 /* Global variables required by Secasy */
 unsigned long numberOfRounds = 10;
-int hashLengthInBits = 256;
+int hashLengthInBits = DEFAULT_BIT_SIZE;
 
 static int g_rounds = 10;
 static int g_primeIndex = 200;
-static int g_hashBits = 256;
+static int g_hashBits = DEFAULT_BIT_SIZE;
 
 void compute_hash(const uint8_t *input, size_t len, char *hashOut) {
     FILE *f = fopen("_stat_temp.bin", "wb");

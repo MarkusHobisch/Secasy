@@ -2,7 +2,7 @@
 
 ## Methodology
 
-The number of processing rounds was systematically reduced from 100,000 down to 1, while measuring six security metrics at each level. Tests were conducted for all four supported hash sizes: **64, 128, 256, and 512 bits**.
+The number of processing rounds was systematically reduced from 100,000 down to 1 (the production default is 10 rounds), while measuring six security metrics at each level. Tests were conducted for all four supported hash sizes: **64, 128, 256, and 512 bits**.
 
 | Metric | Description | Ideal | Warning Threshold |
 |--------|-------------|-------|-------------------|
@@ -278,9 +278,9 @@ The AND and OR operations (2 of the 6 operations) are inherently biasing: AND pu
 
 ### Performance Optimization
 
-The 100,000-round default provides a safety margin of at least **100,000:1** over the minimum required for statistical quality. For comparison, SHA-256 uses 64 rounds with an estimated security margin of ~2:1.
+The 10-round default provides a safety margin of at least **10:1** over the minimum required for statistical quality (1 round at 64-bit). For comparison, SHA-256 uses 64 rounds with an estimated security margin of ~2:1.
 
-If performance is critical, the round count could be reduced to 10–100 without measurable degradation — at least with respect to avalanche, collision, and correlation metrics.
+The round count could theoretically be reduced to 1–5 without measurable degradation — at least with respect to avalanche, collision, and correlation metrics.
 
 ### Paper Material
 

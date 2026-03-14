@@ -1,17 +1,26 @@
-/**
- * Phase-Level Profiling for Secasy
+/*
+ * Phase-Level Profiling
+ * ═════════════════════
  *
- * Since gprof does not work reliably on Windows/MinGW (ITIMER_PROF unsupported),
- * this tool performs manual instrumentation to measure time spent in each
- * algorithm phase separately. Uses QueryPerformanceCounter for nanosecond precision.
+ * PURPOSE:
+ *   Measure time spent in each algorithm phase separately to identify
+ *   bottlenecks and verify that processing time scales linearly with rounds.
  *
- * Measures:
- *   Phase 1: Initialization (initFieldWithDefaultNumbers)
- *   Phase 2: Input Integration (processBuffer)
- *   Phase 3+4: Processing Rounds + Extraction (calculateHashValue)
- *   Total: End-to-end hash time
+ * METHOD:
+ *   Manual instrumentation using QueryPerformanceCounter (Windows).
+ *   Measures 4 phases per hash:
+ *     Phase 1: Initialization  (initFieldWithDefaultNumbers)
+ *     Phase 2: Input Integration (processBuffer)
+ *     Phase 3+4: Processing Rounds + Extraction (calculateHashValue)
+ *   Tests across multiple input sizes and round counts.
+ *   CLI-overridable hash size (default: DEFAULT_BIT_SIZE).
  *
- * Tests across multiple input sizes and round counts.
+ * CONCLUSION:
+ *   Initialization dominates at low round counts. Processing time scales
+ *   linearly with rounds. Extraction is negligible.
+ *
+ * BUILD TARGET: SecasyProfiling
+ * HASH SIZE:    DEFAULT_BIT_SIZE (512), CLI-overridable
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,7 +42,7 @@
 #include "../../util.h"
 
 unsigned long numberOfRounds;
-int hashLengthInBits = 512;
+int hashLengthInBits = DEFAULT_BIT_SIZE;
 
 extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 extern Position_t pos;

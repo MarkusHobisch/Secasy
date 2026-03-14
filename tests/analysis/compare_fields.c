@@ -12,7 +12,7 @@
 extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 extern Position_t pos;
 unsigned long numberOfRounds = 100000;
-int hashLengthInBits = 128;
+int hashLengthInBits = DEFAULT_BIT_SIZE;
 
 void print_field_state(const char* label) {
     printf("\n%s:\n", label);

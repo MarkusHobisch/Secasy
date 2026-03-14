@@ -5,379 +5,98 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-# Source files
-set(SOURCE_FILES
-        main.c
+# ── Core library sources (shared by all targets) ──────────────────────
+set(CORE_SOURCES
         Calculations.c
         InitializationPhase.c
         Printing.c
         ProcessingPhase.c
         SieveOfEratosthenes.c
-        util.c
-        Calculations.h
-        Defines.h
-        InitializationPhase.h
-        Printing.h
-        ProcessingPhase.h
-        SieveOfEratosthenes.h
-        util.h)
+        util.c)
 
-add_executable(Secasy ${SOURCE_FILES})
+# ── Main executable ───────────────────────────────────────────────────
+add_executable(Secasy main.c ${CORE_SOURCES})
 
-# Avalanche test executable (exclude main.c, include avalanche.c)
-add_executable(SecasyAvalanche
-    tests/avalanche/avalanche.c
-        Calculations.c
-        InitializationPhase.c
-        Printing.c
-        ProcessingPhase.c
-        SieveOfEratosthenes.c
-        util.c
-        Defines.h
-        Calculations.h
-        InitializationPhase.h
-        Printing.h
-        ProcessingPhase.h
-        SieveOfEratosthenes.h
-        util.h)
+# ── Helper: add a test executable with standard config ────────────────
+function(add_secasy_test TARGET SOURCE)
+    add_executable(${TARGET} ${SOURCE} ${CORE_SOURCES})
+    target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+endfunction()
 
-# Collision test executable
-add_executable(SecasyCollision
-    tests/collision/collision.c
-        Calculations.c
-        InitializationPhase.c
-        Printing.c
-        ProcessingPhase.c
-        SieveOfEratosthenes.c
-        util.c
-        Defines.h
-        Calculations.h
-        InitializationPhase.h
-        Printing.h
-        ProcessingPhase.h
-        SieveOfEratosthenes.h
-        util.h)
+# ── Security tests ────────────────────────────────────────────────────
+add_secasy_test(SecasyComprehensiveSecurity  tests/security/comprehensive_security_test.c)
+add_secasy_test(SecasyDeepSecurity           tests/security/test_deep_security.c)
+add_secasy_test(SecasyExtendedSecurity       tests/security/extended_security_test.c)
+add_secasy_test(SecasyPracticalExploit       tests/security/practical_exploit_test.c)
 
-# Differential security test executable
-add_executable(SecasyDifferential
-    tests/differential/differential_test.c
-        Calculations.c
-        InitializationPhase.c
-        Printing.c
-        ProcessingPhase.c
-        SieveOfEratosthenes.c
-        util.c
-        Defines.h
-        Calculations.h
-        InitializationPhase.h
-        Printing.h
-        ProcessingPhase.h
-        SieveOfEratosthenes.h
-        util.h)
+# ── Avalanche / diffusion ────────────────────────────────────────────
+add_secasy_test(SecasyAvalanche              tests/avalanche/avalanche.c)
 
-# Extended security test executable
-add_executable(SecasyExtendedSecurity
-    tests/extended_security/extended_security_test.c
-        Calculations.c
-        InitializationPhase.c
-        Printing.c
-        ProcessingPhase.c
-        SieveOfEratosthenes.c
-        util.c
-        Defines.h
-        Calculations.h
-        InitializationPhase.h
-        Printing.h
-        ProcessingPhase.h
-        SieveOfEratosthenes.h
-        util.h)
+# ── Collision resistance ──────────────────────────────────────────────
+add_secasy_test(SecasyCollision              tests/collision/collision.c)
+add_secasy_test(SecasyTruncCollisionPoC      tests/collision/trunc_collision_poc.c)
 
-# Truncation collision PoC executable
-add_executable(SecasyTruncCollisionPoC
-    tests/poc/trunc_collision_poc.c
-        Calculations.c
-        InitializationPhase.c
-        Printing.c
-        ProcessingPhase.c
-        SieveOfEratosthenes.c
-        util.c
-        Defines.h
-        Calculations.h
-        InitializationPhase.h
-        Printing.h
-        ProcessingPhase.h
-        SieveOfEratosthenes.h
-        util.h)
+# ── Differential cryptanalysis ────────────────────────────────────────
+add_secasy_test(SecasyDifferential           tests/differential/differential_test.c)
 
-# Comprehensive Security Test executable
-add_executable(SecasyComprehensiveSecurity
-    tests/analysis/comprehensive_security_test.c
-        Calculations.c
-        InitializationPhase.c
-        Printing.c
-        ProcessingPhase.c
-        SieveOfEratosthenes.c
-        util.c
-        Defines.h
-        Calculations.h
-        InitializationPhase.h
-        Printing.h
-        ProcessingPhase.h
-        SieveOfEratosthenes.h
-        util.h)
+# ── Statistical randomness ────────────────────────────────────────────
+add_secasy_test(SecasyStatisticalRandomness  tests/statistical/statistical_randomness_test.c)
+add_secasy_test(SecasyStatRigor              tests/statistical/stat_rigor_test.c)
+add_secasy_test(SecasyHashPattern            tests/statistical/hash_pattern_test.c)
 
-# Deep Security Test executable
-add_executable(SecasyDeepSecurity
-    tests/analysis/test_deep_security.c
-        Calculations.c
-        InitializationPhase.c
-        Printing.c
-        ProcessingPhase.c
-        SieveOfEratosthenes.c
-        util.c
-        Defines.h
-        Calculations.h
-        InitializationPhase.h
-        Printing.h
-        ProcessingPhase.h
-        SieveOfEratosthenes.h
-        util.h)
+# ── Performance / benchmarking ────────────────────────────────────────
+add_secasy_test(SecasyBenchmark              tests/performance/benchmark_rounds.c)
+add_secasy_test(SecasyPreciseTiming          tests/performance/precise_timing.c)
+add_secasy_test(SecasyProfiling              tests/performance/profiling.c)
 
-# Practical Exploit Test executable
-add_executable(SecasyPracticalExploit
-    tests/analysis/practical_exploit_test.c
-        Calculations.c
-        InitializationPhase.c
-        Printing.c
-        ProcessingPhase.c
-        SieveOfEratosthenes.c
-        util.c
-        Defines.h
-        Calculations.h
-        InitializationPhase.h
-        Printing.h
-        ProcessingPhase.h
-        SieveOfEratosthenes.h
-        util.h)
+# ── Round-reduction analysis ──────────────────────────────────────────
+add_secasy_test(SecasyRoundReduction         tests/round_reduction/round_reduction_test.c)
 
-# Statistical Randomness Test executable
-add_executable(SecasyStatisticalRandomness
-    tests/analysis/statistical_randomness_test.c
-        Calculations.c
-        InitializationPhase.c
-        Printing.c
-        ProcessingPhase.c
-        SieveOfEratosthenes.c
-        util.c
-        Defines.h
-        Calculations.h
-        InitializationPhase.h
-        Printing.h
-        ProcessingPhase.h
-        SieveOfEratosthenes.h
-        util.h)
+# ── Fuzzing / stress testing ──────────────────────────────────────────
+add_secasy_test(SecasyFuzzTest               tests/fuzzing/fuzz_test.c)
 
-# Hash Pattern Analysis Test executable
-add_executable(SecasyHashPattern
-    tests/analysis/hash_pattern_test.c
-        Calculations.c
-        InitializationPhase.c
-        Printing.c
-        ProcessingPhase.c
-        SieveOfEratosthenes.c
-        util.c
-        Defines.h
-        Calculations.h
-        InitializationPhase.h
-        Printing.h
-        ProcessingPhase.h
-        SieveOfEratosthenes.h
-        util.h)
+# Collect all test target names for bulk property assignment
+set(ALL_TEST_TARGETS
+    SecasyComprehensiveSecurity SecasyDeepSecurity SecasyExtendedSecurity
+    SecasyPracticalExploit SecasyAvalanche SecasyCollision SecasyTruncCollisionPoC
+    SecasyDifferential SecasyStatisticalRandomness SecasyStatRigor SecasyHashPattern
+    SecasyBenchmark SecasyPreciseTiming SecasyProfiling SecasyRoundReduction
+    SecasyFuzzTest)
 
-# Round Reduction Analysis executable
-add_executable(SecasyRoundReduction
-    tests/analysis/round_reduction_test.c
-        Calculations.c
-        InitializationPhase.c
-        Printing.c
-        ProcessingPhase.c
-        SieveOfEratosthenes.c
-        util.c
-        Defines.h
-        Calculations.h
-        InitializationPhase.h
-        Printing.h
-        ProcessingPhase.h
-        SieveOfEratosthenes.h
-        util.h)
+# ── Per-target properties (applied in bulk) ───────────────────────────
+set(WARN_FLAGS -Wall -Wextra -Wundef -Wshadow -Wpointer-arith
+               -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
 
-# Benchmark executable
-add_executable(SecasyBenchmark
-    tests/analysis/benchmark_rounds.c
-        Calculations.c
-        InitializationPhase.c
-        Printing.c
-        ProcessingPhase.c
-        SieveOfEratosthenes.c
-        util.c
-        Defines.h
-        Calculations.h
-        InitializationPhase.h
-        Printing.h
-        ProcessingPhase.h
-        SieveOfEratosthenes.h
-        util.h)
-
-add_executable(SecasyPreciseTiming
-    tests/analysis/precise_timing.c
-        Calculations.c
-        InitializationPhase.c
-        Printing.c
-        ProcessingPhase.c
-        SieveOfEratosthenes.c
-        util.c
-        Defines.h
-        Calculations.h
-        InitializationPhase.h
-        Printing.h
-        ProcessingPhase.h
-        SieveOfEratosthenes.h
-        util.h)
-
-add_executable(SecasyStatRigor
-    tests/analysis/stat_rigor_test.c
-        Calculations.c
-        InitializationPhase.c
-        Printing.c
-        ProcessingPhase.c
-        SieveOfEratosthenes.c
-        util.c
-        Defines.h
-        Calculations.h
-        InitializationPhase.h
-        Printing.h
-        ProcessingPhase.h
-        SieveOfEratosthenes.h
-        util.h)
-
-add_executable(SecasyProfiling
-    tests/analysis/profiling.c
-        Calculations.c
-        InitializationPhase.c
-        Printing.c
-        ProcessingPhase.c
-        SieveOfEratosthenes.c
-        util.c
-        Defines.h
-        Calculations.h
-        InitializationPhase.h
-        Printing.h
-        ProcessingPhase.h
-        SieveOfEratosthenes.h
-        util.h)
-
-add_executable(SecasyFuzzTest
-    tests/analysis/fuzz_test.c
-        Calculations.c
-        InitializationPhase.c
-        Printing.c
-        ProcessingPhase.c
-        SieveOfEratosthenes.c
-        util.c
-        Defines.h
-        Calculations.h
-        InitializationPhase.h
-        Printing.h
-        ProcessingPhase.h
-        SieveOfEratosthenes.h
-        util.h)
-
-# Ensure subdirectory test sources can include headers at project root
-target_include_directories(SecasyAvalanche PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(SecasyCollision PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(SecasyDifferential PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(SecasyExtendedSecurity PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(SecasyTruncCollisionPoC PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(SecasyComprehensiveSecurity PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(SecasyDeepSecurity PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(SecasyPracticalExploit PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(SecasyStatisticalRandomness PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(SecasyHashPattern PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(SecasyRoundReduction PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(SecasyBenchmark PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(SecasyPreciseTiming PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(SecasyStatRigor PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(SecasyProfiling PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(SecasyFuzzTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-
-# Large file support for Unix-like systems
-if (NOT WIN32)
-    target_compile_definitions(Secasy PRIVATE _FILE_OFFSET_BITS=64)
-    target_compile_definitions(SecasyAvalanche PRIVATE _FILE_OFFSET_BITS=64)
-    target_compile_definitions(SecasyCollision PRIVATE _FILE_OFFSET_BITS=64)
-    target_compile_definitions(SecasyDifferential PRIVATE _FILE_OFFSET_BITS=64)
-    target_compile_definitions(SecasyExtendedSecurity PRIVATE _FILE_OFFSET_BITS=64)
-    target_compile_definitions(SecasyTruncCollisionPoC PRIVATE _FILE_OFFSET_BITS=64)
-    target_compile_definitions(SecasyComprehensiveSecurity PRIVATE _FILE_OFFSET_BITS=64)
-    target_compile_definitions(SecasyDeepSecurity PRIVATE _FILE_OFFSET_BITS=64)
-    target_compile_definitions(SecasyPracticalExploit PRIVATE _FILE_OFFSET_BITS=64)
-    target_compile_definitions(SecasyStatisticalRandomness PRIVATE _FILE_OFFSET_BITS=64)
-    target_compile_definitions(SecasyHashPattern PRIVATE _FILE_OFFSET_BITS=64)
-    target_compile_definitions(SecasyRoundReduction PRIVATE _FILE_OFFSET_BITS=64)
-    target_compile_definitions(SecasyBenchmark PRIVATE _FILE_OFFSET_BITS=64)
-    target_compile_definitions(SecasyPreciseTiming PRIVATE _FILE_OFFSET_BITS=64)
-    target_compile_definitions(SecasyStatRigor PRIVATE _FILE_OFFSET_BITS=64)
-    target_compile_definitions(SecasyProfiling PRIVATE _FILE_OFFSET_BITS=64)
-    target_compile_definitions(SecasyFuzzTest PRIVATE _FILE_OFFSET_BITS=64)
-endif()
-
-# Warning / optimization flags (do not force -Ofast so user can choose with CMAKE_BUILD_TYPE)
 if (MSVC)
     target_compile_options(Secasy PRIVATE /W4 /permissive-)
-    target_compile_options(SecasyAvalanche PRIVATE /W4 /permissive-)
-    target_compile_options(SecasyComprehensiveSecurity PRIVATE /W4 /permissive-)
-    target_compile_options(SecasyDeepSecurity PRIVATE /W4 /permissive-)
 else()
-    target_compile_options(Secasy PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
-    target_compile_options(SecasyAvalanche PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
-    target_compile_options(SecasyCollision PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
-    target_compile_options(SecasyDifferential PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
-    target_compile_options(SecasyExtendedSecurity PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
-    target_compile_options(SecasyTruncCollisionPoC PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
-    target_compile_options(SecasyComprehensiveSecurity PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
-    target_compile_options(SecasyDeepSecurity PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
-    target_compile_options(SecasyPracticalExploit PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
-    target_compile_options(SecasyStatisticalRandomness PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
-    target_compile_options(SecasyHashPattern PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
-    target_compile_options(SecasyRoundReduction PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
-    target_compile_options(SecasyBenchmark PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
-    target_compile_options(SecasyPreciseTiming PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
-    target_compile_options(SecasyStatRigor PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
-    target_compile_options(SecasyProfiling PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
-    target_compile_options(SecasyFuzzTest PRIVATE -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wstrict-prototypes -Wconversion -Wno-unused-parameter)
-    # Enable ANSI stdio on MinGW so %zu etc. are recognized and reduce format warnings
-    if (MINGW)
-    target_compile_definitions(Secasy PRIVATE __USE_MINGW_ANSI_STDIO=1)
-    target_compile_definitions(SecasyAvalanche PRIVATE __USE_MINGW_ANSI_STDIO=1)
-    target_compile_definitions(SecasyCollision PRIVATE __USE_MINGW_ANSI_STDIO=1)
-    target_compile_definitions(SecasyDifferential PRIVATE __USE_MINGW_ANSI_STDIO=1)
-    target_compile_definitions(SecasyExtendedSecurity PRIVATE __USE_MINGW_ANSI_STDIO=1)
-    target_compile_definitions(SecasyTruncCollisionPoC PRIVATE __USE_MINGW_ANSI_STDIO=1)
-    target_compile_definitions(SecasyComprehensiveSecurity PRIVATE __USE_MINGW_ANSI_STDIO=1)
-    target_compile_definitions(SecasyDeepSecurity PRIVATE __USE_MINGW_ANSI_STDIO=1)
-    target_compile_definitions(SecasyPracticalExploit PRIVATE __USE_MINGW_ANSI_STDIO=1)
-    target_compile_definitions(SecasyStatisticalRandomness PRIVATE __USE_MINGW_ANSI_STDIO=1)
-    target_compile_definitions(SecasyHashPattern PRIVATE __USE_MINGW_ANSI_STDIO=1)
-    target_compile_definitions(SecasyRoundReduction PRIVATE __USE_MINGW_ANSI_STDIO=1)
-    target_compile_definitions(SecasyBenchmark PRIVATE __USE_MINGW_ANSI_STDIO=1)
-    target_compile_definitions(SecasyPreciseTiming PRIVATE __USE_MINGW_ANSI_STDIO=1)
-    target_compile_definitions(SecasyStatRigor PRIVATE __USE_MINGW_ANSI_STDIO=1)
-    target_compile_definitions(SecasyProfiling PRIVATE __USE_MINGW_ANSI_STDIO=1)
-    target_compile_definitions(SecasyFuzzTest PRIVATE __USE_MINGW_ANSI_STDIO=1)
-    endif()
+    target_compile_options(Secasy PRIVATE ${WARN_FLAGS})
 endif()
 
-# Optional: GTK3 (only if really needed)
+foreach(T ${ALL_TEST_TARGETS})
+    if (NOT WIN32)
+        target_compile_definitions(${T} PRIVATE _FILE_OFFSET_BITS=64)
+        target_link_libraries(${T} PRIVATE m)
+    endif()
+    if (MSVC)
+        target_compile_options(${T} PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(${T} PRIVATE ${WARN_FLAGS})
+        if (MINGW)
+            target_compile_definitions(${T} PRIVATE __USE_MINGW_ANSI_STDIO=1)
+        endif()
+    endif()
+endforeach()
+
+# Main target platform flags
+if (NOT WIN32)
+    target_compile_definitions(Secasy PRIVATE _FILE_OFFSET_BITS=64)
+    target_link_libraries(Secasy PRIVATE m)
+elseif (MINGW)
+    target_compile_definitions(Secasy PRIVATE __USE_MINGW_ANSI_STDIO=1)
+endif()
+
+# ── Optional: GTK3 ────────────────────────────────────────────────────
 option(SECASY_WITH_GTK3 "Build with GTK3 (not required for core hash)" OFF)
 if (SECASY_WITH_GTK3)
     find_package(PkgConfig REQUIRED)
@@ -386,25 +105,4 @@ if (SECASY_WITH_GTK3)
     target_link_directories(Secasy PRIVATE ${GTK3_LIBRARY_DIRS})
     target_compile_definitions(Secasy PRIVATE ${GTK3_CFLAGS_OTHER})
     target_link_libraries(Secasy PRIVATE ${GTK3_LIBRARIES})
-endif()
-
-# Link math library if available (ceil used in ProcessingPhase)
-if (NOT WIN32)
-    target_link_libraries(Secasy PRIVATE m)
-    target_link_libraries(SecasyAvalanche PRIVATE m)
-    target_link_libraries(SecasyCollision PRIVATE m)
-    target_link_libraries(SecasyDifferential PRIVATE m)
-    target_link_libraries(SecasyExtendedSecurity PRIVATE m)
-    target_link_libraries(SecasyTruncCollisionPoC PRIVATE m)
-    target_link_libraries(SecasyComprehensiveSecurity PRIVATE m)
-    target_link_libraries(SecasyDeepSecurity PRIVATE m)
-    target_link_libraries(SecasyPracticalExploit PRIVATE m)
-    target_link_libraries(SecasyStatisticalRandomness PRIVATE m)
-    target_link_libraries(SecasyHashPattern PRIVATE m)
-    target_link_libraries(SecasyRoundReduction PRIVATE m)
-    target_link_libraries(SecasyBenchmark PRIVATE m)
-    target_link_libraries(SecasyPreciseTiming PRIVATE m)
-    target_link_libraries(SecasyStatRigor PRIVATE m)
-    target_link_libraries(SecasyProfiling PRIVATE m)
-    target_link_libraries(SecasyFuzzTest PRIVATE m)
 endif()

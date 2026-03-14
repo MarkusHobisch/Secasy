@@ -3,7 +3,7 @@
 ## 1. Algorithm Overview
 
 Grid-based cryptographic hash function operating on a 16×16 field of `uint64_t` cells (256 cells total).  
-Three phases: **Initialization** → **Processing** (10 rounds default) → **Extraction** (512-bit hash output).  
+Four phases: **Initialization** → **Input Integration** → **Processing** (10 rounds default) → **Extraction** (512-bit hash output).  
 Six operations: ADD, SUB, XOR, AND, OR, INVERT — applied per cell with neighbor coupling.
 
 ## 2. Empirical Security Results

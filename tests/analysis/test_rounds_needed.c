@@ -14,7 +14,7 @@
 #include "../../util.h"
 
 unsigned long numberOfRounds = 100000;  // Will be modified during tests
-int hashLengthInBits = 128;
+int hashLengthInBits = DEFAULT_BIT_SIZE;
 
 // Test avalanche effect for given number of rounds
 double test_avalanche(unsigned long rounds) {

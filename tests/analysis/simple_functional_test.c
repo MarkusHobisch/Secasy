@@ -10,7 +10,7 @@
 #include "../../Calculations.h"
 
 unsigned long numberOfRounds = 10;
-int hashLengthInBits = 128;
+int hashLengthInBits = DEFAULT_BIT_SIZE;
 
 void test_deterministic(void) {
     printf("\n=== Test 1: Deterministic (same input = same hash) ===\n");

@@ -12,7 +12,7 @@
 #include "../../util.h"
 
 unsigned long numberOfRounds = 100000;  // Default production value
-int hashLengthInBits = 128;
+int hashLengthInBits = DEFAULT_BIT_SIZE;
 
 void benchmark_small_inputs(void) {
     printf("\n=== Benchmark: Small Inputs (1-100 bytes) ===\n");
