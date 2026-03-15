@@ -45,13 +45,13 @@
 #endif
 
 // Include Secasy hash function components  
-#include "../../Calculations.h"
-#include "../../InitializationPhase.h"
-#include "../../ProcessingPhase.h"
-#include "../../SieveOfEratosthenes.h"
-#include "../../util.h"
-#include "../../Printing.h"
-#include "../../Defines.h"
+#include "Calculations.h"
+#include "InitializationPhase.h"
+#include "ProcessingPhase.h"
+#include "SieveOfEratosthenes.h"
+#include "util.h"
+#include "Printing.h"
+#include "Defines.h"
 
 // Test configuration
 #define MAX_INPUT_LENGTH 64

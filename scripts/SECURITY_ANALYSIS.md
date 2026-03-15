@@ -33,13 +33,13 @@ Phase 3: Processing Rounds        Phase 4: Hash Extraction
 └──────────────────────────┘      └──────────────────────────────────────┘
 ```
 
-| Parameter            | Value                                          |
-|----------------------|------------------------------------------------|
-| Internal state       | 16×16 × 64-bit = **16,384 bits** (wide-pipe)  |
-| Output size          | 64–512 bits (default: 512)                     |
-| State:output ratio   | **32:1** (cf. SHA-3: 6.25:1, SHA-256: 1:1)    |
-| Processing rounds    | 10 (default), minimum = ⌈hashBits / 64⌉       |
-| Operations           | ADD, SUB, XOR, AND, OR, INVERT                |
+| Parameter          | Value                                        |
+|--------------------|----------------------------------------------|
+| Internal state     | 16×16 × 64-bit = **16,384 bits** (wide-pipe) |
+| Output size        | 64–512 bits (default: 512)                   |
+| State:output ratio | **32:1** (cf. SHA-3: 6.25:1, SHA-256: 1:1)   |
+| Processing rounds  | 10 (default), minimum = ⌈hashBits / 64⌉      |
+| Operations         | ADD, SUB, XOR, AND, OR, INVERT               |
 
 ---
 
@@ -47,27 +47,27 @@ Phase 3: Processing Rounds        Phase 4: Hash Extraction
 
 ### Statistical Quality (N = 1,000,000, SecasyStatRigor)
 
-| Property               | Value           | Ideal   | Status |
-|------------------------|-----------------|---------|--------|
-| Avalanche rate         | 50.0007%        | 50.000% | ✅     |
-| Max bit bias           | 0.149%          | 0%      | ✅     |
-| Sequential correlation | 49.999%         | 50.000% | ✅     |
-| Collisions (512-bit)   | 0 / 1,000,000   | 0       | ✅     |
+| Property               | Value         | Ideal   | Status |
+|------------------------|---------------|---------|--------|
+| Avalanche rate         | 50.0007%      | 50.000% | ✅      |
+| Max bit bias           | 0.149%        | 0%      | ✅      |
+| Sequential correlation | 49.999%       | 50.000% | ✅      |
+| Collisions (512-bit)   | 0 / 1,000,000 | 0       | ✅      |
 
 ### Test Suite Summary
 
 | Test Suite                         | Tests | Result   |
 |------------------------------------|-------|----------|
-| SecasyComprehensiveSecurity        | 10/10 | ✅ PASS  |
-| SecasyDeepSecurity                 | 4/4   | ✅ PASS  |
-| SecasyExtendedSecurity             | 5/5   | ✅ PASS  |
-| SecasyPracticalExploit             | 4/4   | ✅ PASS  |
-| SecasyStatisticalRandomness (NIST) | 10/10 | ✅ PASS  |
-| SecasyDifferential                 | 5/5   | ✅ PASS  |
-| SecasyAvalanche                    | —     | ✅ ~50%  |
-| SecasyCollision                    | —     | ✅ 0 col |
-| SecasyFuzz (500k iterations)       | —     | ✅ 0 err |
-| SecasyRoundReduction (all sizes)   | —     | ✅ stable|
+| SecasyComprehensiveSecurity        | 10/10 | ✅ PASS   |
+| SecasyDeepSecurity                 | 4/4   | ✅ PASS   |
+| SecasyExtendedSecurity             | 5/5   | ✅ PASS   |
+| SecasyPracticalExploit             | 4/4   | ✅ PASS   |
+| SecasyStatisticalRandomness (NIST) | 10/10 | ✅ PASS   |
+| SecasyDifferential                 | 5/5   | ✅ PASS   |
+| SecasyAvalanche                    | —     | ✅ ~50%   |
+| SecasyCollision                    | —     | ✅ 0 col  |
+| SecasyFuzz (500k iterations)       | —     | ✅ 0 err  |
+| SecasyRoundReduction (all sizes)   | —     | ✅ stable |
 
 ### Round-Invariance
 
@@ -80,26 +80,31 @@ across all hash sizes (64, 128, 256, 512 bit). See
 ## Key Security Properties
 
 ### 1. Wide-Pipe Design
+
 The 32:1 ratio of internal state (16,384 bits) to output (512 bits) makes length extension
 attacks infeasible — an attacker who knows H(m) cannot reconstruct the remaining 15,872 bits
 of internal state.
 
 ### 2. Non-Invertible Operations
+
 AND and OR operations are not invertible. Given `a AND b = c`, neither `a` nor `b` can be
 recovered uniquely. This prevents backward computation from hash output to input.
 
 ### 3. Cross-Axis Coupling
+
 Input integration couples both axes of the grid: vertical jumps depend on the horizontal
 coordinate and vice versa. This breaks commutativity (LEFT→UP ≠ UP→LEFT) and ensures
 different byte sequences follow entirely different grid paths.
 
 ### 4. Hash Extraction
+
 The extraction function iterates over all 256 cells in row-major order, multiplies each cell
 value by a unique position weight (1–256), XORs into a 64-bit accumulator, and left-rotates
 by 7 bits per step. One 64-bit block is collected per processing round; blocks are
 concatenated for larger hash sizes (e.g., 8 blocks for 512-bit output).
 
 ### 5. Side-Channel Considerations
+
 The current implementation is **not** constant-time (data-dependent branches in
 `switch(colorIndex)`, data-dependent cache accesses on the prime table). This is acceptable
 for pure hashing but would require a branchless variant for HMAC or key derivation use.
@@ -111,24 +116,24 @@ for pure hashing but would require a branchless variant for HMAC or key derivati
 All test executables are built via CMake. Common flags: `-r` (rounds), `-n` (hash bits),
 `-s` (seed), `-m` (sample count).
 
-| Executable                    | Location                          | Purpose                         |
-|-------------------------------|-----------------------------------|---------------------------------|
-| `SecasyAvalanche`             | tests/avalanche/                  | Avalanche / diffusion analysis  |
-| `SecasyCollision`             | tests/collision/                  | Collision / distribution        |
-| `SecasyTruncCollision`        | tests/collision/                  | Truncated collision PoC         |
-| `SecasyDifferential`          | tests/differential/               | Differential cryptanalysis      |
-| `SecasyStatisticalRandomness` | tests/statistical/                | NIST-inspired randomness        |
-| `SecasyStatRigor`             | tests/statistical/                | Large-sample (N=1M) rigor      |
-| `SecasyHashPattern`           | tests/statistical/                | Pattern / structure analysis    |
-| `SecasyComprehensiveSecurity` | tests/security/                   | 10-test security battery        |
-| `SecasyDeepSecurity`          | tests/security/                   | Linear/diff./state/weak-key     |
-| `SecasyExtendedSecurity`      | tests/security/                   | Length ext., bit indep., etc.   |
-| `SecasyPracticalExploit`      | tests/security/                   | Practical exploit attempts      |
-| `SecasyRoundReduction`        | tests/round_reduction/            | Round count sweep (CSV)         |
-| `SecasyBenchmark`             | tests/performance/                | Performance comparison          |
-| `SecasyPreciseTiming`         | tests/performance/                | Nanosecond precision timing     |
-| `SecasyProfiling`             | tests/performance/                | Phase-level profiling           |
-| `SecasyFuzz`                  | tests/fuzzing/                    | 500k-iteration fuzz test        |
+| Executable                    | Location               | Purpose                        |
+|-------------------------------|------------------------|--------------------------------|
+| `SecasyAvalanche`             | tests/avalanche/       | Avalanche / diffusion analysis |
+| `SecasyCollision`             | tests/collision/       | Collision / distribution       |
+| `SecasyTruncCollision`        | tests/collision/       | Truncated collision PoC        |
+| `SecasyDifferential`          | tests/differential/    | Differential cryptanalysis     |
+| `SecasyStatisticalRandomness` | tests/statistical/     | NIST-inspired randomness       |
+| `SecasyStatRigor`             | tests/statistical/     | Large-sample (N=1M) rigor      |
+| `SecasyHashPattern`           | tests/statistical/     | Pattern / structure analysis   |
+| `SecasyComprehensiveSecurity` | tests/security/        | 10-test security battery       |
+| `SecasyDeepSecurity`          | tests/security/        | Linear/diff./state/weak-key    |
+| `SecasyExtendedSecurity`      | tests/security/        | Length ext., bit indep., etc.  |
+| `SecasyPracticalExploit`      | tests/security/        | Practical exploit attempts     |
+| `SecasyRoundReduction`        | tests/round_reduction/ | Round count sweep (CSV)        |
+| `SecasyBenchmark`             | tests/performance/     | Performance comparison         |
+| `SecasyPreciseTiming`         | tests/performance/     | Nanosecond precision timing    |
+| `SecasyProfiling`             | tests/performance/     | Phase-level profiling          |
+| `SecasyFuzz`                  | tests/fuzzing/         | 500k-iteration fuzz test       |
 
 ---
 
@@ -141,6 +146,7 @@ Independent cryptanalysis of the grid structure's algebraic properties is the es
 step.
 
 **Assessment:**
+
 - Learning and experimentation: ✅ Excellent
 - General-purpose hashing: ✅ Suitable
 - Experimental cryptographic use: ✅ Meets empirical SAC requirements

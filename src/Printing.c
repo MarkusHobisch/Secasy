@@ -100,6 +100,6 @@ void printDatatypeMaxValues()
     printf("\n\n**************/////// MAX VALUES OF DATATYPES ///////**************\n");
     printf("+ LONG_MAX                 %ld\n", LONG_MAX);
     printf("+ INT_MAX                  %i\n", INT_MAX);
-    printf("+ LONG_LONG_MAX            %lld\n", (long long)LLONG_MAX); // corrected format for signed long long
+    printf("+ LONG_LONG_MAX            %" PRId64 "\n", (int64_t)LLONG_MAX);
     printf("*******************************************************************\n\n");
 }

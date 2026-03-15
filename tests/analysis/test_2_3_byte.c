@@ -6,10 +6,10 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
-#include "../../Defines.h"
-#include "../../InitializationPhase.h"
-#include "../../ProcessingPhase.h"
-#include "../../Calculations.h"
+#include "Defines.h"
+#include "InitializationPhase.h"
+#include "ProcessingPhase.h"
+#include "Calculations.h"
 
 extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 extern Position_t pos;

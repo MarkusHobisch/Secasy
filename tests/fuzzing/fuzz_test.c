@@ -29,10 +29,10 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
-#include "../../Defines.h"
-#include "../../InitializationPhase.h"
-#include "../../ProcessingPhase.h"
-#include "../../Calculations.h"
+#include "Defines.h"
+#include "InitializationPhase.h"
+#include "ProcessingPhase.h"
+#include "Calculations.h"
 
 /* ── Globals required by Secasy ──────────────── */
 unsigned long numberOfRounds;

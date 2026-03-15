@@ -54,6 +54,9 @@ gmon.out
 *.txt
 !CMakeLists.txt
 
+# Copilot instructions (local only)
+.github/copilot-instructions.md
+
 # OS / editor
 *.swp
 *.DS_Store

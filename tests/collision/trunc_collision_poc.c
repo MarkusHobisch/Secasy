@@ -27,9 +27,9 @@
 #include <string.h>
 #include <time.h>
 
-#include "../../Defines.h"
-#include "../../InitializationPhase.h"
-#include "../../ProcessingPhase.h"
+#include "Defines.h"
+#include "InitializationPhase.h"
+#include "ProcessingPhase.h"
 
 /* Globals required by Secasy core */
 unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;

@@ -5,14 +5,17 @@ This directory contains automation scripts for the Secasy security analysis plan
 ## Available Scripts
 
 ### 1. `generate_hashes.sh`
+
 Generate random hashes for statistical testing (NIST STS, Dieharder, etc.).
 
 **Usage:**
+
 ```bash
 ./generate_hashes.sh [count] [input_length] [rounds]
 ```
 
 **Examples:**
+
 ```bash
 # Generate 1M hashes with default parameters
 ./generate_hashes.sh 1000000
@@ -22,14 +25,17 @@ Generate random hashes for statistical testing (NIST STS, Dieharder, etc.).
 ```
 
 ### 2. `validate_sac.py`
+
 Validate SAC (Strict Avalanche Criterion) matrix results.
 
 **Usage:**
+
 ```bash
 python validate_sac.py <sac_matrix.csv> [--threshold 0.95]
 ```
 
 **Examples:**
+
 ```bash
 # Default: require 95% of cells in [0.48, 0.52]
 python validate_sac.py ../results/sac_matrix_64B.csv
@@ -39,20 +45,24 @@ python validate_sac.py ../results/sac_matrix.csv --threshold 0.90 --lower 0.47 -
 ```
 
 **Output:**
+
 - Matrix statistics (mean, median, std dev, min, max)
 - Acceptance rate
 - Pass/fail decision
 - Exit code: 0 (pass) or 1 (fail)
 
 ### 3. `validate_collisions.py`
+
 Validate collision test results against birthday bounds.
 
 **Usage:**
+
 ```bash
 python validate_collisions.py <collision_log.txt> [--sigma 3.0]
 ```
 
 **Examples:**
+
 ```bash
 # Default: ±3σ acceptance band
 python validate_collisions.py ../results/collision_sweep.log
@@ -62,24 +72,29 @@ python validate_collisions.py ../results/collision_24bit.log --sigma 2.0
 ```
 
 **Output:**
+
 - Per-truncation-level validation
 - Deviation in σ units
 - Overall pass/fail
 - Exit code: 0 (pass) or 1 (fail)
 
 ### 4. `run_security_tests.sh`
+
 Run comprehensive test battery with automated validation.
 
 **Usage:**
+
 ```bash
 ./run_security_tests.sh [quick|full]
 ```
 
 **Modes:**
+
 - `quick`: Fast sanity checks (~5 minutes)
 - `full`: Comprehensive tests (~30-60 minutes)
 
 **Examples:**
+
 ```bash
 # Quick smoke test
 ./run_security_tests.sh quick
@@ -89,6 +104,7 @@ Run comprehensive test battery with automated validation.
 ```
 
 **Output:**
+
 - Real-time test execution
 - Pass/fail indicators
 - Summary statistics
@@ -99,6 +115,7 @@ Run comprehensive test battery with automated validation.
 These scripts are designed to integrate with GitHub Actions or other CI systems.
 
 **Example `.github/workflows/security.yml`:**
+
 ```yaml
 name: Security Tests
 
@@ -121,22 +138,27 @@ jobs:
 ## Requirements
 
 ### System Dependencies
+
 - **Bash** (for shell scripts)
 - **Python 3.7+** (for validation scripts)
 - **CMake** (for building Secasy)
 - **GCC/Clang** (C11 compatible)
 
 ### Python Packages
+
 None required for basic scripts. Optional:
+
 - `numpy` (for advanced statistical analysis)
 - `matplotlib` (for visualization)
 
 Install with:
+
 ```bash
 pip install numpy matplotlib
 ```
 
 ## Directory Structure
+
 ```
 scripts/
 ├── README.md                    # This file
@@ -154,35 +176,37 @@ scripts/
 ## Next Steps
 
 ### To Be Implemented
+
 1. **NIST STS Integration** (`run_nist_sts.sh`)
-   - Download NIST STS
-   - Generate bitstream from hashes
-   - Parse results, extract p-values
-   - Automated pass/fail
+    - Download NIST STS
+    - Generate bitstream from hashes
+    - Parse results, extract p-values
+    - Automated pass/fail
 
 2. **Dieharder Wrapper** (`run_dieharder.sh`)
-   - Stream hashes to dieharder
-   - Filter results
-   - Summary report
+    - Stream hashes to dieharder
+    - Filter results
+    - Summary report
 
 3. **Differential Search** (`differential_search.py`)
-   - Reduced-round testing
-   - DDT construction
-   - Probability estimation
+    - Reduced-round testing
+    - DDT construction
+    - Probability estimation
 
 4. **Linear Bias Sampler** (`linear_bias_sampler.py`)
-   - Mask generation
-   - Walsh-Hadamard transform
-   - Bias distribution analysis
+    - Mask generation
+    - Walsh-Hadamard transform
+    - Bias distribution analysis
 
 5. **Visualization Suite**
-   - SAC matrix heatmaps
-   - Collision distribution plots
-   - Differential/linear probability graphs
+    - SAC matrix heatmaps
+    - Collision distribution plots
+    - Differential/linear probability graphs
 
 ## Contributing
 
 When adding new scripts:
+
 1. Follow naming convention: `<action>_<target>.{sh,py}`
 2. Include usage comments at top of file
 3. Add entry to this README
@@ -195,4 +219,5 @@ Same as parent Secasy project.
 
 ## Contact
 
-For questions about these scripts or the security analysis plan, see `SECURITY_ANALYSIS_PLAN.md` or contact the repository maintainer.
+For questions about these scripts or the security analysis plan, see `SECURITY_ANALYSIS_PLAN.md` or contact the
+repository maintainer.

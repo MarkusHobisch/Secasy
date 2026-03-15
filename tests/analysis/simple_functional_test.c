@@ -4,10 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../Defines.h"
-#include "../../InitializationPhase.h"
-#include "../../ProcessingPhase.h"
-#include "../../Calculations.h"
+#include "Defines.h"
+#include "InitializationPhase.h"
+#include "ProcessingPhase.h"
+#include "Calculations.h"
 
 unsigned long numberOfRounds = 10;
 int hashLengthInBits = DEFAULT_BIT_SIZE;

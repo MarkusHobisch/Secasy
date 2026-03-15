@@ -25,9 +25,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include "../../Defines.h"
-#include "../../InitializationPhase.h"
-#include "../../ProcessingPhase.h"
+#include "Defines.h"
+#include "InitializationPhase.h"
+#include "ProcessingPhase.h"
 
 unsigned long numberOfRounds  = DEFAULT_NUMBER_OF_ROUNDS;
 int           hashLengthInBits = DEFAULT_BIT_SIZE;

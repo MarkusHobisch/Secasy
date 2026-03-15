@@ -5,11 +5,11 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdint.h>
-#include "../../Defines.h"
-#include "../../InitializationPhase.h"
-#include "../../ProcessingPhase.h"
-#include "../../Calculations.h"
-#include "../../util.h"
+#include "Defines.h"
+#include "InitializationPhase.h"
+#include "ProcessingPhase.h"
+#include "Calculations.h"
+#include "util.h"
 
 unsigned long numberOfRounds = 100000;  // Default production value
 int hashLengthInBits = DEFAULT_BIT_SIZE;

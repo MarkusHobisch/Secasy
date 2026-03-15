@@ -27,11 +27,11 @@
 #include <stdint.h>
 #include <math.h>
 #include <time.h>
-#include "../../Defines.h"
-#include "../../InitializationPhase.h"
-#include "../../ProcessingPhase.h"
-#include "../../Calculations.h"
-#include "../../util.h"
+#include "Defines.h"
+#include "InitializationPhase.h"
+#include "ProcessingPhase.h"
+#include "Calculations.h"
+#include "util.h"
 
 #define INPUT_LEN 16
 

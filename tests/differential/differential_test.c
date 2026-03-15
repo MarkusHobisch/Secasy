@@ -34,10 +34,10 @@
 #include <time.h>
 #include <math.h>
 
-#include "../../Defines.h"
-#include "../../InitializationPhase.h"
-#include "../../ProcessingPhase.h"
-#include "../../util.h"
+#include "Defines.h"
+#include "InitializationPhase.h"
+#include "ProcessingPhase.h"
+#include "util.h"
 
 // Globals required by Secasy
 unsigned long numberOfRounds = 10;

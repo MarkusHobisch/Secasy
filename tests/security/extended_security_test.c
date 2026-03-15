@@ -34,12 +34,12 @@
 #include <time.h>
 #include <math.h>
 
-#include "../../Defines.h"
-#include "../../Calculations.h"
-#include "../../InitializationPhase.h"
-#include "../../ProcessingPhase.h"
-#include "../../util.h"
-#include "../../Printing.h"
+#include "Defines.h"
+#include "Calculations.h"
+#include "InitializationPhase.h"
+#include "ProcessingPhase.h"
+#include "util.h"
+#include "Printing.h"
 
 #define MAX_HASH_LEN 512
 #define DEFAULT_ROUNDS 10

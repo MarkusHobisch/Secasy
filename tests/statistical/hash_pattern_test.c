@@ -30,11 +30,11 @@
 #include <stdint.h>
 #include <math.h>
 #include <time.h>
-#include "../../Defines.h"
-#include "../../InitializationPhase.h"
-#include "../../ProcessingPhase.h"
-#include "../../Calculations.h"
-#include "../../util.h"
+#include "Defines.h"
+#include "InitializationPhase.h"
+#include "ProcessingPhase.h"
+#include "Calculations.h"
+#include "util.h"
 
 /* ── Tunable parameters ────────────────────────────────────── */
 #define NUM_SAMPLES    50000   /* hashes for statistical tests  */

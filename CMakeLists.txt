@@ -5,22 +5,25 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
+# ── Include path for all targets ──────────────────────────────────────
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 # ── Core library sources (shared by all targets) ──────────────────────
 set(CORE_SOURCES
-        Calculations.c
-        InitializationPhase.c
-        Printing.c
-        ProcessingPhase.c
-        SieveOfEratosthenes.c
-        util.c)
+        src/Calculations.c
+        src/InitializationPhase.c
+        src/Printing.c
+        src/ProcessingPhase.c
+        src/SieveOfEratosthenes.c
+        src/util.c)
 
 # ── Main executable ───────────────────────────────────────────────────
-add_executable(Secasy main.c ${CORE_SOURCES})
+add_executable(Secasy src/main.c ${CORE_SOURCES})
 
 # ── Helper: add a test executable with standard config ────────────────
 function(add_secasy_test TARGET SOURCE)
     add_executable(${TARGET} ${SOURCE} ${CORE_SOURCES})
-    target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 endfunction()
 
 # ── Security tests ────────────────────────────────────────────────────
@@ -96,6 +99,47 @@ if (NOT WIN32)
     target_link_libraries(Secasy PRIVATE m)
 elseif (MINGW)
     target_compile_definitions(Secasy PRIVATE __USE_MINGW_ANSI_STDIO=1)
+endif()
+
+# ── Documentation (PDF via Pandoc) ───────────────────────────────────
+find_program(PANDOC pandoc)
+if(PANDOC)
+    set(PDOC_OPTS --pdf-engine=xelatex "-V" "papersize=a4" "-V" "mainfont=Segoe UI" "-V" "monofont=Consolas")
+    set(DE_PDFS  ${CMAKE_SOURCE_DIR}/docs/de/pdfs)
+    set(EN_PDFS  ${CMAKE_SOURCE_DIR}/docs/en/pdfs)
+
+    add_custom_target(docs
+        # ── German ──────────────────────────────────────────────────
+        COMMAND ${PANDOC} ${CMAKE_SOURCE_DIR}/docs/de/SECURITY_CONCEPTS.md
+                -o ${DE_PDFS}/SECURITY_CONCEPTS.pdf
+                ${PDOC_OPTS} "-V" "geometry:margin=2.5cm" "-V" "fontsize=11pt" --toc
+
+        # ── English — prose documents ────────────────────────────────
+        COMMAND ${PANDOC} ${CMAKE_SOURCE_DIR}/docs/en/SECURITY_CONCEPTS.md
+                -o ${EN_PDFS}/SECURITY_CONCEPTS.pdf
+                ${PDOC_OPTS} "-V" "geometry:margin=2.5cm" "-V" "fontsize=11pt" --toc
+
+        COMMAND ${PANDOC} ${CMAKE_SOURCE_DIR}/docs/en/SECURITY_NOTES.md
+                -o ${EN_PDFS}/SECURITY_NOTES.pdf
+                ${PDOC_OPTS} "-V" "geometry:margin=2.5cm" "-V" "fontsize=11pt" --toc
+
+        COMMAND ${PANDOC} ${CMAKE_SOURCE_DIR}/docs/en/ROUND_REDUCTION_ANALYSIS.md
+                -o ${EN_PDFS}/ROUND_REDUCTION_ANALYSIS.pdf
+                ${PDOC_OPTS} "-V" "geometry:margin=1.5cm" "-V" "fontsize=10pt" --toc
+
+        COMMAND ${PANDOC} ${CMAKE_SOURCE_DIR}/docs/de/ALGORITHMUS.md
+                -o ${DE_PDFS}/ALGORITHMUS.pdf
+                ${PDOC_OPTS} "-V" "geometry:margin=2.5cm" "-V" "fontsize=11pt" --toc
+
+        COMMAND ${PANDOC} ${CMAKE_SOURCE_DIR}/docs/en/ALGORITHM.md
+                -o ${EN_PDFS}/ALGORITHM.pdf
+                ${PDOC_OPTS} "-V" "geometry:margin=2.5cm" "-V" "fontsize=11pt" --toc
+
+        COMMENT "Generating documentation PDFs into docs/*/pdfs/"
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+else()
+    message(STATUS "Pandoc not found — 'docs' target unavailable")
 endif()
 
 # ── Optional: GTK3 ────────────────────────────────────────────────────

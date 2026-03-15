@@ -287,12 +287,10 @@ static int getFileSize64(const char* path, unsigned long long* outSize)
     {
         return -1;
     }
-#if defined(_WIN32)
     if (st.st_size < 0)
     {
         return -1;
     }
-#endif
     *outSize = (unsigned long long)st.st_size;
     return 0;
 }

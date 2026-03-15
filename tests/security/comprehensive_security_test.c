@@ -36,11 +36,11 @@
 #include <time.h>
 #include <stdint.h>
 #include <math.h>
-#include "../../Defines.h"
-#include "../../InitializationPhase.h"
-#include "../../ProcessingPhase.h"
-#include "../../Calculations.h"
-#include "../../util.h"
+#include "Defines.h"
+#include "InitializationPhase.h"
+#include "ProcessingPhase.h"
+#include "Calculations.h"
+#include "util.h"
 
 unsigned long numberOfRounds = 10;
 int hashLengthInBits = DEFAULT_BIT_SIZE;
