@@ -54,14 +54,16 @@ add_secasy_test(SecasyRoundReduction         tests/round_reduction/round_reducti
 
 # ── Fuzzing / stress testing ──────────────────────────────────────────
 add_secasy_test(SecasyFuzzTest               tests/fuzzing/fuzz_test.c)
-
+# ── Test vector generator & verifier ────────────────────────────────
+add_secasy_test(SecasyTestVectors            tests/testvectors/generate_test_vectors.c)
+add_secasy_test(SecasyVerifyVectors          tests/testvectors/verify_test_vectors.c)
 # Collect all test target names for bulk property assignment
 set(ALL_TEST_TARGETS
     SecasyComprehensiveSecurity SecasyDeepSecurity SecasyExtendedSecurity
     SecasyPracticalExploit SecasyAvalanche SecasyCollision SecasyTruncCollisionPoC
     SecasyDifferential SecasyStatisticalRandomness SecasyStatRigor SecasyHashPattern
     SecasyBenchmark SecasyPreciseTiming SecasyProfiling SecasyRoundReduction
-    SecasyFuzzTest)
+    SecasyFuzzTest SecasyTestVectors SecasyVerifyVectors)
 
 # ── Per-target properties (applied in bulk) ───────────────────────────
 set(WARN_FLAGS -Wall -Wextra -Wundef -Wshadow -Wpointer-arith
