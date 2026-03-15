@@ -24,6 +24,7 @@ unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
 int hashLengthInBits = DEFAULT_BIT_SIZE;
 static unsigned long maximumPrimeIndex = DEFAULT_MAX_PRIME_INDEX;
 static char* inputFilename = NULL;
+static char* inputString = NULL;
 static unsigned long long inputFileSize = 0ULL;
 
 static void readInCommandLineOptions(int argc, char** argv);
@@ -31,6 +32,7 @@ static void readAndStoreNumberOfRoundsOption(void);
 static void readAndStoreNumberOfMaximumPrimeIndexOption(void);
 static void readAndStoreNumberOfBitsOption(void);
 static void readAndStoreFilenameOption(void);
+static void readAndStoreStringOption(void);
 static void printHelperText(void);
 static void printCommandLineOptions(void);
 static void printStatistics(double cpuSeconds, double wallSeconds, unsigned long long fileSizeBytes);
@@ -44,15 +46,21 @@ int main(int argc, char** argv)
 
     readInCommandLineOptions(argc, argv);
 
-    if (getFileSize64(inputFilename, &inputFileSize) != 0)
-    {
-        inputFileSize = 0ULL; // Non-fatal
-    }
-
     printCommandLineOptions();
-
     initFieldWithDefaultNumbers(maximumPrimeIndex);
-    readAndProcessFile(inputFilename);
+
+    if (inputString)
+    {
+        processBuffer((const unsigned char*)inputString, strlen(inputString));
+    }
+    else
+    {
+        if (getFileSize64(inputFilename, &inputFileSize) != 0)
+        {
+            inputFileSize = 0ULL; // Non-fatal
+        }
+        readAndProcessFile(inputFilename);
+    }
 
 #if (DEBUG_MODE && DEBUG_LOG_EXTENDED)
     printField();
@@ -83,13 +91,14 @@ int main(int argc, char** argv)
 
     free(hashValue);
     free(inputFilename);
+    free(inputString);
     return EXIT_SUCCESS;
 }
 
 static void readInCommandLineOptions(int argc, char** argv)
 {
     int opt;
-    while ((opt = getopt(argc, argv, "r:i:n:f:h")) != -1)
+    while ((opt = getopt(argc, argv, "r:i:n:f:s:h")) != -1)
     {
         switch (opt)
         {
@@ -105,17 +114,25 @@ static void readInCommandLineOptions(int argc, char** argv)
             case 'f':
                 readAndStoreFilenameOption();
                 break;
+            case 's':
+                readAndStoreStringOption();
+                break;
             case 'h':
                 printHelperText();
                 exit(EXIT_SUCCESS);
             default:
-                LOG_ERROR("Usage: %s supported arguments [-r] [-i] [-n] [-f] [-h]", argv[0]);
+                LOG_ERROR("Usage: %s supported arguments [-r] [-i] [-n] [-f] [-s] [-h]", argv[0]);
                 exit(EXIT_FAILURE);
         }
     }
-    if (!inputFilename)
+    if (!inputFilename && !inputString)
     {
-        LOG_ERROR("Missing input file. Provide one with -f <file>");
+        LOG_ERROR("Missing input. Provide -f <file> or -s <string>");
+        exit(EXIT_FAILURE);
+    }
+    if (inputFilename && inputString)
+    {
+        LOG_ERROR("Cannot use -f and -s together. Choose one.");
         exit(EXIT_FAILURE);
     }
 }
@@ -186,23 +203,44 @@ static void readAndStoreFilenameOption()
     inputFilename = dup;
 }
 
+static void readAndStoreStringOption()
+{
+    if (!optarg || *optarg == '\0')
+    {
+        LOG_ERROR("Missing string after -s option");
+        printHelperText();
+        exit(EXIT_FAILURE);
+    }
+    char* dup = secasy_strdup(optarg);
+    if (!dup)
+    {
+        LOG_ERROR("Memory allocation failed for input string");
+        exit(EXIT_FAILURE);
+    }
+    inputString = dup;
+}
+
 static void printHelperText()
 {
     printf("\n");
     printf("+--------------------------------------------------------------------------------------------------+\n");
-    printf("| Arguments: [-r] [-i] [-n] [-f] [-h]                                                             |\n");
+    printf("| Arguments: [-r] [-i] [-n] [-f] [-s] [-h]                                                        |\n");
     printf("|  -n <bits>  : bit size of hash value (power of two, >= %d)                                     |\n",
            MIN_HASH_OUTPUT_BITS);
     printf("|  -i <index> : max prime index for calculation of prime numbers                                  |\n");
     printf("|  -r <rounds>: number of processing rounds                                                        |\n");
     printf("|  -f <file>  : input filename                                                                     |\n");
+    printf("|  -s <string>: hash a string directly                                                             |\n");
     printf("|  -h         : show this help                                                                     |\n");
     printf("+--------------------------------------------------------------------------------------------------+\n\n");
 }
 
 static void printCommandLineOptions()
 {
-    LOG_INFO("inputFilename: %s", inputFilename ? inputFilename : "(null)");
+    if (inputString)
+        LOG_INFO("inputString: \"%s\" (%zu bytes)", inputString, strlen(inputString));
+    else
+        LOG_INFO("inputFilename: %s", inputFilename ? inputFilename : "(null)");
     LOG_INFO("numberOfRounds: %lu", numberOfRounds);
     LOG_INFO("maximumPrimeIndex: %lu", maximumPrimeIndex);
     LOG_INFO("hashLengthInBits: %d", hashLengthInBits);
