@@ -146,6 +146,12 @@ cmake -S . -B build
 cmake --build build --config Release -- -j
 ```
 
+**Build only the main executable:**
+
+```bash
+cmake --build . --target Secasy
+```
+
 **Full rebuild (clean first):**
 
 ```bash

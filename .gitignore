@@ -53,6 +53,7 @@ gmon.out
 # Text output files (test results, logs, etc.)
 *.txt
 !CMakeLists.txt
+debug.txt
 
 # GitHub config (local only)
 .github/

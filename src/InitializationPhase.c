@@ -9,6 +9,8 @@
 #include "primes.h"
 #include "string.h"
 #include "util.h"
+/* Mirror all printf output to debug.txt when g_debug_fp is set */
+#define printf debug_tee_printf
 
 // Field size must be power of 2 for bitmask optimization
 _Static_assert((FIELD_SIZE & (FIELD_SIZE - 1)) == 0, "FIELD_SIZE must be a power of 2");
@@ -107,6 +109,9 @@ void readAndProcessFile(const char *filename)
     free(buffer);
     setPrimeNumberOfLastTile();
     lastPrime = (int)field[pos.x][pos.y].value;
+#if DEBUG_MODE
+    printf("  +--------------------------------------------------------+\n\n");
+#endif
 }
 
 // New: process an in-memory buffer (used for avalanche tests)
@@ -124,6 +129,9 @@ void processBuffer(const unsigned char *data, size_t len)
     }
     setPrimeNumberOfLastTile();
     lastPrime = (int)field[pos.x][pos.y].value;
+#if DEBUG_MODE
+    printf("  +--------------------------------------------------------+\n\n");
+#endif
 }
 
 static void initPrimeNumbers(const unsigned long maxPrimeIndex)
@@ -207,6 +215,21 @@ static FILE *readFile(const char *filename)
  */
 static void calcAndSetDirections(int byte)
 {
+#if DEBUG_MODE
+    static size_t byteCounter = 0;
+    if (byteCounter == 0)
+    {
+        printf("\n  +--------------------------------------------------------+\n");
+        printf("  |  Init Phase  (Byte Walk)                               |\n");
+        printf("  +--------------------------------------------------------+\n");
+    }
+    char ch = (byte >= 0x20 && byte <= 0x7E) ? (char)byte : '.';
+    printf("  |  Byte %3zu  '%c' (0x%02X = %d%d%d%d%d%d%d%d):                      |\n",
+           byteCounter++, ch, (unsigned char)byte,
+           (byte >> 7) & 1, (byte >> 6) & 1, (byte >> 5) & 1, (byte >> 4) & 1,
+           (byte >> 3) & 1, (byte >> 2) & 1, (byte >> 1) & 1, byte & 1);
+    printf("  |   From       OldPrime      NewPrime  Dir       To      |\n");
+#endif
     writeNextNumber(byte & 3);        // Bits 0-1
     writeNextNumber((byte >> 2) & 3); // Bits 2-3
     writeNextNumber((byte >> 4) & 3); // Bits 4-5
@@ -226,38 +249,35 @@ static void writeNextNumber(const int move)
     const int nextPrime = nextPrimeNumber(tile);
     tile->value = (uint64_t)nextPrime;
 #if DEBUG_MODE
-    printf("old prime: %" PRIu64 " -> new prime: %d dir: %d", oldPrime, nextPrime, move);
+    const uint32_t fromX = pos.x, fromY = pos.y;
 #endif
     switch (move)
     {
     case UP:
         pos.y = (pos.y - oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
-#if DEBUG_MODE
-        printf(" UP\n");
-#endif
         break;
     case DOWN:
         pos.y = (pos.y + oldPrime) & (FIELD_SIZE - 1);
-#if DEBUG_MODE
-        printf(" DOWN\n");
-#endif
         break;
     case LEFT:
         pos.x = (pos.x - oldPrime) & (FIELD_SIZE - 1);
-#if DEBUG_MODE
-        printf(" LEFT\n");
-#endif
         break;
     case RIGHT:
         pos.x = (pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
-#if DEBUG_MODE
-        printf(" RIGHT\n");
-#endif
         break;
     default:
         printf("UNKNOWN POSITION !!\n");
-        break;
+        return;
     }
+#if DEBUG_MODE
+    {
+        static const char *dirName[] = { "UP   ", "RIGHT", "LEFT ", "DOWN " };
+        printf("  |  [%2u,%2u]  %10" PRIu64 " -> %10d  %s  -> [%2u,%2u]  |\n",
+               fromX, fromY, oldPrime, nextPrime,
+               move < 4 ? dirName[move] : "?????",
+               pos.x, pos.y);
+    }
+#endif
 }
 
 static void setPrimeNumberOfLastTile(void)

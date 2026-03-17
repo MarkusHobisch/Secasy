@@ -9,6 +9,23 @@
   #include <unistd.h>
 #endif
 
+FILE *g_debug_fp = NULL;
+
+int debug_tee_printf(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    int n = vprintf(fmt, args);
+    va_end(args);
+    if (g_debug_fp)
+    {
+        va_start(args, fmt);
+        vfprintf(g_debug_fp, fmt, args);
+        va_end(args);
+    }
+    return n;
+}
+
 int is_power_of_two(long v) {
     return v > 0 && (v & (v - 1)) == 0;
 }

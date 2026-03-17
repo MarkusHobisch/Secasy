@@ -1,7 +1,7 @@
 #ifndef SECASY_PRINTING_H
 #define SECASY_PRINTING_H
 
-void printField(void);
+void printField(const char *phase);
 
 void printColorIndexes(void);
 
@@ -10,5 +10,7 @@ void printPrimeIndexes(void);
 void printSumsAndValues(void);
 
 void printDatatypeMaxValues(void);
+
+void printInputBits(const unsigned char *data, size_t len);
 
 #endif

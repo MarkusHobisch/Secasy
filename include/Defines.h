@@ -48,11 +48,11 @@ typedef struct
 // Default: OFF for faster runs and clean output.
 // Override at compile time, e.g. -DDEBUG_MODE=1 -DDEBUG_LOG_EXTENDED=1
 #ifndef DEBUG_MODE
-#define DEBUG_MODE 0
+#define DEBUG_MODE 1
 #endif
 
 #ifndef DEBUG_LOG_EXTENDED
-#define DEBUG_LOG_EXTENDED 0
+#define DEBUG_LOG_EXTENDED 1
 #endif
 
 #endif

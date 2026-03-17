@@ -46,11 +46,22 @@ int main(int argc, char **argv)
 
     readInCommandLineOptions(argc, argv);
 
+#if DEBUG_MODE
+    g_debug_fp = fopen("debug.txt", "w");
+    if (!g_debug_fp)
+    {
+        fprintf(stderr, "[WARNING] Could not open debug.txt for writing\n");
+    }
+#endif
+
     printCommandLineOptions();
     initFieldWithDefaultNumbers(maximumPrimeIndex);
 
     if (inputString)
     {
+#if DEBUG_MODE
+        printInputBits((const unsigned char *)inputString, strlen(inputString));
+#endif
         processBuffer((const unsigned char *)inputString, strlen(inputString));
     }
     else
@@ -59,11 +70,33 @@ int main(int argc, char **argv)
         {
             inputFileSize = 0ULL; // Non-fatal
         }
+#if DEBUG_MODE
+        {
+            FILE *dbgFile = fopen(inputFilename, "rb");
+            if (dbgFile)
+            {
+                fseek(dbgFile, 0, SEEK_END);
+                long dbgLen = ftell(dbgFile);
+                fseek(dbgFile, 0, SEEK_SET);
+                if (dbgLen > 0)
+                {
+                    unsigned char *dbgBuf = (unsigned char *)malloc((size_t)dbgLen);
+                    if (dbgBuf)
+                    {
+                        size_t r = fread(dbgBuf, 1, (size_t)dbgLen, dbgFile);
+                        printInputBits(dbgBuf, r);
+                        free(dbgBuf);
+                    }
+                }
+                fclose(dbgFile);
+            }
+        }
+#endif
         readAndProcessFile(inputFilename);
     }
 
 #if (DEBUG_MODE && DEBUG_LOG_EXTENDED)
-    printField();
+    printField("Init Phase");
     printPrimeIndexes();
     printColorIndexes();
     printSumsAndValues();
@@ -72,13 +105,13 @@ int main(int argc, char **argv)
     hashValue = calculateHashValue();
 
 #if (DEBUG_MODE && DEBUG_LOG_EXTENDED)
-    printField();
+    printField("Processing Phase");
     printSumsAndValues();
 #endif
 
     if (hashValue)
     {
-        LOG_INFO("HASH VALUE: %s", hashValue);
+        LOG_INFO("HASH VALUE (%d-bit): %s", hashLengthInBits, hashValue);
     }
     else
     {
@@ -92,6 +125,10 @@ int main(int argc, char **argv)
     free(hashValue);
     free(inputFilename);
     free(inputString);
+#if DEBUG_MODE
+    if (g_debug_fp) { fclose(g_debug_fp); g_debug_fp = NULL; }
+    LOG_INFO("Debug output written to debug.txt");
+#endif
     return EXIT_SUCCESS;
 }
 

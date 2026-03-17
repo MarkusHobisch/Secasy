@@ -99,7 +99,7 @@ speichert drei unabhängige Werte:
 
 | Feld               | Typ            | Bedeutung                                                                     |
 |--------------------|----------------|-------------------------------------------------------------------------------|
-| `value`            | `int64_t`      | Numerischer Zellwert; wird durch Operationen verändert                        |
+| `value`            | `uint64_t`     | Numerischer Zellwert; wird durch Operationen verändert                        |
 | `primeIndex`       | `uint32_t`     | Zeiger in die vorberechnete Primzahltabelle                                   |
 | `colorIndex`       | `uint8_t`      | Bestimmt, welche der 6 Operationen in Phase 3 auf diese Zelle angewendet wird |
 

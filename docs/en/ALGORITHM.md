@@ -98,7 +98,7 @@ stores three independent values:
 
 | Field        | Type                      | Purpose                                                                 |
 |--------------|---------------------------|-------------------------------------------------------------------------|
-| `value`      | `int64_t` (64-bit signed) | Numeric cell value; modified by operations                              |
+| `value`      | `uint64_t` (64-bit unsigned) | Numeric cell value; modified by operations                              |
 | `primeIndex` | `uint32_t`                | Pointer into the pre-computed prime number table                        |
 | `colorIndex` | `uint8_t` (0–5)           | Determines which of the 6 operations is applied to this cell in Phase 3 |
 
