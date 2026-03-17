@@ -619,4 +619,4 @@ accidentally introduces a weakness.
 
 ---
 
-*Created: 2026-03-15 · Reference implementation: Secasy 512-bit, 10 rounds*
+*Created: 2026-03-16 · Reference implementation: Secasy 512-bit, 10 rounds*

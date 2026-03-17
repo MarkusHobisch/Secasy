@@ -310,7 +310,7 @@ ADD, SUB, and INVERT operations effectively counteract the absorbing tendency.
 ### Performance Optimization
 
 The 10-round default provides a safety margin of at least **10:1** over the minimum required for statistical quality (1
-round at 64-bit). For comparison, SHA-256 [1] uses 64 rounds with an estimated security margin of ~2:1.
+round at 64-bit). For comparison, SHA-256 [@nist_fips180_4] uses 64 rounds with an estimated security margin of ~2:1.
 
 The round count could theoretically be reduced to 1–5 without measurable degradation — at least with respect to
 avalanche, collision, and correlation metrics.
@@ -349,6 +349,3 @@ diffusion that is fundamentally independent of iteration count — a distinctive
 ---
 
 ## References
-
-[1] National Institute of Standards and Technology, *Secure Hash Standard (SHS)*, FIPS PUB 180-4, Aug. 2015. DOI:
-10.6028/NIST.FIPS.180-4

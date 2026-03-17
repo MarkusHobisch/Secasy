@@ -622,4 +622,4 @@ dass keine neue Version versehentlich eine Schwäche einführt.
 
 ---
 
-*Erstellt: 2026-03-15 · Referenz-Implementierung: Secasy 512-Bit, 10 Runden*
+*Erstellt: 2026-03-16 · Referenz-Implementierung: Secasy 512-Bit, 10 Runden*

@@ -20,8 +20,8 @@ Phase 1: Initialization           Phase 2: Input Integration
 ┌──────────────────────┐          ┌──────────────────────────────────────┐
 │ 16×16 grid of        │          │ Each byte → 4 × 2-bit directions    │
 │ uint64_t cells       │  ─────►  │ → prime-driven jumps across grid    │
-│ (256 cells, all = 2) │          │ → cross-axis coupling breaks        │
-│                      │          │   commutativity                     │
+│ (256 cells, all = 2) │          │ → data-dependent jump distances     │
+│                      │          │   (single-axis per direction)       │
 └──────────────────────┘          └──────────────────────────────────────┘
                                               ↓
 Phase 3: Processing Rounds        Phase 4: Hash Extraction
@@ -90,11 +90,12 @@ of internal state.
 AND and OR operations are not invertible. Given `a AND b = c`, neither `a` nor `b` can be
 recovered uniquely. This prevents backward computation from hash output to input.
 
-### 3. Cross-Axis Coupling
+### 3. Data-Dependent Jump Distances
 
-Input integration couples both axes of the grid: vertical jumps depend on the horizontal
-coordinate and vice versa. This breaks commutativity (LEFT→UP ≠ UP→LEFT) and ensures
-different byte sequences follow entirely different grid paths.
+Each cursor step jumps by the current cell's prime value, which changes after each visit.
+This creates a feedback loop: the path depends on the field state, which in turn depends on
+the path already taken. Two inputs that diverge at any byte produce cascading differences in
+jump distances, causing rapid path separation across the grid.
 
 ### 4. Hash Extraction
 

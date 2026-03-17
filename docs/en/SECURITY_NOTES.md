@@ -28,14 +28,9 @@ depends on the current tile's value:
 const uint64_t oldPrime = tile->value;
 // e.g. for direction UP:
 pos.y = (pos.y - oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
-pos.x = (pos.x + (pos.y >> 1) + 1) & (FIELD_SIZE - 1);
 ```
 
-Each step's position depends on the *current* cell value, creating a feedback loop.  
-Consequence: The traversal path cannot be predicted without knowing the full field state.
-
-### 3.2 Non-Invertible Operations
-
+Each step's jump distance depends on the *current* cell value, creating a feedback loop.
 AND and OR are **not invertible** — given `a AND b = c`, neither `a` nor `b` can be uniquely recovered.  
 This fundamentally prevents backward computation from hash output to input.
 
@@ -50,17 +45,17 @@ This creates inter-cell dependencies that prevent isolated analysis of individua
 
 **Timing Attacks:** An attacker measures execution time differences to infer internal state. In Secasy, the
 `switch(colorIndex)` statement selects one of 6 operations per cell. Branch prediction misses and varying instruction
-latencies could leak which operation was executed [8].
+latencies could leak which operation was executed [@kocher1996_timing].
 
 **Power / EM Analysis:** Each arithmetic operation causes a measurable difference in power consumption proportional to
-the Hamming distance between old and new register values. Differential Power Analysis (DPA) [9] correlates power traces
+the Hamming distance between old and new register values. Differential Power Analysis (DPA) [@kocher1999_dpa] correlates power traces
 across many executions to statistically recover which operation was applied at each cell.
 
 **Cache-Timing Attacks (Flush+Reload / Prime+Probe):** The prime table (`primes.h`, 88,801 entries, ~355 KB) exceeds L1
 cache size. Indexed access via `primeArray[primeIndex]` causes cache misses whose pattern depends on `primeIndex`. An
 attacker sharing the same CPU (e.g., co-located cloud VM) can observe which cache lines are loaded and deduce the
 accessed prime indices — revealing the traversal order. This is the same class of attack used to extract AES keys from
-T-Table implementations [1, 2].
+T-Table implementations [@bernstein2005_cache; @osvik2006_cache].
 
 ### 4.2 Inherent Resistance by Design
 
@@ -92,7 +87,7 @@ accesses. This is left as future work.
 
 ## 5. Length Extension Resistance
 
-In Merkle-Damgård constructions [3] (MD5, SHA-1, SHA-256), an attacker who knows $H(m)$ can
+In Merkle-Damgård constructions [@merkle1990; @damgard1990] (MD5, SHA-1, SHA-256), an attacker who knows $H(m)$ can
 compute $H(m \| padding \| m')$ without knowing $m$. This is possible because the hash output *is* the internal state.
 
 Secasy is **inherently immune** to this attack: the internal state is 256 × 64 = 16,384 bits, while the output is only
@@ -105,9 +100,9 @@ The ratio of internal state to output size provides a strong security margin:
 
 | Hash Function | Internal State | Output      | Ratio    |
 |---------------|----------------|-------------|----------|
-| SHA-256 [4]   | 256 bit        | 256 bit     | 1:1      |
-| SHA-512 [4]   | 512 bit        | 512 bit     | 1:1      |
-| SHA-3-256 [5] | 1,600 bit      | 256 bit     | 6.25:1   |
+| SHA-256 [@nist_fips180_4]   | 256 bit        | 256 bit     | 1:1      |
+| SHA-512 [@nist_fips180_4]   | 512 bit        | 512 bit     | 1:1      |
+| SHA-3-256 [@nist_fips202] | 1,600 bit      | 256 bit     | 6.25:1   |
 | **Secasy**    | **16,384 bit** | **512 bit** | **32:1** |
 
 This 32:1 ratio means that even with full knowledge of the hash output, an attacker has access to only ~3% of the
@@ -138,10 +133,10 @@ Empirical testing confirms no detectable bias at 10 rounds.
 
 Quantum algorithms reduce the effective security of hash functions:
 
-- **Preimage (Grover [6]):** $2^{512} \rightarrow 2^{256}$ quantum operations — well beyond feasibility
-- **Collision (BHT algorithm [7]):** $2^{256} \rightarrow 2^{170}$ quantum operations — still considered secure
+- **Preimage (Grover [@grover1996]):** $2^{512} \rightarrow 2^{256}$ quantum operations — well beyond feasibility
+- **Collision (BHT algorithm [@brassard1998_quantum]):** $2^{256} \rightarrow 2^{170}$ quantum operations — still considered secure
 
-Note: For collisions, the Brassard-Høyer-Tapp (BHT) algorithm [7] achieves $2^{n/3}$ complexity, not $2^{n/2}$ as Grover
+Note: For collisions, the Brassard-Høyer-Tapp (BHT) algorithm [@brassard1998_quantum] achieves $2^{n/3}$ complexity, not $2^{n/2}$ as Grover
 does for preimage.
 
 Secasy's 512-bit output provides a **256-bit post-quantum preimage security level** and **170-bit post-quantum collision
@@ -155,8 +150,8 @@ Pathological inputs deserve consideration:
 - **Empty input (0 bytes):** No field modification occurs beyond initialization. The hash is deterministic and unique,
   but derived from the default field state (all cells = 2). This is by design — no padding is applied.
 - **All-zero input (e.g., 1000× `0x00`):** Byte `0x00` decodes to direction `00 00 00 00` (4× UP). Repeated identical
-  directions could produce suboptimal field distribution. However, the prime-based jump distances and
-  commutativity-breaking offsets ensure that even uniform directions produce distinct cell visits.
+  directions could produce suboptimal field distribution. However, the prime-based jump distances ensure that even
+  uniform directions produce distinct cell visits, since each visit changes `primeIndex` and thus the next jump distance.
 - **Very short input (1 byte):** Only 4 traversal moves. The field remains close to its initial state, but the
   processing rounds (default: 10) still provide sufficient diffusion — confirmed by round-reduction analysis down to 1
   round.
@@ -179,31 +174,3 @@ These are identified as future work suitable for a dedicated formal analysis.
 ---
 
 ## References
-
-[1] D. J. Bernstein, "Cache-timing attacks on AES," Technical Report, 2005.
-Available: https://cr.yp.to/antiforgery/cachetiming-20050414.pdf
-
-[2] D. A. Osvik, A. Shamir, and E. Tromer, "Cache attacks and countermeasures: The case of AES," in *Topics in
-Cryptology – CT-RSA 2006*, Lecture Notes in Computer Science, vol. 3860, Springer, Berlin, 2006, pp. 1–20.
-
-[3] R. C. Merkle, "A Certified Digital Signature," in *Advances in Cryptology – CRYPTO 1989*, Lecture Notes in Computer
-Science, vol. 435, Springer, Berlin, 1990, pp. 218–238; I. B. Damgård, "A Design Principle for Hash Functions," ibid.,
-pp. 416–427.
-
-[4] National Institute of Standards and Technology, *Secure Hash Standard (SHS)*, FIPS PUB 180-4, Aug. 2015. DOI:
-10.6028/NIST.FIPS.180-4
-
-[5] National Institute of Standards and Technology, *SHA-3 Standard: Permutation-Based Hash and Extendable-Output
-Functions*, FIPS PUB 202, Aug. 2015. DOI: 10.6028/NIST.FIPS.202
-
-[6] L. K. Grover, "A fast quantum mechanical algorithm for database search," in *Proc. 28th Annual ACM Symposium on
-Theory of Computing (STOC)*, ACM, New York, 1996, pp. 212–219.
-
-[7] G. Brassard, P. Høyer, and A. Tapp, "Quantum cryptanalysis of hash and claw-free functions," in *LATIN 1998:
-Theoretical Informatics*, Lecture Notes in Computer Science, vol. 1380, Springer, Berlin, 1998, pp. 163–169.
-
-[8] P. C. Kocher, "Timing attacks on implementations of Diffie-Hellman, RSA, DSS, and other systems," in *Advances in
-Cryptology – CRYPTO 1996*, Lecture Notes in Computer Science, vol. 1109, Springer, Berlin, 1996, pp. 104–113.
-
-[9] P. Kocher, J. Jaffe, and B. Jun, "Differential power analysis," in *Advances in Cryptology – CRYPTO 1999*, Lecture
-Notes in Computer Science, vol. 1666, Springer, Berlin, 1999, pp. 388–397.
