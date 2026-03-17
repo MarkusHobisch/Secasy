@@ -92,7 +92,7 @@ void printSumsAndValues()
     printf("\n");
     printf("- Last prime was %d\n", lastPrime);
     printf("- Last position was [%u,%u]\n", pos.x, pos.y);
-    printf("- Hash value is %" PRIu64 "\n", hashValue());
+    printf("- Hash value is %" PRIu64 "\n", hashValue(0));
 }
 
 void printDatatypeMaxValues()

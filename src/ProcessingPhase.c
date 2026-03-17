@@ -30,9 +30,9 @@ char *calculateHashValue()
      * Enforce minimum 64 bits; CLI already validates power-of-two.
      */
     int effectiveNumberOfBits = hashLengthInBits;
-    if (effectiveNumberOfBits < MIN_HASH_OUTPUT_BITS)
+    if (effectiveNumberOfBits < HASH_OUTPUT_BITS)
     {
-        effectiveNumberOfBits = MIN_HASH_OUTPUT_BITS;
+        effectiveNumberOfBits = HASH_OUTPUT_BITS;
     }
 
     const size_t outHexChars = (size_t)effectiveNumberOfBits / 4U;
@@ -55,8 +55,7 @@ char *calculateHashValue()
     }
     size_t writePos = 0;
 
-    size_t blocksCollected = 0;
-
+    /* Phase 3: Run all mixing rounds (pure diffusion, no extraction) */
     for (unsigned long roundCounter = 0; roundCounter < actualRounds; roundCounter++)
     {
         /* Iterate through the whole field */
@@ -72,15 +71,14 @@ char *calculateHashValue()
             }
         }
         setPositionsToZeroIfOutOfRange(&posX, &posY);
+    }
 
-        /* After each round, collect a 64-bit block if we still need more */
-        if (blocksCollected < blocksNeeded)
-        {
-            uint64_t hash = hashValue();
-            snprintf(hashBuffer + writePos, 17, "%016" PRIx64, hash);
-            writePos += 16;
-            blocksCollected++;
-        }
+    /* Phase 4: Extract all blocks from the final grid state */
+    for (size_t b = 0; b < blocksNeeded; b++)
+    {
+        uint64_t hash = hashValue((unsigned long)b);
+        snprintf(hashBuffer + writePos, 17, "%016" PRIx64, hash);
+        writePos += 16;
     }
 
     /* Truncate to exact desired length */

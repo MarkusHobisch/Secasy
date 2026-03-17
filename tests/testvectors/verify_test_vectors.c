@@ -101,43 +101,51 @@ static int run_tests(void)
     printf("Secasy Test Vector Verification\n");
     printf("================================\n");
     printf("Rounds : %lu\n", numberOfRounds);
-    printf("Date   : 2026-03-15\n\n");
+    printf("Date   : 2026-03-16\n\n");
 
     /* ── 512-bit vectors ─────────────────────────────────────────── */
     printf("--- 512-bit ---\n");
-    TEST("\"\" (empty)",     EMPTY,   0,  512, "171201cadb67c9037cab4d0774f1f4efd853df21737c875319f9288a6bd4eff5b36037eba14c9bcc6c8ddf75faed794a8a9a29d9764a2917636501221db14740");
-    TEST_STR("\"a\"",        "a",     512, "7a808caa3e4a79bc840618351a3d2c05080c19885554f34e03d92680b5e9e26924fd9211318a8da40b559b1ed9cbead7ba06e4172b9eefd83e94d814a9b0db12");
-    TEST_STR("\"z\"",        "z",     512, "dca7959152e282f0f604fd560535d5161cf80e522224cd922a72b1d7ac938e392d47bc7471bf93a877ef480e049fb4698369ab1ccb34871e28cbf3c1945c95c0");
-    TEST_STR("\"0\"",        "0",     512, "a71fc3757caf88fe054a1987c8efd3d987bcf075521f0299000769f7d56d0605c7dfe489ccaad36165f581bdd812b5818054f00f9a73a93e7a7e47a5d0a10b73");
-    TEST_STR("\"abc\"",      "abc",   512, "0fcdfe71b624b788623d1950214285172b73963011fb020a6ba436e1fb66ed357fd8c789933b08e638e6d9c8d0d86924a4e9985c7a7bc98b136afa2a88d320d4");
-    TEST_STR("\"secasy\"",   "secasy",512, "fbc6840e290b51b709998bfe48feb479f8fba2df646803cd586dbf5970908ce6c9f999556915dfbf13af7ad5a38427c68b43a1d51b9de5f1ae3c80054e2d9277");
-    TEST_STR("\"1234567890\"","1234567890",512,"37f1a1e3e697a10af2e4e4e3fe90ec69894467df2c11f1d6f3d21c51758c600256298db3a49046f17f7803d23b3af9ef13174dfa67bd8f6655b1ac2a148970a1");
+    TEST("\"\" (empty)",     EMPTY,   0,  512, "170cc4dcf0d6f18211e1b34dab26e019c2bd077cb542f53d717544b3b8151f622489f9c95b5ac055c7b13991597469ad62c84674564a659cf6e2298a794cb8a5");
+    TEST_STR("\"a\"",        "a",     512, "920d7d34b8ac5dbf824de63a33dbbcb2c0ef18d6c08c424278f0c8c12a6b2ca60d22b1bcf6cb1637edada5fc98bc0035457a187825b3e65482d99f15a764dbdd");
+    TEST_STR("\"z\"",        "z",     512, "89ccc5f01da80129a7134aa98b06e1a8e7d5328b5c04ed60644128720e36c5f55da025f9fa16c48ffc25aec6d5319e653afa518a064cc73a0bcc67260e0891e7");
+    TEST_STR("\"0\"",        "0",     512, "c9c16ab50a0ece4959ca4981fea665a7a15f5ad8bd461ee19070a1f63508ef62f78d4b6fb60d121d61ef1c3fb26d3cf8edf81cee1b4879fd08b4100a557a29cc");
+    TEST_STR("\"abc\"",      "abc",   512, "8fd33a7c0c31b821d4f98f934204b5826e5fdd4403afdf9b4f024d4a631b2b9c3ced0a04ae8f0816244c8fcc0daf3035075cac4c7b9d1a3f0304c8809ede9cf9");
+    TEST_STR("\"secasy\"",   "secasy",512, "51c42cb1e08f95bc5358d6f6b58e8c78f2c05853115b6c6ae2c873d864c6fffdd7a8f8f8e755b928ce0ef3b586e4bc4c84093f8a572230e21dbfa5e4a714e961");
+    TEST_STR("\"1234567890\"","1234567890",512,"2027f8e1b9a9c8b163af2e6d83ee9b58287b3e96e991686ebdefc1755742fd0883080a8a179cf0e2f080d65ac991d3d9e1fc44390c316ec02f6c3e6b3610b1da");
     TEST_STR("pangram (dog)", "The quick brown fox jumps over the lazy dog", 512,
-             "1fe172638cf0cb765ec1dd61fb6e10a63022bfcfa910b7b8f949c03afa7310201d798d68986fb19784f06cbec6201e89974e017c59595a818efdda5ff427e1fc");
+             "feae885d7e5d5edec261bba1f6cd8b227424617a1cfd392098ee5a5e8798a9bd0ecced6678737ec84d571c31e9058778496e951a0b3eadedd6958c141d1b78e0");
     TEST_STR("pangram (cog)", "The quick brown fox jumps over the lazy cog", 512,
-             "459b054bbb41d8deed1614dbf507c0fb36e6419f6b2e4d27692b6300ecba1c8b15dad6c18888f9faac0f9c3ed1f08e7d4d719cc821ba2b96e97309304fc82a03");
-    TEST("0x00",             BYTE00,  1,  512, "02c7e717c3c562956f8e6331c0c87c82a14b39adac337ce1bfb2dad6cdc6188dabdf2d7041d971f043a41a13cd6c7e141c9fc451909c294522fdb047cae62b63");
-    TEST("0x01",             BYTE01,  1,  512, "304e386689f5ae2ae32ffee66086d68f2ef90f2c228e81fdd530970beab284c2ab7bc08d65d3913d31df51e572fbec56827cfc42cd208513b7e8545130ccc576");
-    TEST("0x80",             BYTE80,  1,  512, "4f4f36598dbdb1bebb48d07514dcbc4e5601193ff1acf0170e247d5a049326f8bf83741c5f3b35d4cd7afa6927707115133154a6a91721c21d2548bc2b56f8f2");
-    TEST("0xFF",             BYTEFF,  1,  512, "af0be72a1c79357f87144c4632621d526e486f77698bccd3bf32715c236d8562886833d6e6de75de1b894e560030906d5cf5d91a13c16ec4cac40684940d0ddc");
-    TEST("0x00 x8",          ZEROS8,  8,  512, "de51092bb53e1ab98d1e1f050cddeb1b01cae6be95a353240789418035c1cd08582d5261536418aeeb403357dcfd35f18b5fa5f438db6a2b06fd79560c49f139");
-    TEST("0x00 x16",         ZEROS16, 16, 512, "41ad1d14dc9feaa44b7008a4d2c7a8573f1472729af48d0ff6d23cb9c4e6011d800390f49fba039a277379ef92807f1577179beee9e996607da73bce94a0696f");
-    TEST("0x00 x32",         ZEROS32, 32, 512, "131e877bc9f7e0c42f31caaf59c2485c50f4eb862f087362d40b0aa8d15600f9df160e3a16bead6fe67bf62e61464a4080b46dfa14f6ac52202a7bbc162b6cdc");
-    TEST("0x00 x64",         ZEROS64, 64, 512, "e639333a956c48d76141c0fe452a06bfe55244bfe0143ab35b27960b441343353895bb1a224e9bf573c92c0e9b39b405a3e8f3ee866325f6536720a2d3b1ed89");
-    TEST("0xFF x8",          ONES8,   8,  512, "76b1e8fc174db951b20e562ba056b41a69c61c44d43c6927e1a032e1146b3be63b1c59653978121a0b13f3c3b09b43e5174328b35b6f04324004ee0aebcff01c");
-    TEST_STR("\"Markus\"",   "Markus",512, "e9d8503507996b04a2e828857579471351a2c1050cee893c8ea9672ad7dc6e9fef07d75c752746c9d057fa00c9cecdaf52a56da7aafab98fa286b88503c78c00");
-    TEST_STR("\"Anna\"",     "Anna",  512, "32dce55effa5d1621608a4e659e7e39d94f19c87bfc396fd43296009b000158503acc3b46e2fd3fcf6717f0cfaec70163dcf8d3671a135e4870762c230db22d6");
+             "860e1653369d48aa6ea027249e1e60c99d292c9ed73ce43d91f0efd67b86e4ef40e207d28cb533b28b4a753f1786be42989dcd4ebf6ef86962e4fb1b053946c5");
+    TEST("0x00",             BYTE00,  1,  512, "92cc8686ac8048228da8db8195451497412b4021c0449c0cb4fadbdbc018f1bd46af79b7c652f2c8041322a758809a4a7be9aaf4cbd69933849048fb231db598");
+    TEST("0x01",             BYTE01,  1,  512, "42fa914a659125ed69ad1d66ef6bdebb11eb767901a44cfb4bce1a00a61644db84a92588b09be4be456bb9e871cb9a1f6a3c54dae01015702ac249eb7be4912b");
+    TEST("0x80",             BYTE80,  1,  512, "e27b1ca5ba734b2d98f8928cd1e707458323bc579de31175dceedd5c6c42a010fdca02c956c188cffdb6086f6f1fc7e1c79b274a81483e18a5425fb01931489a");
+    TEST("0xFF",             BYTEFF,  1,  512, "02ec7ca8d713092fc59d5617fd3dd8806fa58ed4edbddcd8661467fba78e375b2203b95e489fd4e69212fa02595cd1f5ec331d336782a60b23ef2cacfbb9b8ce");
+    TEST("0x00 x8",          ZEROS8,  8,  512, "243db3e455f7dbf22bb6e7233afa2a7a03699e774dd84d34ac45a1e84f5735e4685aa39440dacf12deead17402f9d41507fc4eae726e42d4271166764a952bdc");
+    TEST("0x00 x16",         ZEROS16, 16, 512, "70b3869e26d522a9ba2146fb456a49fc3599f2021079e14641bab1e4d612e439aed2424d53910c11ed4b5a37078e9153ffd16795bc7bcf8af75ef52f24793d20");
+    TEST("0x00 x32",         ZEROS32, 32, 512, "6086e805cef420cdec5960a2da7455bcd01fbc47828bc2f758fb3d3965fc25576a6693f31a2f971d82158d85e54d40fa19e8873dde538ef5dfcd065e882bda2c");
+    TEST("0x00 x64",         ZEROS64, 64, 512, "2ddec90fa0f4d268b9a6c1f41c20e7cf5ce9d668ab66da5c5e7de598b4011172a1b81c3005e5ed2b417e0f18e03f42aebd3fb5048d9effce45e3af296363adbc");
+    TEST("0xFF x8",          ONES8,   8,  512, "815c958b076077f548abaf69ba01834ad6b93f2cc7e2be9f88d56b48a1f3c68af8d1af69814e5afc6eb61e86ab4fcb06a61513f3a23a1f6de21bf114dd197730");
+    TEST_STR("\"Markus\"",   "Markus",512, "f60952a118cb936b815904a40cc320b168778e8ca9c2821e89af15a33757467afdecee36400acbcf3305afd65d8b3ee10e6a54c1baa1a85156350e91c41bc5f4");
+    TEST_STR("\"Anna\"",     "Anna",  512, "52a4087c20be454559e8fa3ea3c13f25c4b213dffa6df6c13c1eb7e2e0fabaedb5f3eff0d88055da3c6e0f1ae24c72965487768f2d7cb917f8d9fe49b959f181");
+    TEST_STR("\"markus\"",   "markus",512, "359a202190a89defd891e743f90b90ee6f14e9c9c9cd2368fe5464fe6e29348c2b2dc030e49bc829f53cdfd620ad6b8a3ee65b1c34465d653ff47eaf6205ed1f");
+    TEST_STR("\"maRkus\"",   "maRkus",512, "66f4b76a53345f34b841a5364684395f9723a46b2fb9e36e51aefbd14af178201a8326a0a4d7b963304a16b1a426c0770a0bd09b41775ca43a034bd2d4046787");
+    TEST_STR("\"Hanna\"",    "Hanna", 512, "44986085b29f103e0e7fecf3f02e74f475ab27f87d016a0b409e400cd9d17bd972135ad23c0530d4606cb35b5f2c99494ff1daa82073c5ddc5e2f40ec18a9c9b");
+    TEST_STR("\"Antonette\"","Antonette",512,"7e9e13182dadc6b5223ba4f8f11d6724b3074c6a74bfadda0753864ac77cebe7e1e317fbe1fbb2dc3a716245b946ec1a9a254979ecc9c6634fde5700a257202b");
 
     /* ── 64-bit vectors ──────────────────────────────────────────── */
     printf("\n--- 64-bit ---\n");
-    TEST("\"\" (empty)",     EMPTY,   0,  64, "171201cadb67c903");
-    TEST_STR("\"a\"",        "a",     64, "7a808caa3e4a79bc");
-    TEST_STR("\"abc\"",      "abc",   64, "0fcdfe71b624b788");
-    TEST_STR("\"secasy\"",   "secasy",64, "fbc6840e290b51b7");
-    TEST_STR("pangram (dog)", "The quick brown fox jumps over the lazy dog", 64, "1fe172638cf0cb76");
-    TEST_STR("pangram (cog)", "The quick brown fox jumps over the lazy cog", 64, "459b054bbb41d8de");
-    TEST_STR("\"Markus\"",   "Markus",64, "e9d8503507996b04");
-    TEST_STR("\"Anna\"",     "Anna",  64, "32dce55effa5d162");
+    TEST("\"\" (empty)",     EMPTY,   0,  64, "170cc4dcf0d6f182");
+    TEST_STR("\"a\"",        "a",     64, "920d7d34b8ac5dbf");
+    TEST_STR("\"abc\"",      "abc",   64, "8fd33a7c0c31b821");
+    TEST_STR("\"secasy\"",   "secasy",64, "51c42cb1e08f95bc");
+    TEST_STR("pangram (dog)", "The quick brown fox jumps over the lazy dog", 64, "feae885d7e5d5ede");
+    TEST_STR("pangram (cog)", "The quick brown fox jumps over the lazy cog", 64, "860e1653369d48aa");
+    TEST_STR("\"Markus\"",   "Markus",64, "f60952a118cb936b");
+    TEST_STR("\"Anna\"",     "Anna",  64, "52a4087c20be4545");
+    TEST_STR("\"markus\"",   "markus",64, "359a202190a89def");
+    TEST_STR("\"maRkus\"",   "maRkus",64, "66f4b76a53345f34");
+    TEST_STR("\"Hanna\"",    "Hanna", 64, "44986085b29f103e");
+    TEST_STR("\"Antonette\"","Antonette",64,"7e9e13182dadc6b5");
 
     /* ── Summary ─────────────────────────────────────────────────── */
     printf("\n================================\n");

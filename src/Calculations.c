@@ -4,12 +4,12 @@
 
 extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 
-uint64_t hashValue(void)
+uint64_t hashValue(unsigned long blockIndex)
 {
     /*
-     * Simple position-dependent accumulation.
-     * The position (x,y) is incorporated directly, making the
-     * order of values relevant (non-commutative).
+     * Position-dependent accumulation with block-index offset.
+     * Each blockIndex produces a distinct 64-bit value from the
+     * same grid state by shifting the position weight.
      */
     uint64_t accumulation = 0;
 
@@ -17,8 +17,8 @@ uint64_t hashValue(void)
     {
         for (int y = 0; y < FIELD_SIZE; y++)
         {
-            /* Position as unique index */
-            uint64_t pos = (uint64_t)(x * FIELD_SIZE + y + 1);
+            /* Position as unique index, offset by blockIndex */
+            uint64_t pos = (uint64_t)(x * FIELD_SIZE + y + 1) + (uint64_t)blockIndex * FIELD_SIZE * FIELD_SIZE;
 
             /* XOR with position-weighted value */
             accumulation ^= field[x][y].value * pos;

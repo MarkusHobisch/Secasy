@@ -231,33 +231,25 @@ static void writeNextNumber(const int move)
     switch (move)
     {
     case UP:
-        // Break commutativity: vertical movement also affects X based on current Y
         pos.y = (pos.y - oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
-        pos.x = (pos.x + (pos.y >> 1) + 1) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
         printf(" UP\n");
 #endif
         break;
     case DOWN:
-        // Break commutativity: vertical movement also affects X based on current Y
         pos.y = (pos.y + oldPrime) & (FIELD_SIZE - 1);
-        pos.x = (pos.x + (pos.y >> 1) + 3) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
         printf(" DOWN\n");
 #endif
         break;
     case LEFT:
-        // Break commutativity: horizontal movement also affects Y based on current X
         pos.x = (pos.x - oldPrime) & (FIELD_SIZE - 1);
-        pos.y = (pos.y + (pos.x >> 1) + 2) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
         printf(" LEFT\n");
 #endif
         break;
     case RIGHT:
-        // Break commutativity: horizontal movement also affects Y based on current X
         pos.x = (pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
-        pos.y = (pos.y + (pos.x >> 1) + 4) & (FIELD_SIZE - 1);
 #if DEBUG_MODE
         printf(" RIGHT\n");
 #endif

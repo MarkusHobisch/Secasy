@@ -186,9 +186,9 @@ static void parse_args(int argc, char **argv)
         fprintf(stderr, "Rounds must be > 0\n");
         exit(EXIT_FAILURE);
     }
-    if (hashLengthInBits < MIN_HASH_BITS)
+    if (hashLengthInBits < HASH_BITS)
     {
-        fprintf(stderr, "Hash bit size < min (%d)\n", MIN_HASH_BITS);
+        fprintf(stderr, "Hash bit size < min (%d)\n", HASH_BITS);
         exit(EXIT_FAILURE);
     }
     if (!is_power_of_two(hashLengthInBits))

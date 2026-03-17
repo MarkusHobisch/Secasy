@@ -54,8 +54,11 @@ gmon.out
 *.txt
 !CMakeLists.txt
 
-# Copilot instructions (local only)
-.github/copilot-instructions.md
+# GitHub config (local only)
+.github/
+
+# Local dev notes
+todo.txt
 
 # OS / editor
 *.swp

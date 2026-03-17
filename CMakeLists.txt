@@ -60,13 +60,22 @@ add_secasy_test(SecasyFuzzTest               tests/fuzzing/fuzz_test.c)
 # ── Test vector generator & verifier ────────────────────────────────
 add_secasy_test(SecasyTestVectors            tests/testvectors/generate_test_vectors.c)
 add_secasy_test(SecasyVerifyVectors          tests/testvectors/verify_test_vectors.c)
+# ── Color operation isolation / diffusion analysis ──────────────────
+add_secasy_test(SecasyColorIsolation         tests/analysis/color_op_isolation.c)
+# ── Field-size diffusion & symmetry sweep ────────────────────────────
+add_secasy_test(SecasyFieldSizeSweep         tests/analysis/field_size_sweep.c)
+# ── Collision diagnosis (debug tool) ────────────────────────────────
+add_secasy_test(SecasyDebugCollision         tests/analysis/debug_collision.c)
+# ── Direction collision trace & analysis ────────────────────────────
+add_secasy_test(SecasyTraceCollision         tests/analysis/trace_collision.c)
 # Collect all test target names for bulk property assignment
 set(ALL_TEST_TARGETS
     SecasyComprehensiveSecurity SecasyDeepSecurity SecasyExtendedSecurity
     SecasyPracticalExploit SecasyAvalanche SecasyCollision SecasyTruncCollisionPoC
     SecasyDifferential SecasyStatisticalRandomness SecasyStatRigor SecasyHashPattern
     SecasyBenchmark SecasyPreciseTiming SecasyProfiling SecasyRoundReduction
-    SecasyFuzzTest SecasyTestVectors SecasyVerifyVectors)
+    SecasyFuzzTest SecasyTestVectors SecasyVerifyVectors SecasyColorIsolation
+    SecasyFieldSizeSweep SecasyDebugCollision SecasyTraceCollision)
 
 # ── Per-target properties (applied in bulk) ───────────────────────────
 set(WARN_FLAGS -Wall -Wextra -Wundef -Wshadow -Wpointer-arith
@@ -105,6 +114,7 @@ endif()
 find_program(PANDOC pandoc)
 if(PANDOC)
     set(PDOC_OPTS --pdf-engine=xelatex "-V" "papersize=a4" "-V" "mainfont=Segoe UI" "-V" "monofont=Consolas")
+    set(CITE_OPTS --citeproc --bibliography=${CMAKE_SOURCE_DIR}/docs/references.bib --csl=${CMAKE_SOURCE_DIR}/docs/ieee.csl)
     set(DE_PDFS  ${CMAKE_SOURCE_DIR}/docs/de/pdfs)
     set(EN_PDFS  ${CMAKE_SOURCE_DIR}/docs/en/pdfs)
 
@@ -112,28 +122,31 @@ if(PANDOC)
         # ── German ──────────────────────────────────────────────────
         COMMAND ${PANDOC} ${CMAKE_SOURCE_DIR}/docs/de/SECURITY_CONCEPTS.md
                 -o ${DE_PDFS}/SECURITY_CONCEPTS.pdf
-                ${PDOC_OPTS} "-V" "geometry:margin=2.5cm" "-V" "fontsize=11pt" --toc
+                ${PDOC_OPTS} ${CITE_OPTS} "-V" "geometry:margin=2.5cm" "-V" "fontsize=11pt" --toc
 
         # ── English — prose documents ────────────────────────────────
         COMMAND ${PANDOC} ${CMAKE_SOURCE_DIR}/docs/en/SECURITY_CONCEPTS.md
                 -o ${EN_PDFS}/SECURITY_CONCEPTS.pdf
-                ${PDOC_OPTS} "-V" "geometry:margin=2.5cm" "-V" "fontsize=11pt" --toc
+                ${PDOC_OPTS} ${CITE_OPTS} "-V" "geometry:margin=2.5cm" "-V" "fontsize=11pt" --toc
 
         COMMAND ${PANDOC} ${CMAKE_SOURCE_DIR}/docs/en/SECURITY_NOTES.md
                 -o ${EN_PDFS}/SECURITY_NOTES.pdf
-                ${PDOC_OPTS} "-V" "geometry:margin=2.5cm" "-V" "fontsize=11pt" --toc
+                ${PDOC_OPTS} ${CITE_OPTS} "-V" "geometry:margin=2.5cm" "-V" "fontsize=11pt" --toc
 
         COMMAND ${PANDOC} ${CMAKE_SOURCE_DIR}/docs/en/ROUND_REDUCTION_ANALYSIS.md
                 -o ${EN_PDFS}/ROUND_REDUCTION_ANALYSIS.pdf
-                ${PDOC_OPTS} "-V" "geometry:margin=1.5cm" "-V" "fontsize=10pt" --toc
+                ${PDOC_OPTS} ${CITE_OPTS} "-V" "geometry:margin=1.5cm" "-V" "fontsize=10pt" --toc
 
-        COMMAND ${PANDOC} ${CMAKE_SOURCE_DIR}/docs/de/ALGORITHMUS.md
+        COMMAND ${PANDOC} ${CMAKE_SOURCE_DIR}/docs/de/ALGORITHM.md
                 -o ${DE_PDFS}/ALGORITHMUS.pdf
-                ${PDOC_OPTS} "-V" "geometry:margin=2.5cm" "-V" "fontsize=11pt" --toc
+                ${PDOC_OPTS} ${CITE_OPTS} "-V" "geometry:margin=2.5cm" "-V" "fontsize=11pt" --toc
+                --resource-path=${CMAKE_SOURCE_DIR}/docs/de
+                --resource-path=${CMAKE_SOURCE_DIR}/docs/en
 
         COMMAND ${PANDOC} ${CMAKE_SOURCE_DIR}/docs/en/ALGORITHM.md
                 -o ${EN_PDFS}/ALGORITHM.pdf
-                ${PDOC_OPTS} "-V" "geometry:margin=2.5cm" "-V" "fontsize=11pt" --toc
+                ${PDOC_OPTS} ${CITE_OPTS} "-V" "geometry:margin=2.5cm" "-V" "fontsize=11pt" --toc
+                --resource-path=${CMAKE_SOURCE_DIR}/docs/en
 
         COMMENT "Generating documentation PDFs into docs/*/pdfs/"
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}

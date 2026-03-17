@@ -9,8 +9,8 @@
 #define MAX_ALLOWED_PRIME_INDEX 50000000UL
 
 // Added readability / reuse constants
-#define MIN_HASH_BITS 64
-#define MIN_HASH_OUTPUT_BITS 64
+#define HASH_BITS 64
+#define HASH_OUTPUT_BITS 64
 #define BYTES_PER_MB 1048576.0
 
 // Field dimension (must be power of 2 for bitmask optimization)
@@ -39,7 +39,7 @@ typedef struct
 {
     uint32_t posX;
     uint32_t posY;
-    uint64_t value;       /* unsigned 64-bit for defined wrap-around overflow behavior */
+    uint64_t value;
     ColorIndex_t colorIndex;
     uint32_t primeIndex;
 } Tile_t;

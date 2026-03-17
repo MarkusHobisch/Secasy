@@ -55,7 +55,7 @@ extern Position_t pos;
 int popcount(uint64_t x) {
     int count = 0;
     while (x) {
-        count += x & 1;
+        count += (int)(x & 1u);
         x >>= 1;
     }
     return count;
@@ -67,7 +67,7 @@ uint64_t hash_to_uint64(const char* hash) {
         int val = (hash[i] >= '0' && hash[i] <= '9') 
                   ? (hash[i] - '0') 
                   : (hash[i] - 'a' + 10);
-        result = (result << 4) | val;
+        result = (result << 4) | (uint64_t)val;
     }
     return result;
 }
@@ -106,7 +106,7 @@ double test_birthday_attack(unsigned long rounds, int num_samples) {
     numberOfRounds = rounds;
     printf("  Testing birthday attack resistance with %d samples...\n", num_samples);
     
-    HashEntry* entries = malloc(num_samples * sizeof(HashEntry));
+    HashEntry* entries = malloc((size_t)num_samples * sizeof(HashEntry));
     if (!entries) {
         printf("    ERROR: Memory allocation failed\n");
         return 1.0;
@@ -114,7 +114,7 @@ double test_birthday_attack(unsigned long rounds, int num_samples) {
     
     // Sort and find collisions (compare full hash strings)
     // Store full hash strings for proper comparison
-    char** hash_strs = malloc(num_samples * sizeof(char*));
+    char** hash_strs = malloc((size_t)num_samples * sizeof(char*));
     if (!hash_strs) {
         printf("    ERROR: Memory allocation failed\n");
         free(entries);
@@ -124,7 +124,7 @@ double test_birthday_attack(unsigned long rounds, int num_samples) {
     for (int i = 0; i < num_samples; i++) {
         unsigned char input[32];
         for (int j = 0; j < 32; j++) {
-            input[j] = rand() % 256;
+            input[j] = (unsigned char)(rand() % 256);
         }
         
         initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
@@ -139,7 +139,7 @@ double test_birthday_attack(unsigned long rounds, int num_samples) {
     }
     
     // Sort by 64-bit prefix for fast candidate finding, then verify with full hash
-    qsort(entries, num_samples, sizeof(HashEntry), compare_hash_entries);
+    qsort(entries, (size_t)num_samples, sizeof(HashEntry), compare_hash_entries);
     
     int collisions = 0;
     for (int i = 1; i < num_samples; i++) {
@@ -187,7 +187,7 @@ double test_preimage_resistance(unsigned long rounds, int num_attempts) {
     for (int i = 0; i < num_attempts; i++) {
         unsigned char random_input[32];
         for (int j = 0; j < 32; j++) {
-            random_input[j] = rand() % 256;
+            random_input[j] = (unsigned char)(rand() % 256);
         }
         
         initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
@@ -230,7 +230,7 @@ double test_second_preimage(unsigned long rounds, int num_attempts) {
     printf("  Testing second preimage resistance...\n");
     
     // Multiple original messages
-    unsigned char originals[5][16] = {
+    unsigned char originals[5][17] = {
         "OriginalMsg_0001",
         "SecondMessage_2",
         "ThirdTestInput3",
@@ -248,7 +248,7 @@ double test_second_preimage(unsigned long rounds, int num_attempts) {
         for (int i = 0; i < num_attempts / 5; i++) {
             unsigned char random_input[32];
             for (int j = 0; j < 32; j++) {
-                random_input[j] = rand() % 256;
+                random_input[j] = (unsigned char)(rand() % 256);
             }
             
             // Ensure different from original
@@ -283,7 +283,7 @@ double test_bit_independence(unsigned long rounds, int num_samples) {
     int num_bits = hashLengthInBits < 256 ? hashLengthInBits : 256;  // Test output bits (cap at 256 for memory)
     
     // Correlation matrix for output bits
-    int* correlations = calloc(num_bits * num_bits, sizeof(int));
+    int* correlations = calloc((size_t)num_bits * (size_t)num_bits, sizeof(int));
     if (!correlations) {
         printf("    ERROR: Memory allocation failed\n");
         return 1.0;
@@ -292,7 +292,7 @@ double test_bit_independence(unsigned long rounds, int num_samples) {
     for (int sample = 0; sample < num_samples; sample++) {
         unsigned char input[32];
         for (int i = 0; i < 32; i++) {
-            input[i] = rand() % 256;
+            input[i] = (unsigned char)(rand() % 256);
         }
         
         initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
@@ -300,7 +300,7 @@ double test_bit_independence(unsigned long rounds, int num_samples) {
         char* hash = calculateHashValue();
         
         // Extract bits (dynamically allocated for num_bits)
-        int* bits = calloc(num_bits, sizeof(int));
+        int* bits = calloc((size_t)num_bits, sizeof(int));
         if (!bits) { free(correlations); return 1.0; }
         for (int i = 0; i < num_bits && i/4 < (int)strlen(hash); i++) {
             int nibble_idx = i / 4;
@@ -357,20 +357,20 @@ double test_strict_avalanche(unsigned long rounds, int num_samples) {
     int input_bits = 256;  // 32 bytes
     int output_bits = hashLengthInBits;
     
-    double* flip_probs = calloc(output_bits, sizeof(double));
+    double* flip_probs = calloc((size_t)output_bits, sizeof(double));
     if (!flip_probs) {
         printf("    ERROR: Memory allocation failed\n");
         return 1.0;
     }
     
     for (int input_bit = 0; input_bit < input_bits; input_bit += 8) {
-        int* flip_counts = calloc(output_bits, sizeof(int));
+        int* flip_counts = calloc((size_t)output_bits, sizeof(int));
         if (!flip_counts) { free(flip_probs); return 1.0; }
         
         for (int sample = 0; sample < num_samples / 32; sample++) {
             unsigned char input1[32], input2[32];
             for (int i = 0; i < 32; i++) {
-                input1[i] = rand() % 256;
+                input1[i] = (unsigned char)(rand() % 256);
                 input2[i] = input1[i];
             }
             
@@ -395,7 +395,7 @@ double test_strict_avalanche(unsigned long rounds, int num_samples) {
                 int xor = v1 ^ v2;
                 for (int b = 0; b < 4; b++) {
                     if (xor & (1 << b)) {
-                        int out_bit = i * 4 + (3 - b);
+                        int out_bit = (int)(i * 4) + (3 - b);
                         if (out_bit < output_bits) {
                             flip_counts[out_bit]++;
                         }
@@ -448,8 +448,8 @@ double test_nonlinearity(unsigned long rounds, int num_samples) {
         unsigned char A[16], B[16], AxorB[16];
         
         for (int i = 0; i < 16; i++) {
-            A[i] = rand() % 256;
-            B[i] = rand() % 256;
+            A[i] = (unsigned char)(rand() % 256);
+            B[i] = (unsigned char)(rand() % 256);
             AxorB[i] = A[i] ^ B[i];
         }
         
@@ -466,8 +466,8 @@ double test_nonlinearity(unsigned long rounds, int num_samples) {
         char* hashAxorB = calculateHashValue();
         
         // Calculate H(A) XOR H(B) and compare with H(A XOR B) using full hash
-        int hash_dist = hamming_distance_hex(hashAxorB, hashA);
-        int total_bits_ab = hamming_distance_hex(hashA, hashB);
+        (void)hamming_distance_hex(hashAxorB, hashA);
+        (void)hamming_distance_hex(hashA, hashB);
         
         // XOR hashes character by character and compare with H(AxorB)
         size_t hlen = strlen(hashA);
@@ -558,7 +558,7 @@ double test_near_collisions(unsigned long rounds, int num_samples) {
         unsigned char input[16];
     } Sample;
     
-    Sample* samples = malloc(num_samples * sizeof(Sample));
+    Sample* samples = malloc((size_t)num_samples * sizeof(Sample));
     if (!samples) {
         printf("    ERROR: Memory allocation failed\n");
         return 1.0;
@@ -566,7 +566,7 @@ double test_near_collisions(unsigned long rounds, int num_samples) {
     
     for (int i = 0; i < num_samples; i++) {
         for (int j = 0; j < 16; j++) {
-            samples[i].input[j] = rand() % 256;
+            samples[i].input[j] = (unsigned char)(rand() % 256);
         }
         
         initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
@@ -619,7 +619,7 @@ double test_input_sensitivity(unsigned long rounds) {
     numberOfRounds = rounds;
     printf("  Testing input sensitivity...\n");
     
-    unsigned char base[32] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef";
+    unsigned char base[33] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef";
     
     initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
     processBuffer(base, 32);
@@ -629,10 +629,10 @@ double test_input_sensitivity(unsigned long rounds) {
     int tests = 0;
     
     // Test single byte changes
-    for (int pos = 0; pos < 32; pos++) {
+    for (int byte_pos = 0; byte_pos < 32; byte_pos++) {
         unsigned char modified[32];
         memcpy(modified, base, 32);
-        modified[pos] = (base[pos] + 1) % 256;
+        modified[byte_pos] = (unsigned char)((base[byte_pos] + 1) % 256);
         
         initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
         processBuffer(modified, 32);
@@ -670,7 +670,7 @@ double test_distribution_uniformity(unsigned long rounds, int num_samples) {
     for (int i = 0; i < num_samples; i++) {
         unsigned char input[16];
         for (int j = 0; j < 16; j++) {
-            input[j] = rand() % 256;
+            input[j] = (unsigned char)(rand() % 256);
         }
         
         initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);

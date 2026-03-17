@@ -6,13 +6,13 @@
 #include <errno.h>
 #include <stdint.h>
 #if defined(_WIN32)
-  #include <sys/stat.h>
-  #define STAT_STRUCT struct _stat64
-  #define STAT_FN _stat64
+#include <sys/stat.h>
+#define STAT_STRUCT struct _stat64
+#define STAT_FN _stat64
 #else
-  #include <sys/stat.h>
-  #define STAT_STRUCT struct stat
-  #define STAT_FN stat
+#include <sys/stat.h>
+#define STAT_STRUCT struct stat
+#define STAT_FN stat
 #endif
 #include "InitializationPhase.h"
 #include "ProcessingPhase.h"
@@ -23,11 +23,11 @@
 unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
 int hashLengthInBits = DEFAULT_BIT_SIZE;
 static unsigned long maximumPrimeIndex = DEFAULT_MAX_PRIME_INDEX;
-static char* inputFilename = NULL;
-static char* inputString = NULL;
+static char *inputFilename = NULL;
+static char *inputString = NULL;
 static unsigned long long inputFileSize = 0ULL;
 
-static void readInCommandLineOptions(int argc, char** argv);
+static void readInCommandLineOptions(int argc, char **argv);
 static void readAndStoreNumberOfRoundsOption(void);
 static void readAndStoreNumberOfMaximumPrimeIndexOption(void);
 static void readAndStoreNumberOfBitsOption(void);
@@ -36,11 +36,11 @@ static void readAndStoreStringOption(void);
 static void printHelperText(void);
 static void printCommandLineOptions(void);
 static void printStatistics(double cpuSeconds, double wallSeconds, unsigned long long fileSizeBytes);
-static int getFileSize64(const char* path, unsigned long long* outSize);
+static int getFileSize64(const char *path, unsigned long long *outSize);
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
-    char* hashValue = NULL;
+    char *hashValue = NULL;
     clock_t cpuStart = clock();
     double wallStart = wall_time_seconds();
 
@@ -51,7 +51,7 @@ int main(int argc, char** argv)
 
     if (inputString)
     {
-        processBuffer((const unsigned char*)inputString, strlen(inputString));
+        processBuffer((const unsigned char *)inputString, strlen(inputString));
     }
     else
     {
@@ -95,34 +95,34 @@ int main(int argc, char** argv)
     return EXIT_SUCCESS;
 }
 
-static void readInCommandLineOptions(int argc, char** argv)
+static void readInCommandLineOptions(int argc, char **argv)
 {
     int opt;
     while ((opt = getopt(argc, argv, "r:i:n:f:s:h")) != -1)
     {
         switch (opt)
         {
-            case 'r':
-                readAndStoreNumberOfRoundsOption();
-                break;
-            case 'i':
-                readAndStoreNumberOfMaximumPrimeIndexOption();
-                break;
-            case 'n':
-                readAndStoreNumberOfBitsOption();
-                break;
-            case 'f':
-                readAndStoreFilenameOption();
-                break;
-            case 's':
-                readAndStoreStringOption();
-                break;
-            case 'h':
-                printHelperText();
-                exit(EXIT_SUCCESS);
-            default:
-                LOG_ERROR("Usage: %s supported arguments [-r] [-i] [-n] [-f] [-s] [-h]", argv[0]);
-                exit(EXIT_FAILURE);
+        case 'r':
+            readAndStoreNumberOfRoundsOption();
+            break;
+        case 'i':
+            readAndStoreNumberOfMaximumPrimeIndexOption();
+            break;
+        case 'n':
+            readAndStoreNumberOfBitsOption();
+            break;
+        case 'f':
+            readAndStoreFilenameOption();
+            break;
+        case 's':
+            readAndStoreStringOption();
+            break;
+        case 'h':
+            printHelperText();
+            exit(EXIT_SUCCESS);
+        default:
+            LOG_ERROR("Usage: %s supported arguments [-r] [-i] [-n] [-f] [-s] [-h]", argv[0]);
+            exit(EXIT_FAILURE);
         }
     }
     if (!inputFilename && !inputString)
@@ -139,7 +139,7 @@ static void readInCommandLineOptions(int argc, char** argv)
 
 static void readAndStoreNumberOfRoundsOption()
 {
-    char* end_ptr = NULL;
+    char *end_ptr = NULL;
     errno = 0;
     unsigned long val = strtoul(optarg, &end_ptr, 10);
     if (errno != 0 || end_ptr == optarg || *end_ptr != '\0' || val == 0UL)
@@ -147,12 +147,18 @@ static void readAndStoreNumberOfRoundsOption()
         LOG_ERROR("Invalid value for rounds");
         exit(EXIT_FAILURE);
     }
+    if (val < DEFAULT_NUMBER_OF_ROUNDS)
+    {
+        LOG_WARNING("Requested %lu rounds, but minimum is %d. Using %d rounds.",
+                    val, DEFAULT_NUMBER_OF_ROUNDS, DEFAULT_NUMBER_OF_ROUNDS);
+        val = DEFAULT_NUMBER_OF_ROUNDS;
+    }
     numberOfRounds = val;
 }
 
 static void readAndStoreNumberOfMaximumPrimeIndexOption()
 {
-    char* end_ptr = NULL;
+    char *end_ptr = NULL;
     errno = 0;
     unsigned long val = strtoul(optarg, &end_ptr, 10);
     if (errno != 0 || end_ptr == optarg || *end_ptr != '\0' || val == 0UL)
@@ -165,7 +171,7 @@ static void readAndStoreNumberOfMaximumPrimeIndexOption()
 
 static void readAndStoreNumberOfBitsOption()
 {
-    char* end_ptr = NULL;
+    char *end_ptr = NULL;
     errno = 0;
     long val = strtol(optarg, &end_ptr, 10);
     if (errno != 0 || end_ptr == optarg || *end_ptr != '\0')
@@ -173,9 +179,9 @@ static void readAndStoreNumberOfBitsOption()
         LOG_ERROR("Invalid value for bit size");
         exit(EXIT_FAILURE);
     }
-    if (val < MIN_HASH_OUTPUT_BITS)
+    if (val < HASH_OUTPUT_BITS)
     {
-        LOG_ERROR("Bit size lower than %d not supported", MIN_HASH_OUTPUT_BITS);
+        LOG_ERROR("Bit size lower than %d not supported", HASH_OUTPUT_BITS);
         exit(EXIT_FAILURE);
     }
     if (!is_power_of_two(val))
@@ -194,7 +200,7 @@ static void readAndStoreFilenameOption()
         printHelperText();
         exit(EXIT_FAILURE);
     }
-    char* dup = secasy_strdup(optarg);
+    char *dup = secasy_strdup(optarg);
     if (!dup)
     {
         LOG_ERROR("Memory allocation failed for filename");
@@ -211,7 +217,7 @@ static void readAndStoreStringOption()
         printHelperText();
         exit(EXIT_FAILURE);
     }
-    char* dup = secasy_strdup(optarg);
+    char *dup = secasy_strdup(optarg);
     if (!dup)
     {
         LOG_ERROR("Memory allocation failed for input string");
@@ -224,10 +230,9 @@ static void printHelperText()
 {
     printf("\n");
     printf("+--------------------------------------------------------------------------------------------------+\n");
-    printf("| Arguments: [-r] [-i] [-n] [-f] [-s] [-h]                                                        |\n");
-    printf("|  -n <bits>  : bit size of hash value (power of two, >= %d)                                     |\n",
-           MIN_HASH_OUTPUT_BITS);
-    printf("|  -i <index> : max prime index for calculation of prime numbers                                  |\n");
+    printf("| Arguments: [-r] [-i] [-n] [-f] [-s] [-h]                                                         |\n");
+    printf("|  -n <bits>  : bit size of hash value (power of two, >= %d)                                       |\n", HASH_OUTPUT_BITS);
+    printf("|  -i <index> : max prime index for calculation of prime numbers                                   |\n");
     printf("|  -r <rounds>: number of processing rounds                                                        |\n");
     printf("|  -f <file>  : input filename                                                                     |\n");
     printf("|  -s <string>: hash a string directly                                                             |\n");
@@ -276,7 +281,7 @@ static void printStatistics(double cpuSeconds, double wallSeconds, unsigned long
     }
 }
 
-static int getFileSize64(const char* path, unsigned long long* outSize)
+static int getFileSize64(const char *path, unsigned long long *outSize)
 {
     if (!path || !outSize)
     {
