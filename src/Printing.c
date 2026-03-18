@@ -295,7 +295,6 @@ void printInputBits(const unsigned char *data, size_t len)
     printf("  +-----------------------------------------------------------------+\n\n");
 }
 
-#if DEBUG_MODE
 void printPathMap(void)
 {
     int nSteps = getPathStepCount();
@@ -376,4 +375,3 @@ void printPathMap(void)
     printf("+\n");
     printf("  (Number=step, ^v<>=direction, *=final position)\n\n");
 }
-#endif

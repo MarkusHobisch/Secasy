@@ -15,8 +15,6 @@ void printDatatypeMaxValues(void);
 
 void printInputBits(const unsigned char *data, size_t len);
 
-#if DEBUG_MODE
 void printPathMap(void);
-#endif
 
 #endif

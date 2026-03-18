@@ -14,53 +14,49 @@ static int *initPrimeSieve(unsigned int maxPrimeIndex);
 
 static void crossOutMultiples(unsigned int maxPrimeIndex, int *primeSieve);
 
-static unsigned int optimizePrimeIndexMaxSize(unsigned int maxPrimeIndex);
-
 static int *getAllPrimes(int *numberOfPrimes, unsigned int maxPrimeIndex, const int *primeSieve);
 
-#if DEBUG_MODE
 static void printAllPrimes(int numberOfPrimes, const int *primes);
-#endif
 
 int *generatePrimeNumbers(int *numberOfPrimes, const unsigned long maxPrimeIndex)
 {
-#ifdef SECASY_PRIMES_FULL
-    LOG_INFO("generating primes up to %lu (full range)", maxPrimeIndex);
-#else
-    LOG_INFO("generating primes up to %lu (truncated heuristic possible)", maxPrimeIndex);
-#endif
+    LOG_INFO("generating primes up to %lu", maxPrimeIndex);
     if (!numberOfPrimes)
     {
         LOG_ERROR("numberOfPrimes pointer is NULL");
         return NULL;
     }
+
     if (maxPrimeIndex < 2UL)
     {
         *numberOfPrimes = 0;
         return NULL; // no primes below 2
     }
+
     if (maxPrimeIndex > MAX_ALLOWED_PRIME_INDEX)
     {
         LOG_ERROR("maxPrimeIndex %lu exceeds practical limit of %lu", maxPrimeIndex, (unsigned long)MAX_ALLOWED_PRIME_INDEX);
         *numberOfPrimes = 0;
         return NULL;
     }
+
     if (maxPrimeIndex > UINT_MAX)
     {
         LOG_ERROR("maxPrimeIndex %lu exceeds supported 32-bit sieve limit", maxPrimeIndex);
         *numberOfPrimes = 0;
         return NULL;
     }
-    unsigned int capped = (unsigned int)maxPrimeIndex;
-    int *primeSieve = initPrimeSieve(capped);
+
+    int *primeSieve = initPrimeSieve(maxPrimeIndex);
     if (!primeSieve)
     {
         *numberOfPrimes = 0;
         return NULL;
     }
-    crossOutMultiples(capped, primeSieve);
-    unsigned int optimizedMaxPrimeIndex = optimizePrimeIndexMaxSize(capped); // NOTE: intentionally truncates range
-    int *primes = getAllPrimes(numberOfPrimes, optimizedMaxPrimeIndex, primeSieve);
+
+    crossOutMultiples(maxPrimeIndex, primeSieve);
+    int *primes = getAllPrimes(numberOfPrimes, maxPrimeIndex, primeSieve);
+
     if (!primes)
     {
         LOG_ERROR("Failed to collect primes");
@@ -68,11 +64,12 @@ int *generatePrimeNumbers(int *numberOfPrimes, const unsigned long maxPrimeIndex
         *numberOfPrimes = 0;
         return NULL;
     }
-    printf("Number of primes <= %lu is %d (truncated range used: %u)\n", maxPrimeIndex, *numberOfPrimes, optimizedMaxPrimeIndex);
-#if DEBUG_MODE
-    printAllPrimes(*numberOfPrimes, primes);
-#endif
-    free(primeSieve); // avoid leak
+
+    printf("Number of primes <= %lu is %d\n", maxPrimeIndex, *numberOfPrimes);
+    if (g_debug_mode)
+        printAllPrimes(*numberOfPrimes, primes);
+
+    free(primeSieve);
     return primes;
 }
 
@@ -84,48 +81,35 @@ static int *initPrimeSieve(const unsigned int maxPrimeIndex)
         LOG_ERROR("maxPrimeIndex too large (%u)", maxPrimeIndex);
         return NULL;
     }
+
     int *primeSieve = (int *)calloc((size_t)maxPrimeIndex + 1U, sizeof(int));
     if (!primeSieve)
     {
         LOG_ERROR("Memory allocation failed for prime sieve (size=%u)", maxPrimeIndex + 1U);
         return NULL;
     }
+
     for (unsigned int i = 2; i <= maxPrimeIndex; i++)
     {
         primeSieve[i] = true;
     }
+
     return primeSieve;
 }
 
 static void crossOutMultiples(const unsigned int maxPrimeIndex, int *primeSieve)
 {
-    // Classic optimized sieve inner loops: start at i*i and use addition instead of multiplication
     for (unsigned int i = 2; i * i <= maxPrimeIndex; ++i)
     {
         if (primeSieve[i])
         {
-            unsigned int start = i * i; // safe: i*i <= maxPrimeIndex
+            unsigned int start = i * i;
             for (unsigned int j = start; j <= maxPrimeIndex; j += i)
             {
                 primeSieve[j] = false;
             }
         }
     }
-}
-
-static unsigned int optimizePrimeIndexMaxSize(unsigned int maxPrimeIndex)
-{
-#ifdef SECASY_PRIMES_FULL
-    return maxPrimeIndex; // full range mode enabled via build flag
-#endif
-    unsigned int size = maxPrimeIndex;
-    if (maxPrimeIndex > 10000)
-        size = maxPrimeIndex / 4;
-    if (maxPrimeIndex >= 10000000)
-        size = maxPrimeIndex / 14;
-    if (maxPrimeIndex >= 100000000)
-        size = maxPrimeIndex / 17;
-    return size;
 }
 
 static int *getAllPrimes(int *numberOfPrimes, const unsigned int maxPrimeIndex, const int *primeSieve)
@@ -136,6 +120,7 @@ static int *getAllPrimes(int *numberOfPrimes, const unsigned int maxPrimeIndex, 
         LOG_ERROR("Memory allocation failed for prime list (size=%u)", maxPrimeIndex);
         return NULL;
     }
+
     int primeCounter = 0;
     for (unsigned int i = 2; i < (maxPrimeIndex + 1U); i++)
     {
@@ -144,11 +129,11 @@ static int *getAllPrimes(int *numberOfPrimes, const unsigned int maxPrimeIndex, 
             primeNumbers[primeCounter++] = (int)i;
         }
     }
+
     *numberOfPrimes = primeCounter;
     return primeNumbers;
 }
 
-#if DEBUG_MODE
 static void printAllPrimes(const int numberOfPrimes, const int *primes)
 {
     if (!primes)
@@ -156,6 +141,7 @@ static void printAllPrimes(const int numberOfPrimes, const int *primes)
         printf("No primes found!\n");
         return;
     }
+
     printf("-------------- PRINT ALL PRIMES (%d) ------------\n", numberOfPrimes);
     for (int i = 0; i < numberOfPrimes; i++)
     {
@@ -170,4 +156,3 @@ static void printAllPrimes(const int numberOfPrimes, const int *primes)
     }
     printf("\n");
 }
-#endif

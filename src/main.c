@@ -50,29 +50,28 @@ int main(int argc, char **argv)
 
     readInCommandLineOptions(argc, argv);
 
-#if DEBUG_MODE
-    g_debug_fp = fopen("debug.txt", "w");
-    if (!g_debug_fp)
+    if (g_debug_mode)
     {
-        fprintf(stderr, "[WARNING] Could not open debug.txt for writing\n");
+        g_debug_fp = fopen("debug.txt", "w");
+        if (!g_debug_fp)
+        {
+            fprintf(stderr, "[WARNING] Could not open debug.txt for writing\n");
+        }
     }
-#endif
 
     printCommandLineOptions();
     initFieldWithDefaultNumbers(maximumPrimeIndex);
 
     if (inputHexBytes)
     {
-#if DEBUG_MODE
-        printInputBits(inputHexBytes, inputHexLen);
-#endif
+        if (g_debug_mode)
+            printInputBits(inputHexBytes, inputHexLen);
         processBuffer(inputHexBytes, inputHexLen);
     }
     else if (inputString)
     {
-#if DEBUG_MODE
-        printInputBits((const unsigned char *)inputString, strlen(inputString));
-#endif
+        if (g_debug_mode)
+            printInputBits((const unsigned char *)inputString, strlen(inputString));
         processBuffer((const unsigned char *)inputString, strlen(inputString));
     }
     else
@@ -81,7 +80,7 @@ int main(int argc, char **argv)
         {
             inputFileSize = 0ULL; // Non-fatal
         }
-#if DEBUG_MODE
+        if (g_debug_mode)
         {
             FILE *dbgFile = fopen(inputFilename, "rb");
             if (dbgFile)
@@ -102,24 +101,25 @@ int main(int argc, char **argv)
                 fclose(dbgFile);
             }
         }
-#endif
         readAndProcessFile(inputFilename);
     }
 
-#if (DEBUG_MODE && DEBUG_LOG_EXTENDED)
-    printField("Init Phase");
-    printPathMap();
-    printPrimeIndexes();
-    printColorIndexes();
-    printSumsAndValues();
-#endif
+    if (g_debug_mode && g_debug_extended)
+    {
+        printField("Init Phase");
+        printPathMap();
+        printPrimeIndexes();
+        printColorIndexes();
+        printSumsAndValues();
+    }
 
     hashValue = calculateHashValue();
 
-#if (DEBUG_MODE && DEBUG_LOG_EXTENDED)
-    printField("Processing Phase");
-    printSumsAndValues();
-#endif
+    if (g_debug_mode && g_debug_extended)
+    {
+        printField("Processing Phase");
+        printSumsAndValues();
+    }
 
     if (hashValue)
     {
@@ -138,21 +138,19 @@ int main(int argc, char **argv)
     free(inputFilename);
     free(inputString);
     free(inputHexBytes);
-#if DEBUG_MODE
-    if (g_debug_fp)
+    if (g_debug_mode && g_debug_fp)
     {
         fclose(g_debug_fp);
         g_debug_fp = NULL;
+        LOG_INFO("Debug output written to debug.txt");
     }
-    LOG_INFO("Debug output written to debug.txt");
-#endif
     return EXIT_SUCCESS;
 }
 
 static void readInCommandLineOptions(int argc, char **argv)
 {
     int opt;
-    while ((opt = getopt(argc, argv, "r:i:n:f:s:x:h")) != -1)
+    while ((opt = getopt(argc, argv, "r:i:n:f:s:x:deh")) != -1)
     {
         switch (opt)
         {
@@ -174,11 +172,18 @@ static void readInCommandLineOptions(int argc, char **argv)
         case 'x':
             readAndStoreHexOption();
             break;
+        case 'd':
+            g_debug_mode = 1;
+            break;
+        case 'e':
+            g_debug_mode = 1;
+            g_debug_extended = 1;
+            break;
         case 'h':
             printHelperText();
             exit(EXIT_SUCCESS);
         default:
-            LOG_ERROR("Usage: %s supported arguments [-r] [-i] [-n] [-f] [-s] [-x] [-h]", argv[0]);
+            LOG_ERROR("Usage: %s supported arguments [-r] [-i] [-n] [-f] [-s] [-x] [-d] [-e] [-h]", argv[0]);
             exit(EXIT_FAILURE);
         }
     }
@@ -342,13 +347,15 @@ static void printHelperText()
 {
     printf("\n");
     printf("+--------------------------------------------------------------------------------------------------+\n");
-    printf("| Arguments: [-r] [-i] [-n] [-f] [-s] [-x] [-h]                                                      |\n");
+    printf("| Arguments: [-r] [-i] [-n] [-f] [-s] [-x] [-d] [-e] [-h]                                          |\n");
     printf("|  -n <bits>  : bit size of hash value (power of two, >= %d)                                       |\n", HASH_OUTPUT_BITS);
     printf("|  -i <index> : max prime index for calculation of prime numbers                                   |\n");
     printf("|  -r <rounds>: number of processing rounds                                                        |\n");
     printf("|  -f <file>  : input filename                                                                     |\n");
     printf("|  -s <string>: hash a string directly                                                             |\n");
     printf("|  -x <hex>   : hash hex bytes, e.g. -x \"0x45,0x47,0x78\"                                         |\n");
+    printf("|  -d         : enable debug mode (writes debug.txt)                                               |\n");
+    printf("|  -e         : enable extended debug output (implies -d)                                          |\n");
     printf("|  -h         : show this help                                                                     |\n");
     printf("+--------------------------------------------------------------------------------------------------+\n\n");
 }

@@ -56,15 +56,17 @@ typedef struct
     uint32_t primeIndex;
 } Tile_t;
 
-// Debug toggles
-// Default: OFF for faster runs and clean output.
-// Override at compile time, e.g. -DDEBUG_MODE=1 -DDEBUG_LOG_EXTENDED=1
-#ifndef DEBUG_MODE
-#define DEBUG_MODE 1
+// Debug toggles — enabled at runtime with -d (debug) and -e (extended debug).
+// Can also override defaults at compile time: -DDEBUG_MODE_DEFAULT=1
+#ifndef DEBUG_MODE_DEFAULT
+#define DEBUG_MODE_DEFAULT 0
 #endif
 
-#ifndef DEBUG_LOG_EXTENDED
-#define DEBUG_LOG_EXTENDED 1
+#ifndef DEBUG_LOG_EXTENDED_DEFAULT
+#define DEBUG_LOG_EXTENDED_DEFAULT 0
 #endif
+
+extern int g_debug_mode;
+extern int g_debug_extended;
 
 #endif

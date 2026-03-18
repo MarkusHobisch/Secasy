@@ -11,9 +11,7 @@ void readAndProcessFile(const char *filename);
 
 void processBuffer(const unsigned char *data, size_t len);
 
-#if DEBUG_MODE
 int getPathStepCount(void);
 void getPathStep(int idx, uint32_t *fX, uint32_t *fY, uint32_t *tX, uint32_t *tY, int *dir);
-#endif
 
 #endif

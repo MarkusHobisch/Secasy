@@ -23,7 +23,8 @@ extern "C"
     int is_power_of_two(long v);
 
     /*
-     * In DEBUG_MODE all printf output is mirrored to this file in addition to stdout.
+     * When g_debug_mode is enabled, all printf output is mirrored to this
+     * file in addition to stdout.
      * Set once in main() before any output; NULL disables mirroring.
      */
     extern FILE *g_debug_fp;
@@ -62,7 +63,7 @@ extern "C"
 #define LOG_DEBUG(...)                    \
     do                                    \
     {                                     \
-        if (DEBUG_MODE)                   \
+        if (g_debug_mode)                 \
         {                                 \
             fprintf(stdout, "[DEBUG] ");  \
             fprintf(stdout, __VA_ARGS__); \
