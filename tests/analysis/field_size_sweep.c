@@ -57,36 +57,37 @@
 #include "primes.h"
 
 /* ── Globals required by ProcessingPhase.c (linked via CORE_SOURCES) ── */
-unsigned long numberOfRounds  = DEFAULT_NUMBER_OF_ROUNDS;
-int           hashLengthInBits = DEFAULT_BIT_SIZE;
+unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
+int hashLengthInBits = DEFAULT_BIT_SIZE;
 
 /* ─────────────────────────────────────────────────────────────────────
  *  Constants
  * ──────────────────────────────────────────────────────────────────── */
-#define MAX_FS        64      /* maximum supported field size (power of 2)   */
-#define HASH_BITS_512 512     /* always produce a 512-bit hash               */
-#define HASH_HEX_LEN  128     /* HASH_BITS_512 / 4 hex chars                 */
-#define N_HASH_BLOCKS 8       /* HASH_BITS_512 / 64 blocks                   */
-#define N_MESSAGES    100     /* random messages per field size               */
-#define MSG_BYTES     32      /* input message length in bytes                */
-#define N_BINS        20      /* histogram bins  (each 5 % wide, 0–100 %)    */
-#define N_NIBBLES     128     /* = HASH_HEX_LEN                               */
-#define BAR_MAX_W     44      /* max ASCII bar width in characters            */
+#define MAX_FS 64         /* maximum supported field size (power of 2)   */
+#define HASH_BITS_512 512 /* always produce a 512-bit hash               */
+#define HASH_HEX_LEN 128  /* HASH_BITS_512 / 4 hex chars                 */
+#define N_HASH_BLOCKS 8   /* HASH_BITS_512 / 64 blocks                   */
+#define N_MESSAGES 100    /* random messages per field size               */
+#define MSG_BYTES 32      /* input message length in bytes                */
+#define N_BINS 20         /* histogram bins  (each 5 % wide, 0–100 %)    */
+#define N_NIBBLES 128     /* = HASH_HEX_LEN                               */
+#define BAR_MAX_W 44      /* max ASCII bar width in characters            */
 
-static const int FIELD_SIZES[] = { 4, 8, 16, 32, 64 };
+static const int FIELD_SIZES[] = {4, 8, 16, 32, 64};
 #define N_FS ((int)(sizeof(FIELD_SIZES) / sizeof(FIELD_SIZES[0])))
 
 /* ─────────────────────────────────────────────────────────────────────
  *  Per-field-size result struct
  * ──────────────────────────────────────────────────────────────────── */
-typedef struct {
-    int       fs;
-    int       cells;
-    double    mean;
-    double    std;
-    double    min_pct;
-    double    max_pct;
-    double    nib_bias;      /* max per-nibble deviation from 50 % [pp] */
+typedef struct
+{
+    int fs;
+    int cells;
+    double mean;
+    double std;
+    double min_pct;
+    double max_pct;
+    double nib_bias; /* max per-nibble deviation from 50 % [pp] */
     long long bins[N_BINS];
     long long total;
 } FsResult;
@@ -95,9 +96,9 @@ typedef struct {
  *  Global Secasy state — prefixed g_ to avoid link conflicts with
  *  the core sources that are also compiled into this target.
  * ──────────────────────────────────────────────────────────────────── */
-static int       g_fs = 16;
-static Tile_t    g_field[MAX_FS][MAX_FS];
-static uint32_t  g_px = 0, g_py = 0;
+static int g_fs = 16;
+static Tile_t g_field[MAX_FS][MAX_FS];
+static uint32_t g_px = 0, g_py = 0;
 
 /* nibble flip accumulators reset before each field-size test */
 static long long g_nib_flips[N_NIBBLES];
@@ -118,12 +119,14 @@ static uint64_t rng_next(void)
 /* ─────────────────────────────────────────────────────────────────────
  *  Nibble popcount lookup
  * ──────────────────────────────────────────────────────────────────── */
-static const int lut4[16] = {0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4};
+static const int lut4[16] = {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
 
 static int hex_val(char c)
 {
-    if (c >= '0' && c <= '9') return c - '0';
-    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
     return c - 'A' + 10;
 }
 
@@ -135,11 +138,13 @@ static void sweep_init(int fs)
     g_fs = fs;
     g_px = 0;
     g_py = 0;
-    for (int i = 0; i < fs; i++) {
-        for (int j = 0; j < fs; j++) {
-            g_field[i][j].posX       = (uint32_t)i;
-            g_field[i][j].posY       = (uint32_t)j;
-            g_field[i][j].value      = 2; /* FIRST_PRIME */
+    for (int i = 0; i < fs; i++)
+    {
+        for (int j = 0; j < fs; j++)
+        {
+            g_field[i][j].posX = (uint32_t)i;
+            g_field[i][j].posY = (uint32_t)j;
+            g_field[i][j].value = 2; /* FIRST_PRIME */
             g_field[i][j].primeIndex = 0;
             g_field[i][j].colorIndex = ADD;
         }
@@ -153,7 +158,8 @@ static void sweep_init(int fs)
 static int sweep_next_prime(Tile_t *t)
 {
     int pi = (int)t->primeIndex + 1;
-    if (pi >= NUMBER_OF_PRIMES) pi = 0;
+    if (pi >= NUMBER_OF_PRIMES)
+        pi = 0;
     ColorIndex_t ci = (ColorIndex_t)(((unsigned int)t->colorIndex + 1U) % 6U);
     t->primeIndex = (uint32_t)pi;
     t->colorIndex = ci;
@@ -166,11 +172,12 @@ static int sweep_next_prime(Tile_t *t)
 static void sweep_step(int move)
 {
     uint32_t mask = (uint32_t)(g_fs - 1);
-    Tile_t  *t    = &g_field[g_px][g_py];
-    uint32_t old  = (uint32_t)t->value;   /* lower 32 bits sufficient for mask */
-    t->value      = (uint64_t)sweep_next_prime(t);
+    Tile_t *t = &g_field[g_px][g_py];
+    uint32_t old = (uint32_t)t->value; /* lower 32 bits sufficient for mask */
+    t->value = (uint64_t)sweep_next_prime(t);
 
-    switch (move) {
+    switch (move)
+    {
     case 0: /* UP */
         g_py = (g_py - old + 1u) & mask;
         g_px = (g_px + (g_py >> 1) + 1u) & mask;
@@ -198,10 +205,10 @@ static void sweep_step(int move)
  * ──────────────────────────────────────────────────────────────────── */
 static void sweep_byte(int byte)
 {
-    sweep_step( byte        & 3);
-    sweep_step((byte >> 2)  & 3);
-    sweep_step((byte >> 4)  & 3);
-    sweep_step((byte >> 6)  & 3);
+    sweep_step(byte & 3);
+    sweep_step((byte >> 2) & 3);
+    sweep_step((byte >> 4) & 3);
+    sweep_step((byte >> 6) & 3);
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -211,7 +218,7 @@ static void sweep_byte(int byte)
 static void sweep_phase2(const unsigned char *data, size_t len)
 {
     if (!data || len == 0)
-        return;   /* mirrors processBuffer: empty → no-op */
+        return; /* mirrors processBuffer: empty → no-op */
 
     for (size_t i = 0; i < len; i++)
         sweep_byte(data[i] & 0xFF);
@@ -227,10 +234,11 @@ static void sweep_phase2(const unsigned char *data, size_t len)
  * ──────────────────────────────────────────────────────────────────── */
 static void sweep_cell(ColorIndex_t ci, uint32_t px, uint32_t py)
 {
-    int     fs = g_fs;
-    Tile_t *t  = &g_field[px][py];
+    int fs = g_fs;
+    Tile_t *t = &g_field[px][py];
 
-    switch (ci) {
+    switch (ci)
+    {
     case ADD:
         t->value += (py == 0u) ? 1ULL : g_field[px][py - 1u].value;
         break;
@@ -259,15 +267,17 @@ static void sweep_cell(ColorIndex_t ci, uint32_t px, uint32_t py)
  * ──────────────────────────────────────────────────────────────────── */
 static uint64_t sweep_block(unsigned long b)
 {
-    int      fs  = g_fs;
+    int fs = g_fs;
     uint64_t acc = 0;
-    for (int x = 0; x < fs; x++) {
-        for (int y = 0; y < fs; y++) {
-            uint64_t cell_pos  = (uint64_t)(unsigned)(x * fs + y + 1);
+    for (int x = 0; x < fs; x++)
+    {
+        for (int y = 0; y < fs; y++)
+        {
+            uint64_t cell_pos = (uint64_t)(unsigned)(x * fs + y + 1);
             uint64_t block_off = (uint64_t)b * (uint64_t)(unsigned)(fs * fs);
-            uint64_t w         = cell_pos + block_off;
+            uint64_t w = cell_pos + block_off;
             acc ^= g_field[x][y].value * w;
-            acc  = (acc << 7) | (acc >> 57);
+            acc = (acc << 7) | (acc >> 57);
         }
     }
     return acc;
@@ -279,9 +289,9 @@ static uint64_t sweep_block(unsigned long b)
  * ──────────────────────────────────────────────────────────────────── */
 static char *sweep_hash(void)
 {
-    int      fs   = g_fs;
-    uint32_t px   = g_px;
-    uint32_t py   = g_py;
+    int fs = g_fs;
+    uint32_t px = g_px;
+    uint32_t py = g_py;
 
     /* ensure at least N_HASH_BLOCKS rounds so all blocks are covered */
     unsigned long eff_rounds = DEFAULT_NUMBER_OF_ROUNDS;
@@ -289,9 +299,12 @@ static char *sweep_hash(void)
         eff_rounds = (unsigned long)N_HASH_BLOCKS;
 
     /* Phase 3: mixing rounds */
-    for (unsigned long r = 0; r < eff_rounds; r++) {
-        for (int i = 0; i < fs; i++) {
-            for (int j = 0; j < fs; j++) {
+    for (unsigned long r = 0; r < eff_rounds; r++)
+    {
+        for (int i = 0; i < fs; i++)
+        {
+            for (int j = 0; j < fs; j++)
+            {
                 uint32_t ox = (px + (uint32_t)i) & (uint32_t)(fs - 1);
                 uint32_t oy = (py + (uint32_t)j) & (uint32_t)(fs - 1);
                 ColorIndex_t ci = g_field[ox][oy].colorIndex;
@@ -299,15 +312,21 @@ static char *sweep_hash(void)
             }
         }
         /* advance position (mirrors setPositionsToZeroIfOutOfRange) */
-        if (++px == (uint32_t)fs) {
+        if (++px == (uint32_t)fs)
+        {
             px = 0;
-            if (++py == (uint32_t)fs) py = 0;
+            if (++py == (uint32_t)fs)
+                py = 0;
         }
     }
 
     /* Phase 4: extraction */
     char *out = (char *)malloc(HASH_HEX_LEN + 1);
-    if (!out) { fputs("OOM\n", stderr); exit(EXIT_FAILURE); }
+    if (!out)
+    {
+        fputs("OOM\n", stderr);
+        exit(EXIT_FAILURE);
+    }
     for (int b = 0; b < N_HASH_BLOCKS; b++)
         snprintf(out + b * 16, 17, "%016" PRIx64, sweep_block((unsigned long)b));
     out[HASH_HEX_LEN] = '\0';
@@ -320,9 +339,10 @@ static char *sweep_hash(void)
 static int hamming_and_nibbles(const char *a, const char *b)
 {
     int dist = 0;
-    for (int i = 0; i < HASH_HEX_LEN; i++) {
+    for (int i = 0; i < HASH_HEX_LEN; i++)
+    {
         int xv = hex_val(a[i]) ^ hex_val(b[i]);
-        dist           += lut4[xv];
+        dist += lut4[xv];
         g_nib_flips[i] += (long long)lut4[xv];
     }
     return dist;
@@ -333,19 +353,20 @@ static int hamming_and_nibbles(const char *a, const char *b)
  * ──────────────────────────────────────────────────────────────────── */
 static void run_fs(int fs, FsResult *r)
 {
-    r->fs      = fs;
-    r->cells   = fs * fs;
-    r->total   = 0LL;
-    r->min_pct =  999.0;
+    r->fs = fs;
+    r->cells = fs * fs;
+    r->total = 0LL;
+    r->min_pct = 999.0;
     r->max_pct = -999.0;
     memset(r->bins, 0, sizeof(r->bins));
     memset(g_nib_flips, 0, sizeof(g_nib_flips));
 
-    double    sum = 0.0, sum2 = 0.0;
+    double sum = 0.0, sum2 = 0.0;
     long long n_trials = 0;
     unsigned char msg[MSG_BYTES];
 
-    for (int m = 0; m < N_MESSAGES; m++) {
+    for (int m = 0; m < N_MESSAGES; m++)
+    {
         /* random message */
         for (int b = 0; b < MSG_BYTES; b++)
             msg[b] = (unsigned char)(rng_next() & 0xFFu);
@@ -356,7 +377,8 @@ static void run_fs(int fs, FsResult *r)
         char *h0 = sweep_hash();
 
         /* per-input-bit flips */
-        for (int bit = 0; bit < MSG_BYTES * 8; bit++) {
+        for (int bit = 0; bit < MSG_BYTES * 8; bit++)
+        {
             int bi = bit / 8;
             int bj = bit % 8;
             msg[bi] ^= (unsigned char)(1u << bj);
@@ -367,20 +389,24 @@ static void run_fs(int fs, FsResult *r)
 
             msg[bi] ^= (unsigned char)(1u << bj); /* restore */
 
-            int    d   = hamming_and_nibbles(h0, h1);
+            int d = hamming_and_nibbles(h0, h1);
             double pct = (double)d / (double)HASH_BITS_512 * 100.0;
 
             int bin = (int)(pct / 5.0);
-            if (bin >= N_BINS) bin = N_BINS - 1;
-            if (bin < 0)       bin = 0;
+            if (bin >= N_BINS)
+                bin = N_BINS - 1;
+            if (bin < 0)
+                bin = 0;
 
             r->bins[bin]++;
             r->total++;
             n_trials++;
-            sum  += pct;
+            sum += pct;
             sum2 += pct * pct;
-            if (pct < r->min_pct) r->min_pct = pct;
-            if (pct > r->max_pct) r->max_pct = pct;
+            if (pct < r->min_pct)
+                r->min_pct = pct;
+            if (pct > r->max_pct)
+                r->max_pct = pct;
 
             free(h1);
         }
@@ -390,7 +416,7 @@ static void run_fs(int fs, FsResult *r)
     long long n = r->total;
     r->mean = sum / (double)n;
     double var = sum2 / (double)n - r->mean * r->mean;
-    r->std  = sqrt(var > 0.0 ? var : 0.0);
+    r->std = sqrt(var > 0.0 ? var : 0.0);
 
     /*
      * Nibble symmetry metric:
@@ -402,10 +428,12 @@ static void run_fs(int fs, FsResult *r)
      */
     double max_dev = 0.0;
     double bits_per_nib = (double)n_trials * 4.0;
-    for (int ni = 0; ni < N_NIBBLES; ni++) {
+    for (int ni = 0; ni < N_NIBBLES; ni++)
+    {
         double rate = (bits_per_nib > 0.0) ? (double)g_nib_flips[ni] / bits_per_nib : 0.5;
-        double dev  = fabs(rate - 0.5) * 100.0; /* percentage points */
-        if (dev > max_dev) max_dev = dev;
+        double dev = fabs(rate - 0.5) * 100.0; /* percentage points */
+        if (dev > max_dev)
+            max_dev = dev;
     }
     r->nib_bias = max_dev;
 }
@@ -417,7 +445,8 @@ static void print_histogram(const FsResult *r)
 {
     long long peak = 1;
     for (int i = 0; i < N_BINS; i++)
-        if (r->bins[i] > peak) peak = r->bins[i];
+        if (r->bins[i] > peak)
+            peak = r->bins[i];
 
     const int ideal_bin = (int)(50.0 * N_BINS / 100.0); /* bin covering 50–55% */
 
@@ -428,12 +457,15 @@ static void print_histogram(const FsResult *r)
     printf("  |  %%-range  |  count  | distribution                              ideal |\n");
     printf("  +-----------+---------+--------------------------------------------------+\n");
 
-    for (int i = 0; i < N_BINS; i++) {
+    for (int i = 0; i < N_BINS; i++)
+    {
         int lo = i * 5, hi = lo + 5;
-        int w  = (peak > 0) ? (int)((double)r->bins[i] / (double)peak * (double)BAR_MAX_W) : 0;
+        int w = (peak > 0) ? (int)((double)r->bins[i] / (double)peak * (double)BAR_MAX_W) : 0;
         printf("  | %3d-%3d%%  | %7lld | ", lo, hi, r->bins[i]);
-        for (int k = 0; k < w;          k++) putchar((i == ideal_bin) ? '*' : '#');
-        for (int k = w; k < BAR_MAX_W;  k++) putchar(' ');
+        for (int k = 0; k < w; k++)
+            putchar((i == ideal_bin) ? '*' : '#');
+        for (int k = w; k < BAR_MAX_W; k++)
+            putchar(' ');
         printf(" |%s\n", (i == ideal_bin) ? " <- ideal" : "");
     }
     printf("  +-----------+---------+--------------------------------------------------+\n");
@@ -447,7 +479,8 @@ static void print_histogram(const FsResult *r)
 static void write_csv(const FsResult rs[], int n, const char *path)
 {
     FILE *f = fopen(path, "w");
-    if (!f) {
+    if (!f)
+    {
         fprintf(stderr, "[WARN] Cannot write CSV to: %s\n", path);
         return;
     }
@@ -459,7 +492,8 @@ static void write_csv(const FsResult rs[], int n, const char *path)
     fprintf(f, "\n");
 
     /* rows */
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++)
+    {
         const FsResult *r = &rs[i];
         fprintf(f, "%d,%d,%.6f,%.6f,%.6f,%.6f,%.6f",
                 r->fs, r->cells, r->mean, r->std, r->min_pct, r->max_pct, r->nib_bias);
@@ -477,7 +511,8 @@ static void write_csv(const FsResult rs[], int n, const char *path)
 int main(void)
 {
     rng_s = (uint64_t)time(NULL) ^ UINT64_C(0xDEADBEEFCAFEBABE);
-    if (rng_s == 0) rng_s = 1;
+    if (rng_s == 0)
+        rng_s = 1;
 
     printf("=== Secasy Field-Size Diffusion & Symmetry Sweep ===\n");
     printf("Config: %d messages x %d bytes, %d input bits each\n",
@@ -487,7 +522,8 @@ int main(void)
 
     FsResult results[N_FS];
 
-    for (int i = 0; i < N_FS; i++) {
+    for (int i = 0; i < N_FS; i++)
+    {
         int fs = FIELD_SIZES[i];
         printf("[%d/%d] Testing %dx%d grid (%d cells)...  ", i + 1, N_FS, fs, fs, fs * fs);
         fflush(stdout);
@@ -503,9 +539,10 @@ int main(void)
            "FieldSize", "Cells", "Mean%", "Sigma%", "Min%", "Max%", "NibBias%");
     printf("%-10s  %-8s  %-8s  %-8s  %-8s  %-8s  %-12s\n",
            "----------", "------", "------", "------", "------", "------", "----------");
-    for (int i = 0; i < N_FS; i++) {
-        const FsResult *r  = &results[i];
-        const char     *mk = (r->fs == 16) ? "  [baseline]" : "";
+    for (int i = 0; i < N_FS; i++)
+    {
+        const FsResult *r = &results[i];
+        const char *mk = (r->fs == 16) ? "  [baseline]" : "";
         printf("%-10d  %-8d  %-8.2f  %-8.2f  %-8.2f  %-8.2f  %-12.2f%s\n",
                r->fs, r->cells, r->mean, r->std, r->min_pct, r->max_pct, r->nib_bias, mk);
     }

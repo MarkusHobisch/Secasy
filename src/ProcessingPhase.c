@@ -17,7 +17,7 @@ extern int hashLengthInBits;
 
 static void processData(ColorIndex_t colorIndex, uint32_t posX, uint32_t posY);
 
-static void setPositionsToZeroIfOutOfRange(uint32_t *posX, uint32_t *posY);
+static void advanceGridPosition(uint32_t *posX, uint32_t *posY);
 
 char *calculateHashValue()
 {
@@ -38,7 +38,7 @@ char *calculateHashValue()
     const size_t outHexChars = (size_t)effectiveNumberOfBits / 4U;
 
     /* Calculate how many 64-bit blocks we need (each block = 16 hex chars) */
-    size_t blocksNeeded = (outHexChars + 15) / 16;
+    size_t blocksNeeded = (outHexChars + HASH_HEX_CHARS_PER_BLOCK - 1) / HASH_HEX_CHARS_PER_BLOCK;
     if (blocksNeeded < 1)
         blocksNeeded = 1;
 
@@ -46,8 +46,7 @@ char *calculateHashValue()
     unsigned long minRounds = (unsigned long)blocksNeeded;
     unsigned long actualRounds = numberOfRounds < minRounds ? minRounds : numberOfRounds;
 
-    /* Allocate buffer for collecting hash blocks */
-    char *hashBuffer = (char *)malloc(blocksNeeded * 16 + 1);
+    char *hashBuffer = (char *)malloc(blocksNeeded * HASH_HEX_CHARS_PER_BLOCK + 1);
     if (!hashBuffer)
     {
         LOG_ERROR("Out of memory allocating hash buffer");
@@ -63,22 +62,23 @@ char *calculateHashValue()
         {
             for (uint32_t j = 0; j < FIELD_SIZE; j++)
             {
-                // Intentional cross-position mixing to increase diffusion: read colorIndex from the last postion of step 1 (init phase) and apply it to the current tile (i, j).
-                uint32_t offsetX = (posX + i) & (FIELD_SIZE - 1); // fast modulo operation
-                uint32_t offsetY = (posY + j) & (FIELD_SIZE - 1); // fast modulo operation
+                // Intentional cross-position mixing to increase diffusion: read colorIndex from the last postion of step 1
+                // (init phase) and apply it to the current tile (i, j).
+                uint32_t offsetX = (posX + i) & FIELD_SIZE_MASK;
+                uint32_t offsetY = (posY + j) & FIELD_SIZE_MASK;
                 Tile_t *tile = &field[offsetX][offsetY];
                 processData(tile->colorIndex, i, j);
             }
         }
-        setPositionsToZeroIfOutOfRange(&posX, &posY);
+        advanceGridPosition(&posX, &posY);
     }
 
     /* Phase 4: Extract all blocks from the final grid state */
     for (size_t b = 0; b < blocksNeeded; b++)
     {
         uint64_t hash = hashValue((unsigned long)b);
-        snprintf(hashBuffer + writePos, 17, "%016" PRIx64, hash);
-        writePos += 16;
+        snprintf(hashBuffer + writePos, HASH_HEX_CHARS_PER_BLOCK + 1, "%016" PRIx64, hash);
+        writePos += HASH_HEX_CHARS_PER_BLOCK;
     }
 
     /* Truncate to exact desired length */
@@ -135,7 +135,7 @@ static void processData(const ColorIndex_t colorIndex, const uint32_t posX, cons
     }
 }
 
-static void setPositionsToZeroIfOutOfRange(uint32_t *posX, uint32_t *posY)
+static void advanceGridPosition(uint32_t *posX, uint32_t *posY)
 {
     if (++*posX == FIELD_SIZE)
     {

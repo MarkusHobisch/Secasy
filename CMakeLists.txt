@@ -68,6 +68,8 @@ add_secasy_test(SecasyFieldSizeSweep         tests/analysis/field_size_sweep.c)
 add_secasy_test(SecasyDebugCollision         tests/analysis/debug_collision.c)
 # ── Direction collision trace & analysis ────────────────────────────
 add_secasy_test(SecasyTraceCollision         tests/analysis/trace_collision.c)
+# ── Cell divergence growth analysis ─────────────────────────────────
+add_secasy_test(SecasyCellDivergence          tests/analysis/cell_divergence.c)
 # Collect all test target names for bulk property assignment
 set(ALL_TEST_TARGETS
     SecasyComprehensiveSecurity SecasyDeepSecurity SecasyExtendedSecurity
@@ -75,7 +77,8 @@ set(ALL_TEST_TARGETS
     SecasyDifferential SecasyStatisticalRandomness SecasyStatRigor SecasyHashPattern
     SecasyBenchmark SecasyPreciseTiming SecasyProfiling SecasyRoundReduction
     SecasyFuzzTest SecasyTestVectors SecasyVerifyVectors SecasyColorIsolation
-    SecasyFieldSizeSweep SecasyDebugCollision SecasyTraceCollision)
+    SecasyFieldSizeSweep SecasyDebugCollision SecasyTraceCollision
+    SecasyCellDivergence)
 
 # ── Per-target properties (applied in bulk) ───────────────────────────
 set(WARN_FLAGS -Wall -Wextra -Wundef -Wshadow -Wpointer-arith
@@ -88,6 +91,7 @@ else()
 endif()
 
 foreach(T ${ALL_TEST_TARGETS})
+    target_compile_definitions(${T} PRIVATE DEBUG_MODE=0)
     if (NOT WIN32)
         target_compile_definitions(${T} PRIVATE _FILE_OFFSET_BITS=64)
         target_link_libraries(${T} PRIVATE m)

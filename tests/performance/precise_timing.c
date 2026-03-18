@@ -88,8 +88,10 @@ static char *hash_buffer(const uint8_t *data, size_t len)
 int main(int argc, char *argv[])
 {
     int hash_bits = 512;
-    if (argc > 1) hash_bits = atoi(argv[1]);
-    if (hash_bits < 64 || hash_bits > 512 || hash_bits % 64 != 0) {
+    if (argc > 1)
+        hash_bits = atoi(argv[1]);
+    if (hash_bits < 64 || hash_bits > 512 || hash_bits % 64 != 0)
+    {
         fprintf(stderr, "Invalid: %d (use 64, 128, 256, 512)\n", hash_bits);
         return 1;
     }
@@ -117,7 +119,8 @@ int main(int argc, char *argv[])
     {
         int N = 10000;
         double t0 = timer_now_us();
-        for (int i = 0; i < N; i++) {
+        for (int i = 0; i < N; i++)
+        {
             initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
         }
         double t1 = timer_now_us();
@@ -144,24 +147,30 @@ int main(int argc, char *argv[])
         printf("  %-10s  %-15s  %-10s\n", "------", "--------", "-------");
 
         double base_us = 0;
-        for (int i = 0; i < n_rounds; i++) {
+        for (int i = 0; i < n_rounds; i++)
+        {
             numberOfRounds = rounds_list[i];
 
             /* For high round counts, measure 1 hash; for low, measure many and average */
             int reps;
-            if (rounds_list[i] >= 10000) reps = 1;
-            else if (rounds_list[i] >= 100) reps = 10;
-            else reps = 100;
+            if (rounds_list[i] >= 10000)
+                reps = 1;
+            else if (rounds_list[i] >= 100)
+                reps = 10;
+            else
+                reps = 100;
 
             double t0 = timer_now_us();
-            for (int r = 0; r < reps; r++) {
+            for (int r = 0; r < reps; r++)
+            {
                 char *h = hash_buffer(input, INPUT_LEN);
                 free(h);
             }
             double t1 = timer_now_us();
             double per_hash = (t1 - t0) / reps;
 
-            if (i == 0) base_us = per_hash;
+            if (i == 0)
+                base_us = per_hash;
             printf("  %-10lu  %12.1f us   %8.0fx\n",
                    rounds_list[i], per_hash, base_us / per_hash);
         }
@@ -171,7 +180,7 @@ int main(int argc, char *argv[])
     printf("\n--- Test 3: Bulk measurement (statistical average) ---\n");
     {
         unsigned long test_rounds[] = {100000, 10000, 1000, 100, 10};
-        int test_samples[]          = {    10,   100, 1000, 10000, 10000};
+        int test_samples[] = {10, 100, 1000, 10000, 10000};
         int n = 5;
 
         printf("  %-10s  %-8s  %-15s  %-15s  %-10s\n",
@@ -180,7 +189,8 @@ int main(int argc, char *argv[])
                "------", "-------", "----------", "-------------", "-------");
 
         double base_us = 0;
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < n; i++)
+        {
             numberOfRounds = test_rounds[i];
             int samples = test_samples[i];
 
@@ -191,7 +201,8 @@ int main(int argc, char *argv[])
                     inputs[s][j] = (uint8_t)(rand() & 0xFF);
 
             double t0 = timer_now_us();
-            for (int s = 0; s < samples; s++) {
+            for (int s = 0; s < samples; s++)
+            {
                 char *h = hash_buffer(inputs[s], INPUT_LEN);
                 free(h);
             }
@@ -200,7 +211,8 @@ int main(int argc, char *argv[])
 
             double total_ms = (t1 - t0) / 1000.0;
             double per_hash_us = (t1 - t0) / samples;
-            if (i == 0) base_us = per_hash_us;
+            if (i == 0)
+                base_us = per_hash_us;
 
             printf("  %-10lu  %-8d  %12.2f ms  %12.2f us  %8.0fx\n",
                    test_rounds[i], samples, total_ms, per_hash_us,
@@ -221,7 +233,8 @@ int main(int argc, char *argv[])
                 inputs[s][j] = (uint8_t)(rand() & 0xFF);
 
         double t0 = timer_now_us();
-        for (int s = 0; s < N; s++) {
+        for (int s = 0; s < N; s++)
+        {
             char *h = hash_buffer(inputs[s], INPUT_LEN);
             free(h);
         }
@@ -233,7 +246,8 @@ int main(int argc, char *argv[])
 
         printf("  Projected times for 10-round hashes:\n");
         int counts[] = {1000, 10000, 50000, 100000, 500000, 1000000};
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 6; i++)
+        {
             double sec = counts[i] * per_hash_us / 1e6;
             printf("    %10d hashes -> %8.1f sec (%5.1f min)\n",
                    counts[i], sec, sec / 60.0);
@@ -243,10 +257,12 @@ int main(int argc, char *argv[])
         numberOfRounds = 100000;
         /* Measure 3 hashes */
         uint8_t inp[INPUT_LEN];
-        for (int j = 0; j < INPUT_LEN; j++) inp[j] = (uint8_t)(rand() & 0xFF);
+        for (int j = 0; j < INPUT_LEN; j++)
+            inp[j] = (uint8_t)(rand() & 0xFF);
 
         double t2 = timer_now_us();
-        for (int r = 0; r < 3; r++) {
+        for (int r = 0; r < 3; r++)
+        {
             char *h = hash_buffer(inp, INPUT_LEN);
             free(h);
         }
@@ -254,7 +270,8 @@ int main(int argc, char *argv[])
         double per_100k = (t3 - t2) / 3.0;
         printf("    Measured: %.1f us/hash (%.1f ms)\n", per_100k, per_100k / 1000.0);
 
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 6; i++)
+        {
             double sec = counts[i] * per_100k / 1e6;
             double hours = sec / 3600.0;
             if (hours > 1.0)

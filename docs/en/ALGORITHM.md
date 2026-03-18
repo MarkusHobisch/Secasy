@@ -20,6 +20,10 @@ Appendix A — Empirical Isolation of Individual Colour Operations
 
 Appendix B — Impact of Field Size on Diffusion
 
+Appendix C — Cell Divergence Growth per Input Byte
+
+Appendix D — Cross-Seed Reproducibility
+
 ---
 
 \newpage
@@ -144,15 +148,20 @@ Each input byte (8 bits) is split into four **2-bit direction codes**:
 One byte therefore produces four cursor movements. For each movement, **two
 operations** are performed on the current cell $(x, y)$:
 
-### Operation A — Prime Update
+### Operation A — Direction-Dependent Prime Update
 
-1. The cell's `primeIndex` is incremented by 1
+1. The cell's `primeIndex` is advanced by $1 + d$, where $d \in \{0, 1, 2, 3\}$
+   is the 2-bit direction code (UP=0, RIGHT=1, LEFT=2, DOWN=3). This means
+   UP advances by +1, RIGHT by +2, LEFT by +3, DOWN by +4.
 2. `colorIndex` is advanced cyclically (0 → 1 → 2 → 3 → 4 → 5 → 0)
-3. The cell's `value` is overwritten with the next prime from the table
+3. The cell's `value` is overwritten with the prime at the new index
 
-Through the cyclic advancement of `colorIndex`, the **order** in which cells
-are visited determines which operation will later be applied to them in
-Phase 3 — not the byte content directly.
+The direction-dependent advance is the **primary mechanism breaking value
+symmetry**: two inputs that visit the same cell via different directions
+write different primes into that cell — even on the very first visit.
+Additionally, the cyclic advancement of `colorIndex` ensures that the
+**order** in which cells are visited determines which operation will later
+be applied in Phase 3 — not the byte content directly.
 
 ### Operation B — Data-Dependent Jump
 
@@ -162,16 +171,17 @@ derived from the old cell value:
 
 | Direction | Formula                                 |
 |-----------|-----------------------------------------|
-| UP        | `y = (y - oldPrime + SAV) & 15`         |
-| DOWN      | `y = (y + oldPrime) & 15`               |
+| UP        | `y = (y - oldPrime) & 15`               |
+| DOWN      | `y = (y + oldPrime + SAV) & 15`         |
 | LEFT      | `x = (x - oldPrime) & 15`               |
 | RIGHT     | `x = (x + oldPrime + SAV) & 15`         |
 
-(`SAV` = `SQUARE_AVOIDANCE_VALUE` = 1, a constant offset applied only to UP
-and RIGHT that prevents the cursor from tracing a closed square and returning
-to its starting position after four moves. Without it, clockwise and
-counter-clockwise traversals would produce identical grid states, leading to
-identical hashes.
+(`SAV` = `SQUARE_AVOIDANCE_VALUE` = 1, a constant offset applied only to
+DOWN and RIGHT. This breaks the symmetry between opposite directions on the
+same axis: UP and DOWN from the same cell with the same `oldPrime` land on
+**different** target cells. Without SAV, opposite directions would produce
+mirror-symmetric jumps, creating exploitable path symmetries for repeated-byte
+inputs.
 
 All coordinates are masked with `& 15` to stay in $[0, 15]$.
 Since the grid size is $N = 16 = 2^4$, a power of two, the identity
@@ -206,11 +216,20 @@ Earlier testing with a variant that additionally coupled both axes
 (secondary-axis offset derived from the primary axis) eliminated these
 collision groups — but introduced a different flaw (direction aliasing
 through information loss in the coupling formula). The secondary-axis
-coupling was therefore removed. The following byte groups require further
-investigation, as they share structurally equivalent cursor paths:
+coupling was therefore removed.
+
+Instead, the collision groups were resolved by introducing
+**direction-dependent prime advancement** (see Operation A) and the
+**Square Avoidance Value** (see Operation B). Together, these two
+mechanisms ensure that bytes within each group produce different cell
+values and different jump trajectories — despite sharing structurally
+equivalent cursor paths. Exhaustive testing of all 256 repeated
+single-byte inputs confirms 0 collisions.
+
+The originally identified groups were:
 
 | Group | Byte values with equivalent path structure |
-|-------|--------------------------------------------|
+|-------|---------------------------------------------|
 | 1     | `0x1A`, `0x1B`, `0x1E`, `0x1F`             |
 | 2     | `0x26`, `0x27`, `0x36`, `0x37`             |
 | 3     | `0x29`, `0x2D`, `0x39`, `0x3D`             |
@@ -219,27 +238,32 @@ investigation, as they share structurally equivalent cursor paths:
 
 The common pattern: within each group, the bytes differ only in bits that
 map to directions on **different axes**, leading to cursor paths that are
-permutations of each other.
+permutations of each other. These groups no longer produce collisions.
 
-### Why Commutativity Does Not Trivially Cause Hash Collisions
+### Why Axis-Commutativity Does Not Cause Hash Collisions
 
 Although cursor movement is commutative across axes, two permuted direction
-sequences do **not** generally visit the same cells in the same order.
-The jump distance at each step depends on the **current value** of the
-visited cell, which changes after each visit (because `nextPrimeNumber`
-advances `primeIndex`). Therefore:
+sequences do **not** produce identical grid states, for two independent
+reasons:
 
-- After the first divergent step, the two paths land on **different cells**
-  with potentially different `value` fields.
-- Subsequent jump distances differ, causing the paths to diverge further.
+1. **SAV breaks path identity on the first step:** Even when two directions
+   operate on different axes (e.g. LEFT vs. DOWN), the SAV offset on
+   DOWN/RIGHT means the actual jump distances differ. On the very first
+   visit (where all cells hold `oldPrime = 2`), UP jumps by 2 while DOWN
+   jumps by 3 (= 2 + SAV). The paths diverge immediately.
 
-A collision requires that both paths visit exactly the **same multiset** of
-cells with the same per-cell visit counts — so that every cell ends up with
-the same `primeIndex` and `value`. This is a much stronger condition than
-mere cursor convergence. Empirically, no such collisions have been observed
-among 50,000 random messages with single-bit flips (12,800,000 trials);
-however, no formal proof of collision-freeness exists, and the byte groups
-listed above remain an open research question (see Section 10).
+2. **Direction-dependent prime advance breaks value identity:** Even if two
+   paths hypothetically visit the same cell, different directions write
+   different primes (e.g. LEFT advances `primeIndex` by +3, DOWN by +4).
+   Different cell values cause different subsequent jump distances,
+   producing exponentially diverging trajectories.
+
+A collision would require that both paths leave identical (`value`,
+`primeIndex`, `colorIndex`) tuples in all 256 cells — despite writing
+different primes at each step and following different jump trajectories.
+Exhaustive testing of all 256 repeated single-byte inputs confirms that
+no such collisions exist. Among 50,000 random messages with single-bit
+flips (12,800,000 trials), no collisions were observed.
 
 ### Collision Resistance Through Fingerprint Uniqueness
 
@@ -248,6 +272,67 @@ Two inputs produce a collision only if they leave identical (`value`,
 despite different paths, different visit orders, and prime-driven jump
 distances. The combinatorial complexity of the state space
 ($\approx 2^{16{,}384}$) makes this practically impossible.
+
+### Worked Example: Hashing the Byte `0x4E`
+
+To make Phase 2 concrete, here is a step-by-step trace for the single-byte
+input `0x4E` = `01001110` in binary. Reading 2-bit groups from LSB to MSB
+yields the direction sequence LEFT, DOWN, UP, RIGHT.
+
+Initial state: cursor at $(0, 0)$, all cells hold `value=2`, `primeIndex=0`.
+
+| Step | Bits | Dir.  | $\Delta$prime | New prime | Old value | Jump formula                 | New pos.  |
+|------|------|-------|-------------|-----------|-----------|------------------------------|-----------|
+| 1    | `10` | LEFT  | +3          | 7         | 2         | $x=(0-2)\&15=14$            | $(14, 0)$ |
+| 2    | `11` | DOWN  | +4          | 11        | 2         | $y=(0+2+1)\&15=3$           | $(14, 3)$ |
+| 3    | `00` | UP    | +1          | 3         | 2         | $y=(3-2)\&15=1$             | $(14, 1)$ |
+| 4    | `01` | RIGHT | +2          | 5         | 2         | $x=(14+2+1)\&15=1$          | $(1, 1)$  |
+
+After one byte, four cells have been visited. Each now holds a different
+prime (7, 11, 3, 5) instead of the initial 2 — and the cursor sits at
+$(1, 1)$.
+
+### Comparison: `0x4E` vs `0x1B` — Same Destination, Different State
+
+The byte `0x1B` = `00011011` decodes to DOWN, LEFT, RIGHT, UP — the **same
+four directions** as `0x4E`, just in a different order. Since all source cells
+initially hold `value = 2`, the net displacement on each axis is identical:
+both cursors arrive at $(1, 1)$.
+
+| Step | Bits | Dir.  | $\Delta$prime | New prime | Old value | Jump formula               | New pos.  |
+|------|------|-------|-------------|-----------|-----------|------------------------------|-----------|
+| 1    | `11` | DOWN  | +4          | 11        | 2         | $y=(0+2+1)\&15=3$            | $(0, 3)$  |
+| 2    | `10` | LEFT  | +3          | 7         | 2         | $x=(0-2)\&15=14$             | $(14, 3)$ |
+| 3    | `01` | RIGHT | +2          | 5         | 2         | $x=(14+2+1)\&15=1$           | $(1, 3)$  |
+| 4    | `00` | UP    | +1          | 3         | 2         | $y=(3-2)\&15=1$              | $(1, 1)$  |
+
+Both bytes end at $(1, 1)$. Yet they leave **different grid states** —
+demonstrating both collision-prevention mechanisms in action:
+
+| Cell      | `0x4E`              | `0x1B`              |
+|-----------|---------------------|---------------------|
+| $(0, 0)$  | 7 (LEFT, $+3$)     | 11 (DOWN, $+4$)     |
+| $(14, 3)$ | 3 (UP, $+1$)       | 5 (RIGHT, $+2$)     |
+| $(14, 0)$ | 11 (DOWN, $+4$)    | untouched (= 2)     |
+| $(14, 1)$ | 5 (RIGHT, $+2$)    | untouched (= 2)     |
+| $(0, 3)$  | untouched (= 2)    | 7 (LEFT, $+3$)      |
+| $(1, 3)$  | untouched (= 2)    | 3 (UP, $+1$)        |
+
+**Two independent effects prevent a collision:**
+
+1. **Direction-dependent prime advance** (value asymmetry): Even at the two
+   shared cells — $(0, 0)$ and $(14, 3)$ — the bytes write different primes,
+   because LEFT ($+3$) vs DOWN ($+4$) and UP ($+1$) vs RIGHT ($+2$) advance
+   `primeIndex` by different amounts.
+
+2. **SAV-induced path divergence** (path asymmetry): Although the net
+   displacement is the same, the intermediate paths differ. `0x4E` visits
+   $(14, 0)$ and $(14, 1)$; `0x1B` visits $(0, 3)$ and $(1, 3)$. These four
+   cells hold different values in each grid.
+
+Together, 6 out of 256 cells differ after a single byte — and since every
+subsequent step reads cell values to compute jump distances, these differences
+amplify exponentially with each additional input byte.
 
 ---
 
@@ -540,13 +625,13 @@ and the Hamming distance to the original hash was measured
 
 | Mode                          | Mean $\mu$ | Std. dev. $\sigma$ | Min       | Max       | Assessment              |
 |-------------------------------|-----------|-------------------|-----------|-----------|-------------------------|
-| Baseline (full mix)           | 50.0 %    | ±2.3 %            | 0.0 %     | 58.4 %    | Optimal                 |
-| ADD only                      | 50.0 %    | ±2.3 %            | 10.9 %    | 59.0 %    | Strong                  |
-| SUB only                      | 50.0 %    | ±2.3 %            | 0.0 %     | 63.3 %    | Strong                  |
-| XOR only                      | 49.4 %    | ±4.2 %            | 0.0 %     | 64.5 %    | Strong                  |
-| AND only                      | 48.5 %    | **±6.9 %**        | 0.0 %     | 65.6 %    | Degraded                |
-| OR only                       | 47.7 %    | **±8.6 %**        | 0.0 %     | 61.9 %    | Significantly weakened  |
-| INVERT only                   | 49.2 %    | ±4.6 %            | 0.0 %     | 62.1 %    | Slightly weakened       |
+| Baseline (full mix)           | 50.0 %    | ±2.2 %            | 40.8 %    | 58.8 %    | Optimal                 |
+| ADD only                      | 50.0 %    | ±2.3 %            | 20.3 %    | 59.4 %    | Strong                  |
+| SUB only                      | 50.0 %    | ±2.2 %            | 30.9 %    | 60.7 %    | Strong                  |
+| XOR only                      | 49.7 %    | ±3.3 %            | 10.0 %    | 62.5 %    | Strong                  |
+| AND only                      | 48.1 %    | **±7.6 %**        | 0.0 %     | 64.5 %    | Degraded                |
+| OR only                       | 49.1 %    | **±5.8 %**        | 0.0 %     | 60.4 %    | Weakened                |
+| INVERT only                   | 49.5 %    | ±3.6 %            | 11.9 %    | 59.2 %    | Strong                  |
 
 > **On the standard deviation $\sigma$:** It describes the **spread of Hamming
 > distances** around the mean. A small $\sigma$ means that *every individual*
@@ -570,19 +655,20 @@ the processing phase cannot fully destroy that base diffusion.
 The decisive quality indicator is the standard deviation $\sigma$, not the
 mean:
 
-- **AND only:** $\sigma = 6.9\,\%$ — 3.0× worse than baseline.
+- **AND only:** $\sigma = 7.6\,\%$ — 3.5× worse than baseline.
   The histogram is noticeably wider; a relevant fraction of samples falls
-  outside the ideal 45–55 % band.
-- **OR only:** $\sigma = 8.6\,\%$ — 3.7× worse than baseline.
-  The histogram spans from 0 % to above 60 %; diffusion is highly
-  uneven and no longer reliably tight.
-- **ADD / SUB / XOR:** $\sigma \leq 4.2\,\%$ — nearly identical to the
+  outside the ideal 45–55 % band. AND remains the weakest single operation.
+- **OR only:** $\sigma = 5.8\,\%$ — 2.6× worse than baseline.
+  While still degraded, OR performs noticeably better than AND.
+  Both still exhibit 0 %-minimum outliers due to output saturation.
+- **XOR / INVERT:** $\sigma \leq 3.6\,\%$ — close to baseline quality.
+- **ADD / SUB:** $\sigma \leq 2.3\,\%$ — virtually identical to the
   full mix.
 
 These findings confirm that the **rotating operation mix** is not required to
 achieve a mean of 50 % (that property emerges already from Phase 2), but it
 is essential for **consistency and tightness of the distribution**. Only the
-full mix achieves $\sigma = 2.3\,\%$, guaranteeing that every individual
+full mix achieves $\sigma = 2.2\,\%$, guaranteeing that every individual
 bit-flip changes approximately 50 % of the output bits with very high
 probability and without outliers.
 
@@ -611,11 +697,11 @@ flip rate from the ideal $50\,\%$.
 
 | Field size      | Cells  | $\mu$           | $\sigma$         | Min         | Max         | Nibble bias   | Assessment        |
 |-----------------|--------|-----------------|------------------|-------------|-------------|---------------|-------------------|
-| $4 \times 4$    | 16     | 46.9 %          | **±12.3 %**      | 0.0 %       | 62.3 %      | 3.40 pp       | Degraded          |
-| $8 \times 8$    | 64     | 48.4 %          | **±9.1 %**       | 0.0 %       | 59.2 %      | 1.96 pp       | Weak              |
-| $16 \times 16$  | 256    | 50.0 %          | ±2.2 %           | 0.0 %       | 59.2 %      | 0.45 pp       | **Baseline**      |
-| $32 \times 32$  | 1024   | 50.0 %          | ±2.2 %           | 41.6 %      | 59.2 %      | 0.38 pp       | Equivalent        |
-| $64 \times 64$  | 4096   | 50.0 %          | ±2.2 %           | 41.6 %      | 58.0 %      | 0.48 pp       | Equivalent        |
+| $4 \times 4$    | 16     | 46.9 %          | **±12.4 %**      | 0.0 %       | 64.1 %      | 3.47 pp       | Degraded          |
+| $8 \times 8$    | 64     | 48.3 %          | **±9.4 %**       | 0.0 %       | 61.3 %      | 2.17 pp       | Weak              |
+| $16 \times 16$  | 256    | 50.0 %          | ±2.3 %           | 0.0 %       | 58.6 %      | 0.45 pp       | **Baseline**      |
+| $32 \times 32$  | 1024   | 50.0 %          | ±2.2 %           | 40.8 %      | 58.8 %      | 0.41 pp       | Equivalent        |
+| $64 \times 64$  | 4096   | 50.0 %          | ±2.2 %           | 41.4 %      | 59.8 %      | 0.49 pp       | Equivalent        |
 
 > **Interpretation note:** The mean $\mu$ alone is not very informative — the
 > decisive metric is the standard deviation $\sigma$, which measures the
@@ -631,28 +717,28 @@ flip rate from the ideal $50\,\%$.
 **Interpretation:**
 
 1. **Below $16 \times 16$, diffusion breaks down.**
-   At $4 \times 4$ ($\sigma = 12.3\,\%$) and $8 \times 8$
-   ($\sigma = 9.1\,\%$), the Hamming-distance distribution is broad and
+   At $4 \times 4$ ($\sigma = 12.4\,\%$) and $8 \times 8$
+   ($\sigma = 9.4\,\%$), the Hamming-distance distribution is broad and
    asymmetric. Numerous samples fall into the $0{-}5\,\%$ range
-   ($n = 1\,570$ and $n = 831$ out of $25\,600$ respectively), meaning
+   ($n = 1\,614$ and $n = 889$ out of $25\,600$ respectively), meaning
    many bit-flips produce virtually no change in the hash — the opposite
    of the avalanche criterion. The mean falls to $46.9\,\%$ and
-   $48.4\,\%$, well below the ideal. The cause: with only 16 or 64 grid
+   $48.3\,\%$, well below the ideal. The cause: with only 16 or 64 grid
    cells, the state space is too small for the prime-driven cursor walk
    to influence sufficiently many distinct cells.
 
 2. **$16 \times 16$ is the empirical saturation point.**
    From this field size onward, $\sigma$ stabilises at $\approx 2.2\,\%$
    and the mean at $50.0\,\%$. Nibble bias drops below $0.5$ percentage
-   points. The 0–5 % bin contains only $n = 1$ out of $25\,600$ samples
-   — a statistical outlier suggesting that for at least one
-   (message, bit-position) pair, cursor-path divergence in the 256-cell
+   points. The 0–5 % bin contains only $n = 2$ out of $25\,600$ samples
+   — statistical outliers suggesting that for rare
+   (message, bit-position) pairs, cursor-path divergence in the 256-cell
    space does not yet fully propagate.
 
 3. **$32 \times 32$ and $64 \times 64$ provide no measurable improvement.**
    $\sigma$, nibble bias, and mean Hamming distance are statistically
    identical to $16 \times 16$. The only improvement: the minimum Hamming
-   distance rises from $0.0\,\%$ to $\approx 42\,\%$ — the 0–5 % bin is
+   distance rises from $0.0\,\%$ to $\approx 41\,\%$ — the 0–5 % bin is
    empty. However, this gain comes at the cost of a massively larger state
    (4× and 16× as many cells) and correspondingly higher runtime.
 
@@ -661,9 +747,292 @@ The field size $16 \times 16$ represents the empirically optimal trade-off:
 it is the *smallest* grid size at which diffusion fully saturates
 ($\sigma \leq 2.3\,\%$, $\mu = 50.0\,\%$). Larger grids offer no
 measurable quality gain in $\sigma$ or nibble bias. The rare 0 %-Hamming
-outliers ($\leq 1 / 25\,600$) point to isolated edge cases in the cursor
+outliers ($\leq 2 / 25\,600$) point to isolated edge cases in the cursor
 walk, not a systematic defect; at $32 \times 32$ they disappear due to
 the larger walk space.
+
+---
+
+\newpage
+
+## Appendix C — Cell Divergence Growth per Input Byte
+
+While Appendix A and B examine the *output hash* quality, this appendix
+looks at what happens *inside the grid* during Phase 2: how quickly does
+a single-bit input difference spread through the 256 grid cells?
+
+### Metric Definition
+
+We define the **Cell Hamming Distance** $\text{HDC}(n)$ as the number of
+grid cells (out of 256) whose state differs between two grids after $n$
+input bytes have been processed. A cell is counted as "different" if any
+of its three state components — `value`, `primeIndex`, or `colorIndex` —
+differ between the two grids.
+
+### Methodology
+
+Five independent experiments were conducted, each with $N = 200$ pairs
+of random messages (128 bytes each). In each experiment, message B is
+identical to message A except for a single random bit flipped at a
+**specific byte position**. The five flip positions were chosen to cover
+the full message span:
+
+| Experiment | Flip position | Rationale                          |
+|------------|---------------|------------------------------------|
+| 1          | Byte 0        | First byte — maximum propagation time  |
+| 2          | Byte 1        | Near-start — reproduces Exp. 1 shifted by 1 |
+| 3          | Byte 32       | Quarter-point — moderate propagation time |
+| 4          | Byte 64       | Midpoint — half the message remains   |
+| 5          | Byte 127      | Last byte — minimum propagation time  |
+
+Both messages in each pair are processed byte-by-byte through Phase 2
+(fingerprinting). After each successive input byte, the full
+$16 \times 16$ grid state is snapshotted and cell differences are
+counted.
+
+All experiments use the same RNG seed (`0xDEADBEEFCAFE1234`) and
+xorshift64 generator to ensure reproducibility.
+
+### Experiment 1 — Bit Flip at Byte 0
+
+| Byte $n$ | Mean $\text{HDC}(n)$ | $\sigma$ | Min | Max | % of 256 |
+|-----------|----------------------|----------|-----|-----|----------|
+| 1         | 6.3                  | 2.3      | 3   | 9   | 2.5 %    |
+| 8         | 52.3                 | 4.2      | 39  | 61  | 20.4 %   |
+| 16        | 94.2                 | 5.7      | 78  | 107 | 36.8 %   |
+| 32        | 154.3                | 6.8      | 138 | 174 | 60.3 %   |
+| 64        | 212.2                | 6.0      | 195 | 226 | 82.9 %   |
+| 87        | 230.9                | 4.9      | 216 | 244 | 90.2 %   |
+| 128       | 244.0                | 3.2      | 233 | 250 | 95.3 %   |
+
+![Experiment 1: Cell divergence growth with bit flip at byte 0](img/cell_divergence_flip_byte0.png)
+
+### Experiment 2 — Bit Flip at Byte 1
+
+| Byte $n$ | Mean $\text{HDC}(n)$ | $\sigma$ | Min | Max | % of 256 |
+|-----------|----------------------|----------|-----|-----|----------|
+| 1         | 0.0                  | 0.0      | 0   | 0   | 0.0 %    |
+| 2         | 6.2                  | 2.2      | 3   | 9   | 2.4 %    |
+| 16        | 89.8                 | 6.5      | 43  | 104 | 35.1 %   |
+| 32        | 152.1                | 7.0      | 119 | 169 | 59.4 %   |
+| 64        | 212.1                | 5.3      | 199 | 224 | 82.8 %   |
+| 87        | 230.4                | 4.6      | 217 | 241 | 90.0 %   |
+| 128       | 244.1                | 3.2      | 235 | 254 | 95.4 %   |
+
+![Experiment 2: Cell divergence growth with bit flip at byte 1](img/cell_divergence_flip_byte1.png)
+
+### Experiment 3 — Bit Flip at Byte 32
+
+| Byte $n$ | Mean $\text{HDC}(n)$ | $\sigma$ | Min | Max | % of 256 |
+|-----------|----------------------|----------|-----|-----|----------|
+| 32        | 0.0                  | 0.0      | 0   | 0   | 0.0 %    |
+| 33        | 6.2                  | 2.2      | 3   | 9   | 2.4 %    |
+| 64        | 151.6                | 6.7      | 133 | 166 | 59.2 %   |
+| 87        | 199.0                | 6.5      | 182 | 220 | 77.7 %   |
+| 96        | 210.8                | 5.8      | 193 | 225 | 82.3 %   |
+| 128       | 233.8                | 4.4      | 222 | 244 | 91.3 %   |
+
+![Experiment 3: Cell divergence growth with bit flip at byte 32](img/cell_divergence_flip_byte32.png)
+
+### Experiment 4 — Bit Flip at Byte 64
+
+| Byte $n$ | Mean $\text{HDC}(n)$ | $\sigma$ | Min | Max | % of 256 |
+|-----------|----------------------|----------|-----|-----|----------|
+| 64        | 0.0                  | 0.0      | 0   | 0   | 0.0 %    |
+| 65        | 6.1                  | 2.2      | 2   | 9   | 2.4 %    |
+| 87        | 121.3                | 9.6      | 63  | 139 | 47.4 %   |
+| 96        | 150.8                | 9.0      | 105 | 170 | 58.9 %   |
+| 128       | 209.4                | 6.5      | 184 | 224 | 81.8 %   |
+
+![Experiment 4: Cell divergence growth with bit flip at byte 64](img/cell_divergence_flip_byte64.png)
+
+### Experiment 5 — Bit Flip at Byte 127
+
+| Byte $n$ | Mean $\text{HDC}(n)$ | $\sigma$ | Min | Max | % of 256 |
+|-----------|----------------------|----------|-----|-----|----------|
+| 127       | 0.0                  | 0.0      | 0   | 0   | 0.0 %    |
+| 128       | 6.0                  | 2.2      | 1   | 9   | 2.3 %    |
+
+![Experiment 5: Cell divergence growth with bit flip at byte 127](img/cell_divergence_flip_byte127.png)
+
+### Combined Comparison
+
+The following figure overlays all five experiments, allowing direct
+comparison of the divergence curves:
+
+![Cell Divergence Comparison: all five flip positions overlaid. Triangles on the x-axis mark the respective flip byte.](img/cell_divergence_comparison.png)
+
+### Reading the Diagrams
+
+Each individual figure shows how $\text{HDC}(n)$ grows with each
+successive input byte, measured across 200 single-bit-flip message pairs.
+
+**Axes:**
+
+- **X-axis** (*Input byte position*): The number of bytes processed so
+  far through Phase 2 (1 = after the first byte, 128 = after all bytes).
+- **Y-axis** (*Number of differing cells*): How many of the 256 grid
+  cells have at least one differing state component.
+
+**Legend elements (individual plots):**
+
+- **"Mean diff. cells"** (coloured line with dots): The arithmetic mean
+  of $\text{HDC}(n)$ across all 200 trials.
+- **"Mean ± 1σ"** (coloured band): One standard deviation above and
+  below the mean. Approximately 68 % of trials fall within this band.
+- **"Min–Max range"** (light band): Full range of observed values.
+- **"Flip position"** (red dotted vertical line): The byte where the
+  single-bit difference is introduced. Before this line, both messages
+  are identical, so $\text{HDC} = 0$.
+
+### Interpretation
+
+1. **Consistent initial divergence of $\approx 6$ cells.** In all five
+   experiments, the first byte *after* the flip position produces
+   $\text{HDC} \approx 6$ (range: 5.96–6.29). This value is
+   independent of the flip position and consistent with the worked
+   example in Section 5, where `0x4E` and `0x1B` differ in exactly
+   6 cells after one byte.
+
+2. **The divergence curve is position-invariant.** The shape of the
+   growth curve is the same regardless of where in the message the bit
+   is flipped — it simply shifts right by the flip position. This
+   means the grid's diffusion mechanism operates uniformly across all
+   byte positions, with no "weak spots" in the message.
+
+3. **Divergence rate: $\approx 4$ cells per byte in the linear phase.**
+   Each additional byte after the flip introduces $\approx 4$ newly
+   differing cells (4 direction steps per byte, each visiting and
+   modifying a cell with a direction-dependent prime).
+
+4. **Final $\text{HDC}$ depends on propagation distance.** The number
+   of bytes available for propagation ($128 - \text{flip\_byte}$)
+   determines the final divergence level:
+
+   | Flip at byte | Bytes remaining | Final $\text{HDC}(128)$ | % of 256 |
+   |--------------|-----------------|-------------------------|----------|
+   | 0            | 128             | 244.0                   | 95.3 %   |
+   | 1            | 127             | 244.1                   | 95.4 %   |
+   | 32           | 96              | 233.8                   | 91.3 %   |
+   | 64           | 64              | 209.4                   | 81.8 %   |
+   | 127          | 1               | 6.0                     | 2.3 %    |
+
+5. **Variance increases when propagation time is short.** Experiments 4
+   and 5 (flip at byte 64 and 127) show higher $\sigma$ relative to the
+   mean, because fewer bytes provide less opportunity for the "averaging"
+   effect of many direction steps. Experiment 4 has $\sigma = 9.6$ at
+   byte 87 (only 22 bytes after flip), compared to $\sigma = 4.9$ in
+   Experiment 1 at the same byte position (87 bytes after flip).
+
+6. **90 % saturation requires $\approx 87$ bytes of propagation.** In
+   Experiments 1 and 2, where 127–128 bytes are available, 90 %
+   saturation (231 cells) is reached at byte 87. Experiment 3 (96 bytes
+   available) reaches 91.3 % by byte 128 but does not quite reach
+   90 % *within* its propagation window. This provides a concrete
+   engineering guideline: messages of $\geq 87$ bytes achieve near-full
+   grid divergence from any single-bit change in the first half.
+
+### Conclusions
+
+- **Phase 2 alone produces near-complete state divergence.** Even
+  *before* Phase 3 (processing rounds), a single bit flip in a 128-byte
+  message causes $\geq 95\%$ of all grid cells to hold different states,
+  provided the flip occurs in the first few bytes. This is empirically
+  confirmed across five independent experiments.
+
+- **Diffusion is uniform across all message positions.** The
+  near-identical initial $\text{HDC} \approx 6$ and identical curve
+  shape across all five experiments demonstrate that the algorithm's
+  diffusion mechanism — direction-dependent prime advance, data-dependent
+  cursor jumps, and SAV — operates consistently regardless of where in
+  the message the difference is introduced. There are no structurally
+  weak positions.
+
+- **Propagation distance determines final divergence.** The final
+  $\text{HDC}(128)$ is a monotonically decreasing function of the flip
+  position — later flips have less propagation time and therefore lower
+  final divergence. This is expected and not a weakness: Phase 3
+  (processing rounds) subsequently mixes the entire grid state
+  regardless of the Phase 2 divergence level.
+
+- **Variance is well-bounded.** In all experiments, the $\pm 1\sigma$
+  band remains narrow relative to the mean, confirming that the
+  divergence behaviour is not sensitive to specific message content or
+  bit position within the flipped byte. No "weak" message classes were
+  observed across the $5 \times 200 = 1{,}000$ total trials.
+
+- **Quantitative observation.** In Experiment 1 (flip at byte 0), the
+  empirical growth curve is well approximated by a saturating
+  exponential $\text{HDC}(n) \approx 256 \cdot (1 - e^{-n/\tau})$
+  with $\tau \approx 40$ bytes. This approximation should be understood
+  as an empirical fit to the observed data (based on $N = 200$ trials),
+  not as a derived analytical model. It does not account for the
+  slightly faster-than-exponential growth in the first $\sim 10$ bytes
+  nor the slower-than-exponential tail beyond byte 90.
+
+---
+
+\newpage
+
+## Appendix D — Cross-Seed Reproducibility
+
+Appendix C demonstrated position-invariance by flipping a bit at
+different message positions using a single RNG seed. A natural follow-up
+question is: **do the results depend on the specific random messages
+generated by that seed?**
+
+To answer this, Experiment 1 (flip at byte 0) was repeated with five
+independent xorshift64 seeds, each generating a fresh set of 200 random
+message pairs. The five seeds were chosen to cover diverse bit patterns:
+
+| Seed                      | HDC(1) | HDC(87) | HDC(128) |
+|---------------------------|--------|---------|----------|
+| `0xDEADBEEFCAFE1234`      | 6.29   | 230.91  | 244.04   |
+| `0x123456789ABCDEF0`      | 5.92   | 230.97  | 244.28   |
+| `0xAAAAAAAAAAAAAAAA`       | 6.10   | 230.76  | 244.35   |
+| `0x5555555555555555`       | 5.87   | 231.16  | 244.22   |
+| `0xFEDCBA9876543210`       | 5.67   | 231.29  | 244.50   |
+| **Grand mean**            | **5.97**| **231.02**| **244.28** |
+| **$\sigma$ across seeds** | **0.21**| **0.19**| **0.15** |
+
+![Cross-seed reproducibility: all five seeds overlaid with grand mean (dashed black). The curves are visually indistinguishable.](img/cell_divergence_seeds.png)
+
+### Observations
+
+1. **Negligible inter-seed variance.** The standard deviation *between
+   seeds* is $\sigma_{\text{seeds}} = 0.21$ at byte 1, $0.19$ at
+   byte 87, and $0.15$ at byte 128. These values are more than an
+   order of magnitude smaller than the intra-seed standard deviation
+   ($\sigma \approx 2{-}7$ within each experiment). The divergence
+   curve is therefore a property of the **algorithm**, not of the
+   specific random messages.
+
+2. **Consistent initial divergence.** $\text{HDC}(1)$ ranges from 5.67
+   to 6.29 across seeds (spread: 0.62 cells). Combined with Appendix C
+   (where $\text{HDC}(1) \approx 6$ regardless of flip position), this
+   confirms that the first-byte divergence of $\approx 6$ cells is a
+   robust structural property.
+
+3. **Saturation is seed-independent.** All five seeds converge to
+   $\text{HDC}(128) \in [244.04, 244.50]$ — a total spread of only
+   0.46 cells out of 256. The 90 %-saturation point remains at byte 87
+   in all five runs.
+
+### Combined Evidence
+
+Across Appendix C (position-invariance) and Appendix D
+(seed-independence), the total evidence base comprises:
+
+- **5 flip positions** $\times$ 200 trials = 1,000 pairs (Appendix C)
+- **5 RNG seeds** $\times$ 200 trials = 1,000 pairs (Appendix D)
+- **Total: 2,000 independent message pairs**
+
+In all 2,000 cases, the divergence curve exhibits the same qualitative
+shape and quantitatively consistent key metrics ($\text{HDC}(1) \approx
+6$, $\approx 4$ cells/byte linear growth, 90 % saturation at
+$\approx 87$ bytes of propagation). This provides strong empirical
+evidence — though not a formal proof — that the observed diffusion
+behaviour is an intrinsic property of Secasy's Phase 2 construction.
 
 ---
 

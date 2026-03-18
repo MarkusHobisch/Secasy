@@ -36,16 +36,16 @@
 #define INPUT_LEN 16
 
 /* Higher sample sizes for the security comparison */
-#define BENCH_HASHES       10000  /* hashes per timing measurement */
-#define SECURITY_AVALANCHE 10000  /* avalanche samples */
-#define SECURITY_BIAS      20000  /* bit bias samples */
-#define SECURITY_COLLISION 20000  /* collision samples */
-#define SECURITY_SEQ       10000  /* sequential corr samples */
-#define SECURITY_HAMMING   3000   /* min hamming pairwise set */
+#define BENCH_HASHES 10000       /* hashes per timing measurement */
+#define SECURITY_AVALANCHE 10000 /* avalanche samples */
+#define SECURITY_BIAS 20000      /* bit bias samples */
+#define SECURITY_COLLISION 20000 /* collision samples */
+#define SECURITY_SEQ 10000       /* sequential corr samples */
+#define SECURITY_HAMMING 3000    /* min hamming pairwise set */
 
-static int hash_bits      = DEFAULT_BIT_SIZE;
+static int hash_bits = DEFAULT_BIT_SIZE;
 static int hash_hex_chars = DEFAULT_BIT_SIZE / 4;
-static int hash_bytes     = DEFAULT_BIT_SIZE / 8;
+static int hash_bytes = DEFAULT_BIT_SIZE / 8;
 
 unsigned long numberOfRounds;
 int hashLengthInBits = DEFAULT_BIT_SIZE;
@@ -57,18 +57,26 @@ extern Position_t pos;
 
 static int hex_val(char c)
 {
-    if (c >= '0' && c <= '9') return c - '0';
-    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F')
+        return c - 'A' + 10;
     return 0;
 }
 
 static int hamming_hex(const char *a, const char *b, int hex_len)
 {
     int dist = 0;
-    for (int i = 0; i < hex_len; i++) {
+    for (int i = 0; i < hex_len; i++)
+    {
         int x = hex_val(a[i]) ^ hex_val(b[i]);
-        while (x) { dist += x & 1; x >>= 1; }
+        while (x)
+        {
+            dist += x & 1;
+            x >>= 1;
+        }
     }
     return dist;
 }
@@ -84,7 +92,8 @@ static char *hash_buffer(const uint8_t *data, size_t len)
 /*                    PART 1: BENCHMARK                      */
 /* ══════════════════════════════════════════════════════════ */
 
-typedef struct {
+typedef struct
+{
     unsigned long rounds;
     double total_ms;
     double per_hash_us;
@@ -97,14 +106,16 @@ static double benchmark_rounds(unsigned long rounds, int num_hashes)
 
     /* Prepare random inputs */
     uint8_t (*inputs)[INPUT_LEN] = malloc((size_t)num_hashes * INPUT_LEN);
-    if (!inputs) return -1.0;
+    if (!inputs)
+        return -1.0;
     for (int i = 0; i < num_hashes; i++)
         for (int j = 0; j < INPUT_LEN; j++)
             inputs[i][j] = (uint8_t)(rand() & 0xFF);
 
     clock_t start = clock();
 
-    for (int i = 0; i < num_hashes; i++) {
+    for (int i = 0; i < num_hashes; i++)
+    {
         char *h = hash_buffer(inputs[i], INPUT_LEN);
         free(h);
     }
@@ -119,11 +130,12 @@ static double benchmark_rounds(unsigned long rounds, int num_hashes)
 /*                  PART 2: SECURITY COMPARISON              */
 /* ══════════════════════════════════════════════════════════ */
 
-typedef struct {
+typedef struct
+{
     unsigned long rounds;
     double avalanche_pct;
     double bit_bias_pct;
-    int    collisions;
+    int collisions;
     double seq_corr_pct;
     double min_hamming_pct;
 } SecurityResult;
@@ -131,7 +143,8 @@ typedef struct {
 static double measure_avalanche_n(int samples)
 {
     double total = 0;
-    for (int s = 0; s < samples; s++) {
+    for (int s = 0; s < samples; s++)
+    {
         uint8_t input[INPUT_LEN];
         for (int j = 0; j < INPUT_LEN; j++)
             input[j] = (uint8_t)(rand() & 0xFF);
@@ -154,15 +167,18 @@ static double measure_avalanche_n(int samples)
 static double measure_bit_bias_n(int samples)
 {
     int *counts = calloc((size_t)hash_bits, sizeof(int));
-    if (!counts) return 99.0;
+    if (!counts)
+        return 99.0;
 
-    for (int i = 0; i < samples; i++) {
+    for (int i = 0; i < samples; i++)
+    {
         uint8_t input[INPUT_LEN];
         for (int j = 0; j < INPUT_LEN; j++)
             input[j] = (uint8_t)(rand() & 0xFF);
 
         char *h = hash_buffer(input, INPUT_LEN);
-        for (int b = 0; b < hash_hex_chars; b++) {
+        for (int b = 0; b < hash_hex_chars; b++)
+        {
             int nibble = hex_val(h[b]);
             int offset = b * 4;
             for (int k = 3; k >= 0; k--)
@@ -172,9 +188,11 @@ static double measure_bit_bias_n(int samples)
     }
 
     double max_dev = 0;
-    for (int b = 0; b < hash_bits; b++) {
+    for (int b = 0; b < hash_bits; b++)
+    {
         double dev = fabs((double)counts[b] / samples - 0.5);
-        if (dev > max_dev) max_dev = dev;
+        if (dev > max_dev)
+            max_dev = dev;
     }
     free(counts);
     return max_dev * 100.0;
@@ -183,9 +201,11 @@ static double measure_bit_bias_n(int samples)
 static int measure_collisions_n(int samples)
 {
     char **hashes = malloc((size_t)samples * sizeof(char *));
-    if (!hashes) return -1;
+    if (!hashes)
+        return -1;
 
-    for (int i = 0; i < samples; i++) {
+    for (int i = 0; i < samples; i++)
+    {
         uint8_t input[INPUT_LEN];
         for (int j = 0; j < INPUT_LEN; j++)
             input[j] = (uint8_t)(rand() & 0xFF);
@@ -193,9 +213,12 @@ static int measure_collisions_n(int samples)
     }
 
     /* Sort and count duplicates (full hash string comparison) */
-    for (int i = 0; i < samples - 1; i++) {
-        for (int j = i + 1; j < samples; j++) {
-            if (strcmp(hashes[i], hashes[j]) > 0) {
+    for (int i = 0; i < samples - 1; i++)
+    {
+        for (int j = i + 1; j < samples; j++)
+        {
+            if (strcmp(hashes[i], hashes[j]) > 0)
+            {
                 char *tmp = hashes[i];
                 hashes[i] = hashes[j];
                 hashes[j] = tmp;
@@ -204,11 +227,14 @@ static int measure_collisions_n(int samples)
     }
 
     int collisions = 0;
-    for (int i = 1; i < samples; i++) {
-        if (strcmp(hashes[i], hashes[i - 1]) == 0) collisions++;
+    for (int i = 1; i < samples; i++)
+    {
+        if (strcmp(hashes[i], hashes[i - 1]) == 0)
+            collisions++;
     }
 
-    for (int i = 0; i < samples; i++) free(hashes[i]);
+    for (int i = 0; i < samples; i++)
+        free(hashes[i]);
     free(hashes);
     return collisions;
 }
@@ -216,9 +242,11 @@ static int measure_collisions_n(int samples)
 static double measure_seq_corr_n(int samples)
 {
     char **hashes = malloc((size_t)samples * sizeof(char *));
-    if (!hashes) return 0;
+    if (!hashes)
+        return 0;
 
-    for (int i = 0; i < samples; i++) {
+    for (int i = 0; i < samples; i++)
+    {
         uint8_t input[INPUT_LEN];
         memset(input, 0, INPUT_LEN);
         input[0] = (uint8_t)(i & 0xFF);
@@ -230,7 +258,8 @@ static double measure_seq_corr_n(int samples)
     for (int i = 0; i < samples - 1; i++)
         sum += hamming_hex(hashes[i], hashes[i + 1], hash_hex_chars);
 
-    for (int i = 0; i < samples; i++) free(hashes[i]);
+    for (int i = 0; i < samples; i++)
+        free(hashes[i]);
     free(hashes);
     return (sum / (samples - 1)) / hash_bits * 100.0;
 }
@@ -238,9 +267,11 @@ static double measure_seq_corr_n(int samples)
 static double measure_min_hamming_n(int n)
 {
     char **hashes = malloc((size_t)n * sizeof(char *));
-    if (!hashes) return 0;
+    if (!hashes)
+        return 0;
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++)
+    {
         uint8_t input[INPUT_LEN];
         for (int j = 0; j < INPUT_LEN; j++)
             input[j] = (uint8_t)(rand() & 0xFF);
@@ -249,12 +280,15 @@ static double measure_min_hamming_n(int n)
 
     int min_dist = hash_bits;
     for (int i = 0; i < n; i++)
-        for (int j = i + 1; j < n; j++) {
+        for (int j = i + 1; j < n; j++)
+        {
             int d = hamming_hex(hashes[i], hashes[j], hash_hex_chars);
-            if (d < min_dist) min_dist = d;
+            if (d < min_dist)
+                min_dist = d;
         }
 
-    for (int i = 0; i < n; i++) free(hashes[i]);
+    for (int i = 0; i < n; i++)
+        free(hashes[i]);
     free(hashes);
     return (double)min_dist / hash_bits * 100.0;
 }
@@ -289,15 +323,17 @@ static SecurityResult run_security_test(unsigned long rounds)
 
 int main(int argc, char *argv[])
 {
-    if (argc > 1) {
+    if (argc > 1)
+    {
         hash_bits = atoi(argv[1]);
     }
-    if (hash_bits < 64 || hash_bits > 512 || hash_bits % 64 != 0) {
+    if (hash_bits < 64 || hash_bits > 512 || hash_bits % 64 != 0)
+    {
         fprintf(stderr, "Invalid hash bits: %d (must be 64, 128, 256, or 512)\n", hash_bits);
         return 1;
     }
     hash_hex_chars = hash_bits / 4;
-    hash_bytes     = hash_bits / 8;
+    hash_bytes = hash_bits / 8;
     hashLengthInBits = hash_bits;
 
     srand((unsigned)time(NULL));
@@ -320,11 +356,16 @@ int main(int argc, char *argv[])
     int bench_samples[] = {10, 20, 100, 500, 500, 1000, 1000, 1000, 1000};
 
     BenchResult *bench = malloc((size_t)num_bench * sizeof(BenchResult));
-    if (!bench) { fprintf(stderr, "OOM\n"); return 1; }
+    if (!bench)
+    {
+        fprintf(stderr, "OOM\n");
+        return 1;
+    }
 
     double default_per_hash = 0;
 
-    for (int i = 0; i < num_bench; i++) {
+    for (int i = 0; i < num_bench; i++)
+    {
         bench[i].rounds = bench_rounds[i];
         printf("  Benchmarking %lu rounds (%d hashes)...",
                bench_rounds[i], bench_samples[i]);
@@ -333,11 +374,12 @@ int main(int argc, char *argv[])
         bench[i].total_ms = benchmark_rounds(bench_rounds[i], bench_samples[i]);
         bench[i].per_hash_us = bench[i].total_ms / bench_samples[i] * 1000.0;
 
-        if (i == 0) default_per_hash = bench[i].per_hash_us;
+        if (i == 0)
+            default_per_hash = bench[i].per_hash_us;
 
         bench[i].speedup_vs_default = (default_per_hash > 0)
-            ? default_per_hash / bench[i].per_hash_us
-            : 0;
+                                          ? default_per_hash / bench[i].per_hash_us
+                                          : 0;
 
         printf(" %.1f ms total, %.1f µs/hash (%.0fx speedup)\n",
                bench[i].total_ms, bench[i].per_hash_us,
@@ -347,7 +389,8 @@ int main(int argc, char *argv[])
     printf("\n  ┌──────────┬─────────────┬──────────────┬──────────────┐\n");
     printf("  │ Rounds   │ Total (ms)  │ Per Hash(µs) │ Speedup      │\n");
     printf("  ├──────────┼─────────────┼──────────────┼──────────────┤\n");
-    for (int i = 0; i < num_bench; i++) {
+    for (int i = 0; i < num_bench; i++)
+    {
         printf("  │ %8lu │ %11.1f │ %12.1f │ %10.0fx   │\n",
                bench[i].rounds, bench[i].total_ms,
                bench[i].per_hash_us, bench[i].speedup_vs_default);
@@ -357,11 +400,15 @@ int main(int argc, char *argv[])
     /* Find the 10-round entry specifically */
     double speedup_10 = 0;
     double us_100k = 0, us_10 = 0;
-    for (int i = 0; i < num_bench; i++) {
-        if (bench[i].rounds == 100000) us_100k = bench[i].per_hash_us;
-        if (bench[i].rounds == 10)     us_10   = bench[i].per_hash_us;
+    for (int i = 0; i < num_bench; i++)
+    {
+        if (bench[i].rounds == 100000)
+            us_100k = bench[i].per_hash_us;
+        if (bench[i].rounds == 10)
+            us_10 = bench[i].per_hash_us;
     }
-    if (us_10 > 0) speedup_10 = us_100k / us_10;
+    if (us_10 > 0)
+        speedup_10 = us_100k / us_10;
 
     printf("\n  ★ KEY RESULT: 10 rounds is %.0fx faster than 100,000 rounds\n",
            speedup_10);
@@ -408,38 +455,53 @@ int main(int argc, char *argv[])
     /* ── Verdict ───────────────────────────────────────────── */
     printf("\n  ── VERDICT ──\n");
     int pass = 1;
-    if (sec_10.avalanche_pct < 48.0 || sec_10.avalanche_pct > 52.0) {
+    if (sec_10.avalanche_pct < 48.0 || sec_10.avalanche_pct > 52.0)
+    {
         printf("  ✗ Avalanche FAIL (%.2f%%, expected 48-52%%)\n", sec_10.avalanche_pct);
         pass = 0;
-    } else {
+    }
+    else
+    {
         printf("  ✓ Avalanche PASS (%.2f%%)\n", sec_10.avalanche_pct);
     }
 
-    if (sec_10.bit_bias_pct > 10.0) {
+    if (sec_10.bit_bias_pct > 10.0)
+    {
         printf("  ✗ Bit Bias FAIL (%.2f%%, limit 10%%)\n", sec_10.bit_bias_pct);
         pass = 0;
-    } else {
+    }
+    else
+    {
         printf("  ✓ Bit Bias PASS (%.2f%%)\n", sec_10.bit_bias_pct);
     }
 
-    if (sec_10.collisions > 0) {
+    if (sec_10.collisions > 0)
+    {
         printf("  ✗ Collisions FAIL (%d found)\n", sec_10.collisions);
         pass = 0;
-    } else {
+    }
+    else
+    {
         printf("  ✓ Collisions PASS (0)\n");
     }
 
-    if (sec_10.seq_corr_pct < 45.0) {
+    if (sec_10.seq_corr_pct < 45.0)
+    {
         printf("  ✗ Seq Correlation FAIL (%.2f%%, min 45%%)\n", sec_10.seq_corr_pct);
         pass = 0;
-    } else {
+    }
+    else
+    {
         printf("  ✓ Seq Correlation PASS (%.2f%%)\n", sec_10.seq_corr_pct);
     }
 
-    if (sec_10.min_hamming_pct < 20.0) {
+    if (sec_10.min_hamming_pct < 20.0)
+    {
         printf("  ✗ Min Hamming FAIL (%.1f%%, min 20%%)\n", sec_10.min_hamming_pct);
         pass = 0;
-    } else {
+    }
+    else
+    {
         printf("  ✓ Min Hamming PASS (%.1f%%)\n", sec_10.min_hamming_pct);
     }
 
@@ -450,9 +512,11 @@ int main(int argc, char *argv[])
     char csv_file[128];
     snprintf(csv_file, sizeof(csv_file), "benchmark_%dbit.csv", hash_bits);
     FILE *f = fopen(csv_file, "w");
-    if (f) {
+    if (f)
+    {
         fprintf(f, "rounds,total_ms,per_hash_us,speedup\n");
-        for (int i = 0; i < num_bench; i++) {
+        for (int i = 0; i < num_bench; i++)
+        {
             fprintf(f, "%lu,%.2f,%.2f,%.2f\n",
                     bench[i].rounds, bench[i].total_ms,
                     bench[i].per_hash_us, bench[i].speedup_vs_default);

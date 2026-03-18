@@ -15,9 +15,21 @@
 
 // Field dimension (must be power of 2 for bitmask optimization)
 #define FIELD_SIZE 16 // 16 x 16 = 256 cells
+#define FIELD_SIZE_MASK (FIELD_SIZE - 1) // bitmask for fast modulo wrapping
+
+// Direction encoding: each byte yields 4 direction steps of 2 bits each
+#define BITS_PER_DIRECTION 2
+#define DIRECTIONS_PER_BYTE 4
+#define DIRECTION_MASK 0x3 // 2-bit mask to extract direction from a byte
+
+// Number of color operations (ADD, SUB, XOR, AND, OR, INVERT)
+#define NUM_COLOR_OPERATIONS 6
 
 // Default I/O block size
 #define DEFAULT_IO_BLOCK_SIZE (4 * 1024 * 1024) // 4 MB default read chunk size
+
+// Hash extraction constants
+#define HASH_HEX_CHARS_PER_BLOCK 16 // hex chars per 64-bit block
 
 typedef struct
 {

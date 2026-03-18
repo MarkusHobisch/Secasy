@@ -4,9 +4,10 @@
 #include <inttypes.h>
 #include "Calculations.h"
 #include "Defines.h"
+#include "InitializationPhase.h"
 #include "Printing.h"
 #include "util.h"
-/* Mirror all printf output to debug.txt when g_debug_fp is set */
+
 #define printf debug_tee_printf
 
 extern Position_t pos;
@@ -15,14 +16,14 @@ extern int lastPrime;
 
 void printField(const char *phase)
 {
-    /* Fixed column width: cap at 8 chars, truncate longer values with '+' */
     const int maxWidth = 8;
     const int colW = maxWidth + 1;
 
     printf("\n");
     int innerW = 5 + FIELD_SIZE * colW + 24;
     printf("  +");
-    for (int i = 0; i < innerW; i++) printf("-");
+    for (int i = 0; i < innerW; i++)
+        printf("-");
     printf("+\n");
 
     int titleLen = printf("  |  Prime Field  (%u x %u)  [%s]", FIELD_SIZE, FIELD_SIZE, phase ? phase : "");
@@ -30,10 +31,10 @@ void printField(const char *phase)
     printf("%*sCursor: [%2u,%2u]  |\n", pad > 0 ? pad : 1, "", pos.x, pos.y);
 
     printf("  +");
-    for (int i = 0; i < innerW; i++) printf("-");
+    for (int i = 0; i < innerW; i++)
+        printf("-");
     printf("+\n");
 
-    /* Column headers */
     printf("  |     ");
     for (int i = 0; i < FIELD_SIZE; i++)
     {
@@ -47,7 +48,8 @@ void printField(const char *phase)
     for (int i = 0; i < FIELD_SIZE; i++)
     {
         printf(" ");
-        for (int k = 0; k < maxWidth; k++) printf("-");
+        for (int k = 0; k < maxWidth; k++)
+            printf("-");
     }
     printf("  --------------------  |\n");
 
@@ -68,10 +70,8 @@ void printField(const char *phase)
             int len = (int)strlen(cell);
             if (isCursor)
             {
-                /* Last char is '*' marker */
                 if (len >= maxWidth)
                 {
-                    /* Truncate: first 5 digits + ".." + "*" */
                     cell[5] = '.';
                     cell[6] = '.';
                     cell[7] = '\0';
@@ -79,12 +79,10 @@ void printField(const char *phase)
                 }
                 else if (len >= maxWidth - 1)
                 {
-                    /* Value fills all but marker slot */
                     printf(" %s*", cell);
                 }
                 else
                 {
-                    /* Right-align value, then '*' */
                     printf(" %*s*", maxWidth - 1, cell);
                 }
             }
@@ -103,18 +101,22 @@ void printField(const char *phase)
                 }
             }
         }
-        /* Row sum: also truncate if needed */
         char rbuf[32];
         snprintf(rbuf, sizeof(rbuf), "%" PRIu64, rowSum);
-        if ((int)strlen(rbuf) > 20) { rbuf[18] = '.'; rbuf[19] = '.'; rbuf[20] = '\0'; }
+        if ((int)strlen(rbuf) > 20)
+        {
+            rbuf[18] = '.';
+            rbuf[19] = '.';
+            rbuf[20] = '\0';
+        }
         printf("  %20s  |\n", rbuf);
     }
 
     printf("  +");
-    for (int i = 0; i < innerW; i++) printf("-");
+    for (int i = 0; i < innerW; i++)
+        printf("-");
     printf("+\n");
 
-    /* Column sums */
     printf("  | CS |");
     for (int i = 0; i < FIELD_SIZE; i++)
     {
@@ -123,18 +125,24 @@ void printField(const char *phase)
             colSum += field[i][j].value;
         char buf[32];
         snprintf(buf, sizeof(buf), "%" PRIu64, colSum);
-        if ((int)strlen(buf) > maxWidth) { buf[5] = '.'; buf[6] = '.'; buf[7] = '\0'; }
+        if ((int)strlen(buf) > maxWidth)
+        {
+            buf[5] = '.';
+            buf[6] = '.';
+            buf[7] = '\0';
+        }
         printf(" %*s", maxWidth, buf);
     }
     printf("  %20s  |\n", "");
     printf("  +");
-    for (int i = 0; i < innerW; i++) printf("-");
+    for (int i = 0; i < innerW; i++)
+        printf("-");
     printf("+\n\n");
 }
 
 void printColorIndexes()
 {
-    static const char *opName[] = { "ADD", "SUB", "XOR", "AND", "OR ", "INV" };
+    static const char *opName[] = {"ADD", "SUB", "XOR", "AND", "OR ", "INV"};
     printf("  +-----------------------------------------------------------------------+\n");
     printf("  |  Color Indexes  (operation per cell)                                  |\n");
     printf("  +-----------------------------------------------------------------------+\n");
@@ -168,21 +176,29 @@ void printPrimeIndexes()
         {
             int v = (int)field[i][j].primeIndex;
             int w = 1;
-            while (v >= 10) { v /= 10; w++; }
-            if (w > maxWidth) maxWidth = w;
+            while (v >= 10)
+            {
+                v /= 10;
+                w++;
+            }
+            if (w > maxWidth)
+                maxWidth = w;
         }
-    if (maxWidth < 6) maxWidth = 6;
+    if (maxWidth < 6)
+        maxWidth = 6;
     int colW = maxWidth + 1;
 
     int innerW = 5 + FIELD_SIZE * colW + 9;
     printf("  +");
-    for (int i = 0; i < innerW; i++) printf("-");
+    for (int i = 0; i < innerW; i++)
+        printf("-");
     printf("+\n");
     int titleLen = printf("  |  Prime Indexes  (next-prime offset per cell)");
     int pad = innerW + 4 - titleLen - 1;
     printf("%*s|\n", pad > 0 ? pad : 1, "");
     printf("  +");
-    for (int i = 0; i < innerW; i++) printf("-");
+    for (int i = 0; i < innerW; i++)
+        printf("-");
     printf("+\n");
 
     printf("  |     ");
@@ -193,7 +209,8 @@ void printPrimeIndexes()
     for (int i = 0; i < FIELD_SIZE; i++)
     {
         printf(" ");
-        for (int k = 0; k < maxWidth; k++) printf("-");
+        for (int k = 0; k < maxWidth; k++)
+            printf("-");
     }
     printf("         |\n");
     for (int j = 0; j < FIELD_SIZE; j++)
@@ -204,7 +221,8 @@ void printPrimeIndexes()
         printf("         |\n");
     }
     printf("  +");
-    for (int i = 0; i < innerW; i++) printf("-");
+    for (int i = 0; i < innerW; i++)
+        printf("-");
     printf("+\n\n");
 }
 
@@ -213,6 +231,7 @@ void printSumsAndValues()
     printf("  +------------------------------------------------------+\n");
     printf("  |  Row Sums               Column Sums                  |\n");
     printf("  +------------------------------------------------------+\n");
+    uint64_t totalRowSum = 0, totalColSum = 0;
     for (int j = 0; j < FIELD_SIZE; ++j)
     {
         uint64_t rowSum = 0, colSum = 0;
@@ -221,8 +240,12 @@ void printSumsAndValues()
             rowSum += field[i][j].value;
             colSum += field[j][i].value;
         }
+        totalRowSum += rowSum;
+        totalColSum += colSum;
         printf("  | R%2d %20" PRIu64 "  C%2d %20" PRIu64 "   |\n", j, rowSum, j, colSum);
     }
+    printf("  +------------------------------------------------------+\n");
+    printf("  | R*  %20" PRIu64 "  C*  %20" PRIu64 "   |\n", totalRowSum, totalColSum);
     printf("  +------------------------------------------------------+\n");
     printf("  |  Last prime    : %10d                          |\n", lastPrime);
     printf("  |  Last position : [%2u,%2u]                             |\n", pos.x, pos.y);
@@ -241,7 +264,7 @@ void printDatatypeMaxValues()
 
 void printInputBits(const unsigned char *data, size_t len)
 {
-    static const char *dirLabel[] = { "UP", "RI", "LE", "DO" };
+    static const char *dirLabel[] = {"UP", "RI", "LE", "DO"};
 
     printf("\n");
     printf("  +-----------------------------------------------------------------+\n");
@@ -257,10 +280,10 @@ void printInputBits(const unsigned char *data, size_t len)
         unsigned char b = data[i];
         char ch = (b >= 0x20 && b <= 0x7E) ? (char)b : '.';
 
-        int d1 =  b       & 3;
-        int d2 = (b >> 2) & 3;
-        int d3 = (b >> 4) & 3;
-        int d4 = (b >> 6) & 3;
+        int d1 = b & DIRECTION_MASK;
+        int d2 = (b >> BITS_PER_DIRECTION) & DIRECTION_MASK;
+        int d3 = (b >> (2 * BITS_PER_DIRECTION)) & DIRECTION_MASK;
+        int d4 = (b >> (3 * BITS_PER_DIRECTION)) & DIRECTION_MASK;
 
         printf("  |  %3zu    '%c'  0x%02X  %d%d%d%d%d%d%d%d   %-2s   %-2s   %-2s   %-2s                 |\n",
                i, ch, b,
@@ -271,3 +294,86 @@ void printInputBits(const unsigned char *data, size_t len)
 
     printf("  +-----------------------------------------------------------------+\n\n");
 }
+
+#if DEBUG_MODE
+void printPathMap(void)
+{
+    int nSteps = getPathStepCount();
+    if (nSteps == 0)
+        return;
+
+    static const char dirArrow[] = {'^', '>', '<', 'v'};
+
+    int cellStep[FIELD_SIZE][FIELD_SIZE];
+    memset(cellStep, 0, sizeof(cellStep));
+    int cellDir[FIELD_SIZE][FIELD_SIZE];
+    memset(cellDir, -1, sizeof(cellDir));
+
+    for (int s = 0; s < nSteps; s++)
+    {
+        uint32_t fX, fY, tX, tY;
+        int dir;
+        getPathStep(s, &fX, &fY, &tX, &tY, &dir);
+
+        if (cellStep[fX][fY] == 0)
+        {
+            cellStep[fX][fY] = s + 1;
+            cellDir[fX][fY] = dir;
+        }
+    }
+
+    if (nSteps > 0)
+    {
+        uint32_t fX, fY, tX, tY;
+        int dir;
+        getPathStep(nSteps - 1, &fX, &fY, &tX, &tY, &dir);
+        if (cellStep[tX][tY] == 0)
+        {
+            cellStep[tX][tY] = nSteps + 1;
+            cellDir[tX][tY] = -1;
+        }
+    }
+
+    const int cellW = 5;
+    int innerW = 6 + FIELD_SIZE * cellW;
+
+    printf("  +");
+    for (int i = 0; i < innerW; i++)
+        printf("-");
+    printf("+\n");
+    int tl = printf("  |  Path Map  (%d steps)", nSteps);
+    printf("%*s|\n", innerW - tl + 2, "");
+    printf("  +");
+    for (int i = 0; i < innerW; i++)
+        printf("-");
+    printf("+\n");
+
+    printf("      ");
+    for (int i = 0; i < FIELD_SIZE; i++)
+        printf(" %2d  ", i);
+    printf("\n");
+
+    for (int y = 0; y < FIELD_SIZE; y++)
+    {
+        printf("  %2d |", y);
+        for (int x = 0; x < FIELD_SIZE; x++)
+        {
+            int s = cellStep[x][y];
+            int d = cellDir[x][y];
+            if (s > 0 && d >= 0 && d < 4)
+                printf(" %2d%c ", s, dirArrow[d]);
+            else if (s > 0)
+                printf(" %2d* ", s);
+            else
+                printf("  .  ");
+        }
+        printf("|\n");
+    }
+
+    printf("  +");
+    for (int i = 0; i < innerW; i++)
+        printf("-");
+    printf("+\n");
+    printf("  (Number=step, ^v<>=direction, *=final position)\n\n");
+}
+#endif

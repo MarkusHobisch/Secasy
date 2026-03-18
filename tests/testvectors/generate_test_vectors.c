@@ -29,11 +29,11 @@
 #include "InitializationPhase.h"
 #include "ProcessingPhase.h"
 
-unsigned long numberOfRounds  = DEFAULT_NUMBER_OF_ROUNDS;
-int           hashLengthInBits = DEFAULT_BIT_SIZE;
+unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
+int hashLengthInBits = DEFAULT_BIT_SIZE;
 
 /* Compute hash of raw bytes and return hex string (caller must free). */
-static char* hash_bytes(const unsigned char* data, size_t len)
+static char *hash_bytes(const unsigned char *data, size_t len)
 {
     initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
     processBuffer(data, len);
@@ -41,16 +41,16 @@ static char* hash_bytes(const unsigned char* data, size_t len)
 }
 
 /* Compute hash of a NUL-terminated string. */
-static char* hash_str(const char* s)
+static char *hash_str(const char *s)
 {
-    return hash_bytes((const unsigned char*)s, strlen(s));
+    return hash_bytes((const unsigned char *)s, strlen(s));
 }
 
 /* Print one test vector line. */
-static void print_vector(const char* label, const char* description,
-                          const unsigned char* data, size_t len)
+static void print_vector(const char *label, const char *description,
+                         const unsigned char *data, size_t len)
 {
-    char* h = hash_bytes(data, len);
+    char *h = hash_bytes(data, len);
     printf("%-40s  %s\n", label, h);
     printf("  # %s  (input_len=%zu)\n\n", description, len);
     free(h);
@@ -106,15 +106,15 @@ int main(void)
 
     /* ── 3. Short strings ────────────────────────────────────────── */
     {
-        const char* s = "abc";
-        char* h = hash_str(s);
+        const char *s = "abc";
+        char *h = hash_str(s);
         printf("%-40s  %s\n", "\"abc\"", h);
         printf("  # Classic 3-char string  (input_len=3)\n\n");
         free(h);
     }
     {
-        const char* s = "secasy";
-        char* h = hash_str(s);
+        const char *s = "secasy";
+        char *h = hash_str(s);
         printf("%-40s  %s\n", "\"secasy\"", h);
         printf("  # Algorithm name  (input_len=6)\n\n");
         free(h);
@@ -122,15 +122,15 @@ int main(void)
 
     /* ── 4. Classic test phrases ─────────────────────────────────── */
     {
-        const char* s = "The quick brown fox jumps over the lazy dog";
-        char* h = hash_str(s);
+        const char *s = "The quick brown fox jumps over the lazy dog";
+        char *h = hash_str(s);
         printf("%-40s  %s\n", "\"The quick brown fox...\"", h);
         printf("  # Classic pangram  (input_len=%zu)\n\n", strlen(s));
         free(h);
     }
     {
-        const char* s = "The quick brown fox jumps over the lazy cog";
-        char* h = hash_str(s);
+        const char *s = "The quick brown fox jumps over the lazy cog";
+        char *h = hash_str(s);
         printf("%-40s  %s\n", "\"The quick brown fox...cog\"", h);
         printf("  # Pangram with 1-char difference (dog->cog)  (input_len=%zu)\n\n", strlen(s));
         free(h);
@@ -166,7 +166,7 @@ int main(void)
     {
         unsigned char buf[64];
         memset(buf, 0x00, sizeof(buf));
-        print_vector("0x00 * 8",  "8 zero bytes",  buf, 8);
+        print_vector("0x00 * 8", "8 zero bytes", buf, 8);
         print_vector("0x00 * 16", "16 zero bytes", buf, 16);
         print_vector("0x00 * 32", "32 zero bytes", buf, 32);
         print_vector("0x00 * 64", "64 zero bytes", buf, 64);
@@ -176,14 +176,15 @@ int main(void)
     {
         unsigned char buf[64];
         memset(buf, 0xFF, sizeof(buf));
-        print_vector("0xFF * 8",  "8 all-ones bytes",  buf, 8);
+        print_vector("0xFF * 8", "8 all-ones bytes", buf, 8);
         print_vector("0xFF * 64", "64 all-ones bytes", buf, 64);
     }
 
     /* ── 8. Sequential bytes 0x00..0xFF ──────────────────────────── */
     {
         unsigned char buf[256];
-        for (int i = 0; i < 256; i++) buf[i] = (unsigned char)i;
+        for (int i = 0; i < 256; i++)
+            buf[i] = (unsigned char)i;
         print_vector("0x00..0xFF",
                      "256 sequential bytes (0 to 255)",
                      buf, 256);
@@ -191,15 +192,15 @@ int main(void)
 
     /* ── 9. Personal names (custom vectors) ─────────────────────── */
     {
-        const char* s = "Markus";
-        char* h = hash_str(s);
+        const char *s = "Markus";
+        char *h = hash_str(s);
         printf("%-40s  %s\n", "\"Markus\"", h);
         printf("  # Personal name  (input_len=6)\n\n");
         free(h);
     }
     {
-        const char* s = "Anna";
-        char* h = hash_str(s);
+        const char *s = "Anna";
+        char *h = hash_str(s);
         printf("%-40s  %s\n", "\"Anna\"", h);
         printf("  # Personal name  (input_len=4)\n\n");
         free(h);
@@ -207,8 +208,8 @@ int main(void)
 
     /* ── 10. Digit strings ───────────────────────────────────────────── */
     {
-        const char* s = "1234567890";
-        char* h = hash_str(s);
+        const char *s = "1234567890";
+        char *h = hash_str(s);
         printf("%-40s  %s\n", "\"1234567890\"", h);
         printf("  # Digit sequence  (input_len=10)\n\n");
         free(h);
@@ -249,7 +250,8 @@ int main(void)
     /* ── 12. 1 KB of alternating 0xAA / 0x55 ────────────────────── */
     {
         unsigned char buf[1024];
-        for (int i = 0; i < 1024; i++) buf[i] = (i % 2 == 0) ? 0xAA : 0x55;
+        for (int i = 0; i < 1024; i++)
+            buf[i] = (i % 2 == 0) ? 0xAA : 0x55;
         print_vector("0xAA55 * 512",
                      "1 KiB alternating 0xAA/0x55 pattern",
                      buf, 1024);

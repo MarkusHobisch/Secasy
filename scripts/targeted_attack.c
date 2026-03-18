@@ -18,22 +18,25 @@
 unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
 int hashLengthInBits = DEFAULT_BIT_SIZE;
 
-static char* compute_hash(const unsigned char* data, size_t len) {
+static char *compute_hash(const unsigned char *data, size_t len)
+{
     initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
     processBuffer(data, len);
     return calculateHashValue();
 }
 
-int main(void) {
+int main(void)
+{
     printf("=== Targeted Collision Analysis ===\n\n");
 
     // Test 1: Check how zeros are handled
     printf("Test 1: Zero byte sequences\n");
     printf("=========================================\n");
 
-    for (int n = 0; n <= 8; n++) {
+    for (int n = 0; n <= 8; n++)
+    {
         unsigned char zeros[9] = {0};
-        char* hash = compute_hash(zeros, n);
+        char *hash = compute_hash(zeros, n);
         printf("  %d zeros: %s\n", n, hash);
         free(hash);
     }
@@ -49,8 +52,9 @@ int main(void) {
         {0x00, 0x00, 0x00, 0x41},
     };
 
-    for (int i = 0; i < 4; i++) {
-        char* hash = compute_hash(patterns[i], 4);
+    for (int i = 0; i < 4; i++)
+    {
+        char *hash = compute_hash(patterns[i], 4);
         printf("  Pattern %d: %02x %02x %02x %02x -> %s\n",
                i, patterns[i][0], patterns[i][1], patterns[i][2], patterns[i][3], hash);
         free(hash);
@@ -67,20 +71,22 @@ int main(void) {
     unsigned char sym1[] = {0x55};
     unsigned char sym2[] = {0xAA};
 
-    char* h1 = compute_hash(sym1, 1);
-    char* h2 = compute_hash(sym2, 1);
+    char *h1 = compute_hash(sym1, 1);
+    char *h2 = compute_hash(sym2, 1);
     printf("  0x55 (all RIGHT): %s\n", h1);
     printf("  0xAA (all LEFT):  %s\n", h2);
     printf("  Same: %s\n", strcmp(h1, h2) == 0 ? "YES - COLLISION!" : "no");
-    free(h1); free(h2);
+    free(h1);
+    free(h2);
 
     // Test 4: Bytes with same bit count
     printf("\nTest 4: Bytes with same popcount\n");
     printf("=========================================\n");
 
-    unsigned char popcount2[] = {0x03, 0x05, 0x06, 0x09, 0x0A, 0x0C};  // All have 2 bits set
-    for (int i = 0; i < 6; i++) {
-        char* hash = compute_hash(&popcount2[i], 1);
+    unsigned char popcount2[] = {0x03, 0x05, 0x06, 0x09, 0x0A, 0x0C}; // All have 2 bits set
+    for (int i = 0; i < 6; i++)
+    {
+        char *hash = compute_hash(&popcount2[i], 1);
         printf("  0x%02X: %s\n", popcount2[i], hash);
         free(hash);
     }
@@ -90,15 +96,16 @@ int main(void) {
     printf("=========================================\n");
 
     // Try to find inputs where movements cancel out
-    unsigned char cancel1[] = {0x01, 0x02};  // RIGHT then LEFT
-    unsigned char cancel2[] = {0x02, 0x01};  // LEFT then RIGHT
+    unsigned char cancel1[] = {0x01, 0x02}; // RIGHT then LEFT
+    unsigned char cancel2[] = {0x02, 0x01}; // LEFT then RIGHT
 
     h1 = compute_hash(cancel1, 2);
     h2 = compute_hash(cancel2, 2);
     printf("  0x01,0x02 (R,L): %s\n", h1);
     printf("  0x02,0x01 (L,R): %s\n", h2);
     printf("  Same: %s\n", strcmp(h1, h2) == 0 ? "YES - COLLISION!" : "no");
-    free(h1); free(h2);
+    free(h1);
+    free(h2);
 
     // Test 6: Modular arithmetic exploitation
     printf("\nTest 6: Field size wrap-around\n");
@@ -121,18 +128,20 @@ int main(void) {
     printf("  A + 7 zeros: %s\n", h1);
     printf("  A + 7 x 0xFF: %s\n", h2);
     printf("  Same: %s\n", strcmp(h1, h2) == 0 ? "YES - COLLISION!" : "no");
-    free(h1); free(h2);
+    free(h1);
+    free(h2);
 
     // Test 7: Empty vs near-empty
     printf("\nTest 7: Empty input behavior\n");
     printf("=========================================\n");
 
-    char* empty = compute_hash(NULL, 0);
+    char *empty = compute_hash(NULL, 0);
     printf("  Empty input: %s\n", empty ? empty : "(null)");
-    if (empty) free(empty);
+    if (empty)
+        free(empty);
 
     unsigned char single_zero[] = {0x00};
-    char* one_zero = compute_hash(single_zero, 1);
+    char *one_zero = compute_hash(single_zero, 1);
     printf("  Single zero: %s\n", one_zero);
     free(one_zero);
 
@@ -142,4 +151,3 @@ int main(void) {
 
     return 0;
 }
-

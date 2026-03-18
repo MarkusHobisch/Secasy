@@ -37,17 +37,31 @@ Tile_t field[FIELD_SIZE][FIELD_SIZE];
 int lastPrime = 1;
 
 static int numberOfPrimes = NUMBER_OF_PRIMES;
-static unsigned int colorLen = 6U;
 static int primeIndex = 0;
 static ColorIndex_t colorIndex = ADD;
 static int *primeArray = storedPrimesArray;
 static int primeArrayDynamic = 0;
 
-static void calcAndSetDirections(int byte);
+#if DEBUG_MODE
+/* Path recording: store each step of the byte walk for the grid overlay */
+#define MAX_PATH_STEPS 4096
+typedef struct {
+    uint32_t fromX, fromY;
+    uint32_t toX, toY;
+    int direction;   /* UP=0 RIGHT=1 LEFT=2 DOWN=3 */
+    uint64_t oldPrime;
+    int newPrime;
+} PathStep_t;
 
-static int nextPrimeNumber(Tile_t *tile);
+static PathStep_t g_pathSteps[MAX_PATH_STEPS];
+static int g_pathStepCount = 0;
+#endif
 
-static void writeNextNumber(int direction);
+static void processByteDirections(int byte);
+
+static int nextPrimeNumber(Tile_t *tile, int direction);
+
+static void processDirectionStep(int direction);
 
 static void initPrimeNumbers(unsigned long maxPrimeIndex);
 
@@ -55,7 +69,7 @@ static void initSquareFieldWithDefaultValue(void);
 
 static FILE *readFile(const char *filename);
 
-static void updateColorAndPrimeIndexOfTile(Tile_t *tile);
+static void updateColorAndPrimeIndexOfTile(Tile_t *tile, int direction);
 
 static void setPrimeNumberOfLastTile(void);
 
@@ -72,6 +86,10 @@ void initFieldWithDefaultNumbers(const unsigned long maxPrimeIndex)
     lastPrime = FIRST_PRIME;
     primeIndex = 0;
     colorIndex = ADD;
+
+#if DEBUG_MODE
+    g_pathStepCount = 0;
+#endif
 
     initPrimeNumbers(maxPrimeIndex);
     initSquareFieldWithDefaultValue();
@@ -94,8 +112,8 @@ void readAndProcessFile(const char *filename)
         int byte; // must be int
         for (size_t i = 0; i < bytesRead; ++i)
         {
-            byte = buffer[i] & 0xFF; // byte to int conversion
-            calcAndSetDirections(byte);
+            byte = buffer[i] & 0xFF;
+            processByteDirections(byte);
         }
     }
     if (ferror(file))
@@ -125,7 +143,7 @@ void processBuffer(const unsigned char *data, size_t len)
     for (size_t i = 0; i < len; ++i)
     {
         int byte = data[i] & 0xFF;
-        calcAndSetDirections(byte);
+        processByteDirections(byte);
     }
     setPrimeNumberOfLastTile();
     lastPrime = (int)field[pos.x][pos.y].value;
@@ -202,18 +220,17 @@ static FILE *readFile(const char *filename)
 }
 
 /*
- * I think this method needs more explanation. Here we want to calculate the direction for the next move. The possible
- *  directions are LEFT, TOP, RIGHT, DOWN. One Byte has 8 bits and with this 8 bits we only take 2 bits for each round.
- *  So the maximum number of rounds is 4. To be more precisely the number of rounds is always 4.
- *  This is due to the fact that the MSB is always 1, since we only work with positive numbers.
+ * Decompose a single byte into four 2-bit direction codes and execute each step.
+ * Bits are consumed LSB-first:
+ *   Bits 0-1  -> step 1
+ *   Bits 2-3  -> step 2
+ *   Bits 4-5  -> step 3
+ *   Bits 6-7  -> step 4
  *
- *  e.g. lets say we have this kind of byte: 11 00 10 01
- *  First round: 01
- *  Second round: 10
- *  Third round: 00
- *  Fourth round: 11
+ * Example: byte 0xC9 = 11 00 10 01
+ *   Step 1: 01 (RIGHT), Step 2: 10 (LEFT), Step 3: 00 (UP), Step 4: 11 (DOWN)
  */
-static void calcAndSetDirections(int byte)
+static void processByteDirections(int byte)
 {
 #if DEBUG_MODE
     static size_t byteCounter = 0;
@@ -230,40 +247,39 @@ static void calcAndSetDirections(int byte)
            (byte >> 3) & 1, (byte >> 2) & 1, (byte >> 1) & 1, byte & 1);
     printf("  |   From       OldPrime      NewPrime  Dir       To      |\n");
 #endif
-    writeNextNumber(byte & 3);        // Bits 0-1
-    writeNextNumber((byte >> 2) & 3); // Bits 2-3
-    writeNextNumber((byte >> 4) & 3); // Bits 4-5
-    writeNextNumber((byte >> 6) & 3); // Bits 6-7
+    processDirectionStep((byte >> (0 * BITS_PER_DIRECTION)) & DIRECTION_MASK);
+    processDirectionStep((byte >> (1 * BITS_PER_DIRECTION)) & DIRECTION_MASK);
+    processDirectionStep((byte >> (2 * BITS_PER_DIRECTION)) & DIRECTION_MASK);
+    processDirectionStep((byte >> (3 * BITS_PER_DIRECTION)) & DIRECTION_MASK);
 }
 
 /*
- * This method defines the jump moves. Let's say the direction is TOP and the current tile value is 5. Now we increase
- * the tile value to 7 (because 7 is the next prim value) and jump 5 fields above. If the jumping value is greater than
- * the field range (number of tiles per horizontal or vertical direction) then we start at the opposite direction again
- * (RIGHT -> LEFT, LEFT -> RIGHT, BOTTOM -> UP, UP -> BOTTOM. We realize this with the modulus operand.
+ * Execute a single direction step: write the next prime to the current tile,
+ * then jump by the old tile value in the given direction (with wraparound).
+ * SAV (Square Avoidance Value) is added to DOWN and RIGHT jumps.
  */
-static void writeNextNumber(const int move)
+static void processDirectionStep(const int direction)
 {
     Tile_t *tile = &field[pos.x][pos.y];
     const uint64_t oldPrime = tile->value;
-    const int nextPrime = nextPrimeNumber(tile);
+    const int nextPrime = nextPrimeNumber(tile, direction);
     tile->value = (uint64_t)nextPrime;
 #if DEBUG_MODE
     const uint32_t fromX = pos.x, fromY = pos.y;
 #endif
-    switch (move)
+    switch (direction)
     {
     case UP:
-        pos.y = (pos.y - oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
+        pos.y = (pos.y - oldPrime) & FIELD_SIZE_MASK;
         break;
     case DOWN:
-        pos.y = (pos.y + oldPrime) & (FIELD_SIZE - 1);
+        pos.y = (pos.y + oldPrime + SQUARE_AVOIDANCE_VALUE) & FIELD_SIZE_MASK;
         break;
     case LEFT:
-        pos.x = (pos.x - oldPrime) & (FIELD_SIZE - 1);
+        pos.x = (pos.x - oldPrime) & FIELD_SIZE_MASK;
         break;
     case RIGHT:
-        pos.x = (pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
+        pos.x = (pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE) & FIELD_SIZE_MASK;
         break;
     default:
         printf("UNKNOWN POSITION !!\n");
@@ -271,11 +287,23 @@ static void writeNextNumber(const int move)
     }
 #if DEBUG_MODE
     {
-        static const char *dirName[] = { "UP   ", "RIGHT", "LEFT ", "DOWN " };
+        static const char *dirName[] = {"UP   ", "RIGHT", "LEFT ", "DOWN "};
         printf("  |  [%2u,%2u]  %10" PRIu64 " -> %10d  %s  -> [%2u,%2u]  |\n",
                fromX, fromY, oldPrime, nextPrime,
-               move < 4 ? dirName[move] : "?????",
+               direction < DIRECTIONS_PER_BYTE ? dirName[direction] : "?????",
                pos.x, pos.y);
+        /* Record step for path map */
+        if (g_pathStepCount < MAX_PATH_STEPS)
+        {
+            g_pathSteps[g_pathStepCount].fromX = fromX;
+            g_pathSteps[g_pathStepCount].fromY = fromY;
+            g_pathSteps[g_pathStepCount].toX = pos.x;
+            g_pathSteps[g_pathStepCount].toY = pos.y;
+            g_pathSteps[g_pathStepCount].direction = direction;
+            g_pathSteps[g_pathStepCount].oldPrime = oldPrime;
+            g_pathSteps[g_pathStepCount].newPrime = nextPrime;
+            g_pathStepCount++;
+        }
     }
 #endif
 }
@@ -283,23 +311,39 @@ static void writeNextNumber(const int move)
 static void setPrimeNumberOfLastTile(void)
 {
     Tile_t *tile = &field[pos.x][pos.y];
-    tile->value = (uint64_t)nextPrimeNumber(tile);
+    tile->value = (uint64_t)nextPrimeNumber(tile, 0);
 }
 
-static int nextPrimeNumber(Tile_t *tile)
+static int nextPrimeNumber(Tile_t *tile, const int direction)
 {
-    updateColorAndPrimeIndexOfTile(tile);
+    updateColorAndPrimeIndexOfTile(tile, direction);
     return primeArray[tile->primeIndex];
 }
 
-static void updateColorAndPrimeIndexOfTile(Tile_t *tile)
+static void updateColorAndPrimeIndexOfTile(Tile_t *tile, const int direction)
 {
     primeIndex = (int)tile->primeIndex;
     colorIndex = tile->colorIndex;
 
-    primeIndex = ++primeIndex < numberOfPrimes ? primeIndex : 0;
-    colorIndex = (ColorIndex_t)((colorIndex + 1) % colorLen);
+    primeIndex = (primeIndex + 1 + direction) % numberOfPrimes;
+    colorIndex = (ColorIndex_t)((colorIndex + 1) % NUM_COLOR_OPERATIONS);
 
     tile->primeIndex = (uint32_t)primeIndex;
     tile->colorIndex = colorIndex;
 }
+
+#if DEBUG_MODE
+int getPathStepCount(void) { return g_pathStepCount; }
+
+void getPathStep(int idx, uint32_t *fX, uint32_t *fY, uint32_t *tX, uint32_t *tY, int *dir)
+{
+    if (idx >= 0 && idx < g_pathStepCount)
+    {
+        *fX = g_pathSteps[idx].fromX;
+        *fY = g_pathSteps[idx].fromY;
+        *tX = g_pathSteps[idx].toX;
+        *tY = g_pathSteps[idx].toY;
+        *dir = g_pathSteps[idx].direction;
+    }
+}
+#endif

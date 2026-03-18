@@ -42,16 +42,16 @@ extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 extern Position_t pos;
 
 /* ── Configuration ───────────────────────────── */
-#define FUZZ_ITERATIONS  500000
-#define MAX_INPUT_SIZE   4096
-#define PROGRESS_EVERY   50000
+#define FUZZ_ITERATIONS 500000
+#define MAX_INPUT_SIZE 4096
+#define PROGRESS_EVERY 50000
 
 /* Hash sizes to test */
-static const int hash_sizes[] = { 64, 128, 256, 512 };
+static const int hash_sizes[] = {64, 128, 256, 512};
 #define N_HASH_SIZES (sizeof(hash_sizes) / sizeof(hash_sizes[0]))
 
 /* Round counts to test */
-static const int round_counts[] = { 1, 2, 5, 10, 50 };
+static const int round_counts[] = {1, 2, 5, 10, 50};
 #define N_ROUND_COUNTS (sizeof(round_counts) / sizeof(round_counts[0]))
 
 /* ── Helpers ─────────────────────────────────── */
@@ -82,29 +82,35 @@ static void do_one_hash(const uint8_t *data, size_t len, int rounds, int bits)
     processBuffer(data, len);
 
     char *hash = calculateHashValue();
-    if (!hash) {
+    if (!hash)
+    {
         fprintf(stderr, "FUZZ FAIL: calculateHashValue returned NULL "
-                "(len=%zu, rounds=%d, bits=%d)\n", len, rounds, bits);
+                        "(len=%zu, rounds=%d, bits=%d)\n",
+                len, rounds, bits);
         exit(1);
     }
 
     /* Sanity: hash string length should be bits/4 hex chars */
     size_t expected_hex = (size_t)(bits / 4);
     size_t actual_hex = strlen(hash);
-    if (actual_hex != expected_hex) {
+    if (actual_hex != expected_hex)
+    {
         fprintf(stderr, "FUZZ FAIL: hash length mismatch: expected %zu hex chars, "
-                "got %zu (len=%zu, rounds=%d, bits=%d)\n",
+                        "got %zu (len=%zu, rounds=%d, bits=%d)\n",
                 expected_hex, actual_hex, len, rounds, bits);
         fprintf(stderr, "  hash = %s\n", hash);
         exit(1);
     }
 
     /* Verify all chars are valid hex */
-    for (size_t i = 0; i < actual_hex; i++) {
+    for (size_t i = 0; i < actual_hex; i++)
+    {
         char c = hash[i];
-        if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) {
+        if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')))
+        {
             fprintf(stderr, "FUZZ FAIL: non-hex char '%c' at pos %zu in hash "
-                    "(len=%zu, rounds=%d, bits=%d)\n", c, i, len, rounds, bits);
+                            "(len=%zu, rounds=%d, bits=%d)\n",
+                    c, i, len, rounds, bits);
             exit(1);
         }
     }
@@ -123,13 +129,19 @@ int main(void)
     printf("Round range: 1..50\n\n");
 
     uint8_t *buf = malloc(MAX_INPUT_SIZE);
-    if (!buf) { perror("malloc"); return 1; }
+    if (!buf)
+    {
+        perror("malloc");
+        return 1;
+    }
 
     int crashes = 0;
     time_t t0 = time(NULL);
 
-    for (int i = 0; i < FUZZ_ITERATIONS; i++) {
-        if (i > 0 && i % PROGRESS_EVERY == 0) {
+    for (int i = 0; i < FUZZ_ITERATIONS; i++)
+    {
+        if (i > 0 && i % PROGRESS_EVERY == 0)
+        {
             double elapsed = difftime(time(NULL), t0);
             printf("  [%d/%d] %.0fs elapsed, %.0f iter/s ...\n",
                    i, FUZZ_ITERATIONS, elapsed,
@@ -146,7 +158,8 @@ int main(void)
         int rounds = round_counts[xorshift32() % N_ROUND_COUNTS];
 
         /* Fill with random data */
-        if (len > 0) fill_random(buf, len);
+        if (len > 0)
+            fill_random(buf, len);
 
         /* Hash it — any crash here is caught by sanitizers */
         do_one_hash(buf, len, rounds, bits);

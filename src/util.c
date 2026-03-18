@@ -3,10 +3,10 @@
 #include <string.h>
 #include <time.h>
 #ifdef _WIN32
-  #include <windows.h>
+#include <windows.h>
 #else
-  #include <sys/time.h>
-  #include <unistd.h>
+#include <sys/time.h>
+#include <unistd.h>
 #endif
 
 FILE *g_debug_fp = NULL;
@@ -26,30 +26,36 @@ int debug_tee_printf(const char *fmt, ...)
     return n;
 }
 
-int is_power_of_two(long v) {
+int is_power_of_two(long v)
+{
     return v > 0 && (v & (v - 1)) == 0;
 }
 
-char* secasy_strdup(const char* src) {
-    if (!src) return NULL;
+char *secasy_strdup(const char *src)
+{
+    if (!src)
+        return NULL;
     size_t len = strlen(src) + 1U;
-    char* dst = (char*)malloc(len);
-    if (!dst) return NULL;
+    char *dst = (char *)malloc(len);
+    if (!dst)
+        return NULL;
     memcpy(dst, src, len);
     return dst;
 }
 
-double wall_time_seconds(void) {
+double wall_time_seconds(void)
+{
 #ifdef _WIN32
     static LARGE_INTEGER freq;
     static int initialized = 0;
     LARGE_INTEGER now;
-    if (!initialized) {
+    if (!initialized)
+    {
         QueryPerformanceFrequency(&freq);
         initialized = 1;
     }
     QueryPerformanceCounter(&now);
-    return (double) now.QuadPart / (double) freq.QuadPart;
+    return (double)now.QuadPart / (double)freq.QuadPart;
 #elif defined(CLOCK_MONOTONIC)
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -60,4 +66,3 @@ double wall_time_seconds(void) {
     return (double)tv.tv_sec + (double)tv.tv_usec / 1e6;
 #endif
 }
-

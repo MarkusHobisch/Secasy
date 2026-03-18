@@ -21,16 +21,22 @@ Six operations: ADD, SUB, XOR, AND, OR, INVERT — applied per cell with neighbo
 
 ### 3.1 Data-Dependent Traversal
 
-During initialization, the traversal order is determined by field values themselves. The jump distance to the next cell
-depends on the current tile's value:
+During input integration, the traversal order is determined by field values themselves. The jump distance to the next
+cell depends on the current tile's value and the direction:
 
 ```c
 const uint64_t oldPrime = tile->value;
-// e.g. for direction UP:
-pos.y = (pos.y - oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1);
+// Direction-dependent jump (SAV added only to DOWN and RIGHT):
+switch (direction) {
+    case UP:    pos.y = (pos.y - oldPrime) & FIELD_SIZE_MASK;                           break;
+    case DOWN:  pos.y = (pos.y + oldPrime + SQUARE_AVOIDANCE_VALUE) & FIELD_SIZE_MASK;  break;
+    case LEFT:  pos.x = (pos.x - oldPrime) & FIELD_SIZE_MASK;                           break;
+    case RIGHT: pos.x = (pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE) & FIELD_SIZE_MASK;  break;
+}
 ```
 
-Each step's jump distance depends on the *current* cell value, creating a feedback loop.
+Each step's jump distance depends on the *current* cell value, creating a feedback loop. The SAV offset (+1) on
+DOWN/RIGHT breaks the symmetry between opposite directions on the same axis.
 AND and OR are **not invertible** — given `a AND b = c`, neither `a` nor `b` can be uniquely recovered.  
 This fundamentally prevents backward computation from hash output to input.
 

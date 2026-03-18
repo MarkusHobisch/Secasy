@@ -24,7 +24,7 @@
 #include "ProcessingPhase.h"
 
 unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
-int hashLengthInBits         = DEFAULT_BIT_SIZE;
+int hashLengthInBits = DEFAULT_BIT_SIZE;
 
 extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 extern Position_t pos;
@@ -42,11 +42,14 @@ static uint64_t rng_next(void)
 /* ── Hamming distance between hex strings ────────────────────────── */
 static int hamming_hex(const char *a, const char *b)
 {
-    static const int lut[16] = {0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4};
+    static const int lut[16] = {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
     int dist = 0;
-    for (size_t i = 0; a[i] && b[i]; i++) {
-        int va = (a[i] >= 'a') ? a[i]-'a'+10 : (a[i] >= 'A') ? a[i]-'A'+10 : a[i]-'0';
-        int vb = (b[i] >= 'a') ? b[i]-'a'+10 : (b[i] >= 'A') ? b[i]-'A'+10 : b[i]-'0';
+    for (size_t i = 0; a[i] && b[i]; i++)
+    {
+        int va = (a[i] >= 'a') ? a[i] - 'a' + 10 : (a[i] >= 'A') ? a[i] - 'A' + 10
+                                                                 : a[i] - '0';
+        int vb = (b[i] >= 'a') ? b[i] - 'a' + 10 : (b[i] >= 'A') ? b[i] - 'A' + 10
+                                                                 : b[i] - '0';
         dist += lut[va ^ vb];
     }
     return dist;
@@ -56,21 +59,24 @@ static int hamming_hex(const char *a, const char *b)
 static void print_msg(const char *label, const unsigned char *msg, int len)
 {
     printf("  %s: ", label);
-    for (int i = 0; i < len; i++) printf("%02x", msg[i]);
+    for (int i = 0; i < len; i++)
+        printf("%02x", msg[i]);
     printf("\n");
 }
 
 /* ── Snapshot grid state after Phase 2 ───────────────────────────── */
-typedef struct {
-    uint64_t     values[FIELD_SIZE][FIELD_SIZE];
+typedef struct
+{
+    uint64_t values[FIELD_SIZE][FIELD_SIZE];
     ColorIndex_t colors[FIELD_SIZE][FIELD_SIZE];
-    uint32_t     px, py;
+    uint32_t px, py;
 } GridSnap;
 
 static void snap_grid(GridSnap *s)
 {
     for (int i = 0; i < FIELD_SIZE; i++)
-        for (int j = 0; j < FIELD_SIZE; j++) {
+        for (int j = 0; j < FIELD_SIZE; j++)
+        {
             s->values[i][j] = field[i][j].value;
             s->colors[i][j] = field[i][j].colorIndex;
         }
@@ -82,11 +88,15 @@ static int compare_grids(const GridSnap *a, const GridSnap *b)
 {
     int diffs = 0;
     for (int i = 0; i < FIELD_SIZE; i++)
-        for (int j = 0; j < FIELD_SIZE; j++) {
-            if (a->values[i][j] != b->values[i][j]) diffs++;
-            if (a->colors[i][j] != b->colors[i][j]) diffs++;
+        for (int j = 0; j < FIELD_SIZE; j++)
+        {
+            if (a->values[i][j] != b->values[i][j])
+                diffs++;
+            if (a->colors[i][j] != b->colors[i][j])
+                diffs++;
         }
-    if (a->px != b->px || a->py != b->py) diffs++;
+    if (a->px != b->px || a->py != b->py)
+        diffs++;
     return diffs;
 }
 
@@ -97,9 +107,11 @@ static void print_grid_diff(const GridSnap *a, const GridSnap *b)
            (a->px == b->px && a->py == b->py) ? "SAME" : "DIFF");
     int shown = 0;
     for (int i = 0; i < FIELD_SIZE && shown < 20; i++)
-        for (int j = 0; j < FIELD_SIZE && shown < 20; j++) {
+        for (int j = 0; j < FIELD_SIZE && shown < 20; j++)
+        {
             if (a->values[i][j] != b->values[i][j] ||
-                a->colors[i][j] != b->colors[i][j]) {
+                a->colors[i][j] != b->colors[i][j])
+            {
                 printf("  [%2d][%2d] val: %016" PRIx64 " vs %016" PRIx64
                        "  col: %d vs %d\n",
                        i, j, a->values[i][j], b->values[i][j],
@@ -114,17 +126,19 @@ static char *hash_and_snap(const unsigned char *data, size_t len, GridSnap *snap
 {
     initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
     processBuffer(data, len);
-    if (snap) snap_grid(snap);
+    if (snap)
+        snap_grid(snap);
     return calculateHashValue();
 }
 
 #define N_MESSAGES 200
-#define MSG_LEN     32
+#define MSG_LEN 32
 
 int main(void)
 {
     rng_state = (uint64_t)time(NULL) ^ 0xdeadbeef01234567ULL;
-    if (rng_state == 0) rng_state = 0xabcdef1234567890ULL;
+    if (rng_state == 0)
+        rng_state = 0xabcdef1234567890ULL;
 
     printf("=== Baseline Collision Diagnosis ===\n");
     printf("Messages: %d x %d bytes = %d bits each\n",
@@ -133,7 +147,8 @@ int main(void)
 
     int collision_count = 0;
 
-    for (int m = 0; m < N_MESSAGES; m++) {
+    for (int m = 0; m < N_MESSAGES; m++)
+    {
         unsigned char msg[MSG_LEN];
         for (int b = 0; b < MSG_LEN; b++)
             msg[b] = (unsigned char)(rng_next() & 0xFF);
@@ -143,8 +158,10 @@ int main(void)
         char *h0c = strdup(h0);
         free(h0);
 
-        for (int bi = 0; bi < MSG_LEN; bi++) {
-            for (int bit = 0; bit < 8; bit++) {
+        for (int bi = 0; bi < MSG_LEN; bi++)
+        {
+            for (int bit = 0; bit < 8; bit++)
+            {
                 unsigned char flipped[MSG_LEN];
                 memcpy(flipped, msg, MSG_LEN);
                 flipped[bi] ^= (unsigned char)(1u << bit);
@@ -154,7 +171,8 @@ int main(void)
 
                 int dist = hamming_hex(h0c, h1);
 
-                if (dist == 0) {
+                if (dist == 0)
+                {
                     collision_count++;
                     printf("======== COLLISION #%d ========\n", collision_count);
                     printf("  Message #%d, byte %d, bit %d\n", m, bi, bit);

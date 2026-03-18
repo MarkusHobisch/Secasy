@@ -73,23 +73,77 @@ Each input byte (8 bits) is decomposed into four 2-bit direction codes (bits 0�
 four directions: UP (0), RIGHT (1), LEFT (2), DOWN (3). For each direction code, two operations are performed at the
 current cursor position:
 
-1. **Prime update:** The cell's prime index is incremented, its color index advances cyclically through the six
-   operations, and its value is overwritten with the corresponding prime number from the pre-computed table.
+1. **Direction-dependent prime update:** The cell's prime index is advanced by a direction-dependent amount
+   (+1 for UP, +2 for RIGHT, +3 for LEFT, +4 for DOWN), its color index advances cyclically through the six
+   operations, and its value is overwritten with the corresponding prime number from the pre-computed table. Because
+   different directions select different primes, two inputs that visit the same cell via different directions leave
+   different cell states — even on the very first visit.
 
-2. **Non-linear jump:** The cursor moves to a new grid position. The jump distance is derived from the cell's old
-   value (before the prime update), the direction, and a direction-specific offset (+1 for UP, +2 for LEFT, +3 for DOWN,
-   +4 for RIGHT). Crucially, both axes are coupled: for vertical movements (UP/DOWN), the new x-coordinate depends on
-   the new y-coordinate and vice versa for horizontal movements (LEFT/RIGHT). All coordinates wrap around using bitmask
-   modulo 16.
+2. **Data-dependent jump:** The cursor moves along a single axis determined by the direction: UP/DOWN modify only the
+   y-coordinate, LEFT/RIGHT modify only the x-coordinate. The jump distance is the cell's old value (before the prime
+   update), taken modulo 16 via bitmask. A constant asymmetry offset (Square Avoidance Value, SAV = 1) is added to
+   DOWN and RIGHT, breaking the symmetry between opposite directions on the same axis.
 
-This cross-axis coupling **breaks commutativity**: the sequence LEFT→UP produces a different trajectory than UP→LEFT,
-even from the same starting position. Together with the prime-number-driven jump distances, this ensures that different
-byte sequences follow entirely different paths through the grid, modify different cells, and leave a unique state
-pattern (fingerprint) before any processing round executes.
+Two complementary mechanisms prevent collisions between inputs that produce the same multiset of direction codes:
+
+- **Path asymmetry (SAV):** The square avoidance value shifts DOWN/RIGHT jumps by +1 relative to UP/LEFT. This means
+  opposite directions from the same cell land on different target cells, even on the first visit when all cells still
+  hold the initial value. SAV provides **immediate** path divergence from step 1.
+
+- **Value asymmetry (direction-dependent prime advance):** Different directions write different primes into the same
+  cell (e.g. UP writes prime at index +1, DOWN at index +4). Once a cell contains a different prime, all subsequent
+  jump distances from that cell change, causing paths to diverge exponentially. This provides **delayed but amplifying**
+  divergence upon cell revisits.
+
+Together with the prime-number-driven jump distances, these mechanisms ensure that different byte sequences follow
+different paths through the grid, write different values into visited cells, and leave a unique state pattern
+(fingerprint) before any processing round executes.
 
 For two inputs to produce a collision, they would need to leave identical value, prime index, and color index tuples
-across all 256 cells — despite following different prime-driven paths. This is the structural basis for collision
-resistance.
+across all 256 cells — despite different prime-driven paths and direction-dependent cell values. This is the structural
+basis for collision resistance.
+
+#### Worked Example: Hashing the Byte `0x4E`
+
+The byte `0x4E` = `01001110` in binary. Reading 2-bit groups from LSB to MSB:
+
+| Step | Bits  | Direction | Prime advance | At cell | Action                                  |
+|------|-------|-----------|---------------|---------|---------------------------------------  |
+| 1    | `10`  | LEFT      | +3            | (0, 0)  | Write prime[3]=7, then jump x by −2     |
+| 2    | `11`  | DOWN      | +4            | (14, 0) | Write prime[4]=11, then jump y by +3    |
+| 3    | `00`  | UP        | +1            | (14, 3) | Write prime[1]=3, then jump y by −2     |
+| 4    | `01`  | RIGHT     | +2            | (14, 1) | Write prime[2]=5, then jump x by +3     |
+
+After just one byte, the cursor has visited 4 cells, each now holding a different prime (7, 11, 3, 5
+instead of the initial 2), and the cursor ends at position (1, 1).
+
+#### Why Same Position ≠ Same Hash: `0x4E` vs `0x1B`
+
+The byte `0x1B` = `00011011` decodes to the directions DOWN, LEFT, RIGHT, UP — the same four directions
+as `0x4E` (LEFT, DOWN, UP, RIGHT), just in a different order. Since all source cells initially hold
+the same value (2), the net displacement is identical: both cursors end at **(1, 1)**.
+
+| Step | Bits  | Direction | Prime advance | At cell | Action                                  |
+|------|-------|-----------|---------------|---------|---------------------------------------  |
+| 1    | `11`  | DOWN      | +4            | (0, 0)  | Write prime[4]=11, then jump y by +3    |
+| 2    | `10`  | LEFT      | +3            | (0, 3)  | Write prime[3]=7, then jump x by −2     |
+| 3    | `01`  | RIGHT     | +2            | (14, 3) | Write prime[2]=5, then jump x by +3     |
+| 4    | `00`  | UP        | +1            | (1, 3)  | Write prime[1]=3, then jump y by −2     |
+
+Both bytes end at (1, 1), yet they leave **different grid states**:
+
+| Cell     | Written by `0x4E`     | Written by `0x1B`     |
+|----------|-----------------------|-----------------------|
+| (0, 0)   | 7 (LEFT, Δ+3)        | 11 (DOWN, Δ+4)        |
+| (14, 3)  | 3 (UP, Δ+1)          | 5 (RIGHT, Δ+2)        |
+| (14, 0)  | 11 (DOWN, Δ+4)       | *untouched (=2)*      |
+| (14, 1)  | 5 (RIGHT, Δ+2)       | *untouched (=2)*      |
+| (0, 3)   | *untouched (=2)*      | 7 (LEFT, Δ+3)         |
+| (1, 3)   | *untouched (=2)*      | 3 (UP, Δ+1)           |
+
+Even at the two **shared** cells — (0,0) and (14,3) — the direction-dependent prime advance writes
+different primes. The remaining visited cells don't overlap at all. This demonstrates how SAV and
+direction-dependent prime advancement together prevent collisions between structurally similar inputs.
 
 ### 2.3 Phase 3 — Processing Rounds (diffusion)
 
@@ -177,14 +231,41 @@ gcc -std=c11 -O3 -Wall -Wextra -o secasy \
 
 Secasy is a command line tool supporting the following arguments:
 
-| Flag | Description                                  | Default      | Example        |
-|------|----------------------------------------------|--------------|----------------|
-| `-n` | Hash output size in bits (power of two, ≥64) | 512          | `-n 256`       |
-| `-i` | Maximum prime index                          | 16,000,000   | `-i 100`       |
-| `-r` | Number of processing rounds                  | 10           | `-r 20`        |
-| `-f` | Input file path                              | *(required)* | `-f input.pdf` |
+| Flag | Description                                            | Default      | Example                      |
+|------|--------------------------------------------------------|--------------|------------------------------|
+| `-f` | Input file path                                        | —            | `-f input.pdf`               |
+| `-s` | Hash a string directly                                 | —            | `-s "Hello"`                 |
+| `-x` | Hash raw hex bytes (comma-separated or single)         | —            | `-x "0x45,0x47,0x78"`       |
+| `-n` | Hash output size in bits (power of two, ≥64)           | 512          | `-n 256`                     |
+| `-r` | Number of processing rounds                            | 10           | `-r 20`                      |
+| `-i` | Maximum prime index                                    | 16,000,000   | `-i 100`                     |
+| `-h` | Print help text                                        | —            | `-h`                         |
 
-At least the filename (`-f`) must be specified.
+Exactly one input source (`-f`, `-s`, or `-x`) must be specified. They cannot be combined.
+
+### Quick Examples
+
+```bash
+# Hash a file (most common usage)
+./Secasy -f document.pdf
+
+# Hash a string directly
+./Secasy -s "Hello, World!"
+
+# Hash raw hex bytes
+./Secasy -x "0x4E"
+
+# Hash with 256-bit output and 20 rounds
+./Secasy -s "test" -n 256 -r 20
+```
+
+Sample output (512-bit hash of the string `"a"`):
+```
+3a29643d127dc5db52e87165c6a6354f18e21f7af3ca01df6fa3e7a75aebae6d
+55b4836e98fdec67436705447af36e098df252cf471f4d21acfd939cd200a1fd
+```
+
+See [TEST_VECTORS.md](TEST_VECTORS.md) for the full set of reference hashes.
 
 ## 4. Security Analysis
 

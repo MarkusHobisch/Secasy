@@ -27,10 +27,10 @@
 #include "InitializationPhase.h"
 #include "ProcessingPhase.h"
 
-unsigned long numberOfRounds   = DEFAULT_NUMBER_OF_ROUNDS;
-int           hashLengthInBits = DEFAULT_BIT_SIZE;
+unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
+int hashLengthInBits = DEFAULT_BIT_SIZE;
 
-static char* hash_bytes(const unsigned char* data, size_t len, int bits)
+static char *hash_bytes(const unsigned char *data, size_t len, int bits)
 {
     hashLengthInBits = bits;
     initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
@@ -38,65 +38,78 @@ static char* hash_bytes(const unsigned char* data, size_t len, int bits)
     return calculateHashValue();
 }
 
-static char* hash_str(const char* s, int bits)
+static char *hash_str(const char *s, int bits)
 {
-    return hash_bytes((const unsigned char*)s, strlen(s), bits);
+    return hash_bytes((const unsigned char *)s, strlen(s), bits);
 }
 
 /* ── Test vector table ─────────────────────────────────────────────── */
-typedef struct {
-    const char* label;
-    const unsigned char* data;
+typedef struct
+{
+    const char *label;
+    const unsigned char *data;
     size_t len;
     int bits;
-    const char* expected;
+    const char *expected;
 } Vector;
 
 /* Helper so we can use string literals as data */
-#define STR(s)  (const unsigned char*)(s), (sizeof(s)-1)
+#define STR(s) (const unsigned char *)(s), (sizeof(s) - 1)
 #define BIN(arr) (arr), sizeof(arr)
 
-static const unsigned char EMPTY[]    = {0};           /* len will be 0 */
-static const unsigned char ZEROS8[]   = {0,0,0,0,0,0,0,0};
-static const unsigned char ZEROS16[]  = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-static const unsigned char ZEROS32[32]= {0};
-static const unsigned char ZEROS64[64]= {0};
-static const unsigned char ONES8[]    = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
-static const unsigned char BYTE00[]   = {0x00};
-static const unsigned char BYTE01[]   = {0x01};
-static const unsigned char BYTE80[]   = {0x80};
-static const unsigned char BYTEFF[]   = {0xFF};
+static const unsigned char EMPTY[] = {0}; /* len will be 0 */
+static const unsigned char ZEROS8[] = {0, 0, 0, 0, 0, 0, 0, 0};
+static const unsigned char ZEROS16[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static const unsigned char ZEROS32[32] = {0};
+static const unsigned char ZEROS64[64] = {0};
+static const unsigned char ONES8[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+static const unsigned char BYTE00[] = {0x00};
+static const unsigned char BYTE01[] = {0x01};
+static const unsigned char BYTE80[] = {0x80};
+static const unsigned char BYTEFF[] = {0xFF};
 
 static int run_tests(void)
 {
     int pass = 0, fail = 0;
 
     /* Macro to define and run one test */
-#define TEST(label_, data_, len_, bits_, expected_) \
-    do { \
-        char* got = hash_bytes((data_), (len_), (bits_)); \
-        int ok = (strcmp(got, (expected_)) == 0); \
+#define TEST(label_, data_, len_, bits_, expected_)                              \
+    do                                                                           \
+    {                                                                            \
+        char *got = hash_bytes((data_), (len_), (bits_));                        \
+        int ok = (strcmp(got, (expected_)) == 0);                                \
         printf("[%s] %d-bit  %-46s\n", ok ? "PASS" : "FAIL", (bits_), (label_)); \
-        if (!ok) { \
-            printf("       expected: %s\n", (expected_)); \
-            printf("       got:      %s\n", got); \
-            fail++; \
-        } else { pass++; } \
-        free(got); \
-    } while(0)
+        if (!ok)                                                                 \
+        {                                                                        \
+            printf("       expected: %s\n", (expected_));                        \
+            printf("       got:      %s\n", got);                                \
+            fail++;                                                              \
+        }                                                                        \
+        else                                                                     \
+        {                                                                        \
+            pass++;                                                              \
+        }                                                                        \
+        free(got);                                                               \
+    } while (0)
 
-#define TEST_STR(label_, str_, bits_, expected_) \
-    do { \
-        char* got = hash_str((str_), (bits_)); \
-        int ok = (strcmp(got, (expected_)) == 0); \
+#define TEST_STR(label_, str_, bits_, expected_)                                 \
+    do                                                                           \
+    {                                                                            \
+        char *got = hash_str((str_), (bits_));                                   \
+        int ok = (strcmp(got, (expected_)) == 0);                                \
         printf("[%s] %d-bit  %-46s\n", ok ? "PASS" : "FAIL", (bits_), (label_)); \
-        if (!ok) { \
-            printf("       expected: %s\n", (expected_)); \
-            printf("       got:      %s\n", got); \
-            fail++; \
-        } else { pass++; } \
-        free(got); \
-    } while(0)
+        if (!ok)                                                                 \
+        {                                                                        \
+            printf("       expected: %s\n", (expected_));                        \
+            printf("       got:      %s\n", got);                                \
+            fail++;                                                              \
+        }                                                                        \
+        else                                                                     \
+        {                                                                        \
+            pass++;                                                              \
+        }                                                                        \
+        free(got);                                                               \
+    } while (0)
 
     printf("Secasy Test Vector Verification\n");
     printf("================================\n");
@@ -105,47 +118,47 @@ static int run_tests(void)
 
     /* ── 512-bit vectors ─────────────────────────────────────────── */
     printf("--- 512-bit ---\n");
-    TEST("\"\" (empty)",     EMPTY,   0,  512, "170cc4dcf0d6f18211e1b34dab26e019c2bd077cb542f53d717544b3b8151f622489f9c95b5ac055c7b13991597469ad62c84674564a659cf6e2298a794cb8a5");
-    TEST_STR("\"a\"",        "a",     512, "920d7d34b8ac5dbf824de63a33dbbcb2c0ef18d6c08c424278f0c8c12a6b2ca60d22b1bcf6cb1637edada5fc98bc0035457a187825b3e65482d99f15a764dbdd");
-    TEST_STR("\"z\"",        "z",     512, "89ccc5f01da80129a7134aa98b06e1a8e7d5328b5c04ed60644128720e36c5f55da025f9fa16c48ffc25aec6d5319e653afa518a064cc73a0bcc67260e0891e7");
-    TEST_STR("\"0\"",        "0",     512, "c9c16ab50a0ece4959ca4981fea665a7a15f5ad8bd461ee19070a1f63508ef62f78d4b6fb60d121d61ef1c3fb26d3cf8edf81cee1b4879fd08b4100a557a29cc");
-    TEST_STR("\"abc\"",      "abc",   512, "8fd33a7c0c31b821d4f98f934204b5826e5fdd4403afdf9b4f024d4a631b2b9c3ced0a04ae8f0816244c8fcc0daf3035075cac4c7b9d1a3f0304c8809ede9cf9");
-    TEST_STR("\"secasy\"",   "secasy",512, "51c42cb1e08f95bc5358d6f6b58e8c78f2c05853115b6c6ae2c873d864c6fffdd7a8f8f8e755b928ce0ef3b586e4bc4c84093f8a572230e21dbfa5e4a714e961");
-    TEST_STR("\"1234567890\"","1234567890",512,"2027f8e1b9a9c8b163af2e6d83ee9b58287b3e96e991686ebdefc1755742fd0883080a8a179cf0e2f080d65ac991d3d9e1fc44390c316ec02f6c3e6b3610b1da");
+    TEST("\"\" (empty)", EMPTY, 0, 512, "170cc4dcf0d6f18211e1b34dab26e019c2bd077cb542f53d717544b3b8151f622489f9c95b5ac055c7b13991597469ad62c84674564a659cf6e2298a794cb8a5");
+    TEST_STR("\"a\"", "a", 512, "3a29643d127dc5db52e87165c6a6354f18e21f7af3ca01df6fa3e7a75aebae6d55b4836e98fdec67436705447af36e098df252cf471f4d21acfd939cd200a1fd");
+    TEST_STR("\"z\"", "z", 512, "9be4960d677a2db545422ba467ba6368d96d1cd7707a2fa5c9298f28707b341bce96fe38559af0ac7e6eb37edca080667e2ad87aa5f44d76f6d76333889b5f6c");
+    TEST_STR("\"0\"", "0", 512, "4bc2e5fd617e6e0ddd65c39f3a8175786d8b2734fbf841f50e04217e34b20fe5f8f3bae55f8236192a0e649f9cf75555f07f0b0b0429458e48ec33c5a1b8f1a5");
+    TEST_STR("\"abc\"", "abc", 512, "0daae080dab87f0b766d974697bb5f1151c56afacb903c131e0445ecef9ee0b0bbf7987798aad36e7134185c37603600ee60f8451c28ba0789be55d09e40a317");
+    TEST_STR("\"secasy\"", "secasy", 512, "ea791c8897d5abffaa2f570f12b34db890d4fb75559cc233079973c8274ce864450cc6116877186e7382824df50129f79dc1d379843e77995b3e23db67dc88ce");
+    TEST_STR("\"1234567890\"", "1234567890", 512, "2d6ff2cfacadb4a42d0ce9dddcd8d714a05cefcb09d54225a9bc1c8931ee9512fb161dd6b314ab6af1672e4d3d9fc5c70bd869be03850682a0a3ec5e44afd5f6");
     TEST_STR("pangram (dog)", "The quick brown fox jumps over the lazy dog", 512,
-             "feae885d7e5d5edec261bba1f6cd8b227424617a1cfd392098ee5a5e8798a9bd0ecced6678737ec84d571c31e9058778496e951a0b3eadedd6958c141d1b78e0");
+             "29982929a9a81356bacd93d4469b4becba57254db71c55ad362a2f47a7454df6198bcc6b308d62eace54403ad9842a17d3cb4a18527e74de328bc763d4172105");
     TEST_STR("pangram (cog)", "The quick brown fox jumps over the lazy cog", 512,
-             "860e1653369d48aa6ea027249e1e60c99d292c9ed73ce43d91f0efd67b86e4ef40e207d28cb533b28b4a753f1786be42989dcd4ebf6ef86962e4fb1b053946c5");
-    TEST("0x00",             BYTE00,  1,  512, "92cc8686ac8048228da8db8195451497412b4021c0449c0cb4fadbdbc018f1bd46af79b7c652f2c8041322a758809a4a7be9aaf4cbd69933849048fb231db598");
-    TEST("0x01",             BYTE01,  1,  512, "42fa914a659125ed69ad1d66ef6bdebb11eb767901a44cfb4bce1a00a61644db84a92588b09be4be456bb9e871cb9a1f6a3c54dae01015702ac249eb7be4912b");
-    TEST("0x80",             BYTE80,  1,  512, "e27b1ca5ba734b2d98f8928cd1e707458323bc579de31175dceedd5c6c42a010fdca02c956c188cffdb6086f6f1fc7e1c79b274a81483e18a5425fb01931489a");
-    TEST("0xFF",             BYTEFF,  1,  512, "02ec7ca8d713092fc59d5617fd3dd8806fa58ed4edbddcd8661467fba78e375b2203b95e489fd4e69212fa02595cd1f5ec331d336782a60b23ef2cacfbb9b8ce");
-    TEST("0x00 x8",          ZEROS8,  8,  512, "243db3e455f7dbf22bb6e7233afa2a7a03699e774dd84d34ac45a1e84f5735e4685aa39440dacf12deead17402f9d41507fc4eae726e42d4271166764a952bdc");
-    TEST("0x00 x16",         ZEROS16, 16, 512, "70b3869e26d522a9ba2146fb456a49fc3599f2021079e14641bab1e4d612e439aed2424d53910c11ed4b5a37078e9153ffd16795bc7bcf8af75ef52f24793d20");
-    TEST("0x00 x32",         ZEROS32, 32, 512, "6086e805cef420cdec5960a2da7455bcd01fbc47828bc2f758fb3d3965fc25576a6693f31a2f971d82158d85e54d40fa19e8873dde538ef5dfcd065e882bda2c");
-    TEST("0x00 x64",         ZEROS64, 64, 512, "2ddec90fa0f4d268b9a6c1f41c20e7cf5ce9d668ab66da5c5e7de598b4011172a1b81c3005e5ed2b417e0f18e03f42aebd3fb5048d9effce45e3af296363adbc");
-    TEST("0xFF x8",          ONES8,   8,  512, "815c958b076077f548abaf69ba01834ad6b93f2cc7e2be9f88d56b48a1f3c68af8d1af69814e5afc6eb61e86ab4fcb06a61513f3a23a1f6de21bf114dd197730");
-    TEST_STR("\"Markus\"",   "Markus",512, "f60952a118cb936b815904a40cc320b168778e8ca9c2821e89af15a33757467afdecee36400acbcf3305afd65d8b3ee10e6a54c1baa1a85156350e91c41bc5f4");
-    TEST_STR("\"Anna\"",     "Anna",  512, "52a4087c20be454559e8fa3ea3c13f25c4b213dffa6df6c13c1eb7e2e0fabaedb5f3eff0d88055da3c6e0f1ae24c72965487768f2d7cb917f8d9fe49b959f181");
-    TEST_STR("\"markus\"",   "markus",512, "359a202190a89defd891e743f90b90ee6f14e9c9c9cd2368fe5464fe6e29348c2b2dc030e49bc829f53cdfd620ad6b8a3ee65b1c34465d653ff47eaf6205ed1f");
-    TEST_STR("\"maRkus\"",   "maRkus",512, "66f4b76a53345f34b841a5364684395f9723a46b2fb9e36e51aefbd14af178201a8326a0a4d7b963304a16b1a426c0770a0bd09b41775ca43a034bd2d4046787");
-    TEST_STR("\"Hanna\"",    "Hanna", 512, "44986085b29f103e0e7fecf3f02e74f475ab27f87d016a0b409e400cd9d17bd972135ad23c0530d4606cb35b5f2c99494ff1daa82073c5ddc5e2f40ec18a9c9b");
-    TEST_STR("\"Antonette\"","Antonette",512,"7e9e13182dadc6b5223ba4f8f11d6724b3074c6a74bfadda0753864ac77cebe7e1e317fbe1fbb2dc3a716245b946ec1a9a254979ecc9c6634fde5700a257202b");
+             "5e7fac4bdfc5b792e33546dcd0b825cc657ac4a329a5529837790fe1728867142f3d8130c52c66f1c19307bd6a25a72451a19e341edb26bbe16ee3914e910239");
+    TEST("0x00", BYTE00, 1, 512, "7934c6203539b4a56ed85db787b694d87daab5011975984b405ef3e21ab4f84bf922d9c8b80ea3a7ada32629b27f8485fa2fd504ebdf24741cba942b4f83a1b8");
+    TEST("0x01", BYTE01, 1, 512, "88c0b9c2ca25b6529866ad1c7986278058d3291a6c16d94660bdc78ea74fa9fbdc9e2319e964e35713b3a3700cb2ae61b6a5d237a838729f02a89e97dfa967a2");
+    TEST("0x80", BYTE80, 1, 512, "dc509a98affade882bb4eaa992b45cea638bde98e501a160bc2378a8875b4cfe24b43ddd94c0f98c9fafb44c79423477fc788cb9a4e4cf93290f0eccf2f6a666");
+    TEST("0xFF", BYTEFF, 1, 512, "d64809ba27354d28625c661f266678c2dc41b3d6760b7bd24cf959de641827390a90276ecf16e93985240a5b4e301a05f6ec3c1ebddde24fff2855f1148b09ea");
+    TEST("0x00 x8", ZEROS8, 8, 512, "8912d0a0bf063521b47492589b38846f88f75efe2eec62c4eb8f1bc1598e98ec1c597fb63a4b015b180bc93badbb1cba76081dcc893716fa99d7f60600ef3f87");
+    TEST("0x00 x16", ZEROS16, 16, 512, "0e2bead304e4fc4e061ab0aedf7dcd73d07be927e64ccbf63d97a7f0b645b01c956adf4483c0e50eb9dbe7decc8517c57085b01150fa03c16a6f0362b19f70f5");
+    TEST("0x00 x32", ZEROS32, 32, 512, "be12bc1f46521285ff22aa2a54ba8084875c0c2c9f2e6a5093e14bd9bdf3c2d21ea9661fea1c6a0f9ae270caca56de833483440e4588d8e27a83d581920b4199");
+    TEST("0x00 x64", ZEROS64, 64, 512, "b2807173ae08fcbcf5ae5f601a9b8bda8bf21576bbfc692aa7961f9993ce60cfa98db2ed4a94a143df1eb3e7e4a91f4fd09da51b460099016035e7340b4fb224");
+    TEST("0xFF x8", ONES8, 8, 512, "e54c726c1ac815eceef213d88b916229abb848962296e21676021ed47ab69de8eff7675e95ec2a1a32567cd1a4a4d4c448b61df289db6f05895b18e378268114");
+    TEST_STR("\"Markus\"", "Markus", 512, "fe638bdac5e04f1bc59f1b92b2d166e7019c9e3602bb4a4874dd1d8d9e2ecf9519a7d4f172427b8d763193ebce54af48d2b6bb86a68fa45916b39a738d78c610");
+    TEST_STR("\"Anna\"", "Anna", 512, "fa8c9eeda7c7dc8d8baf9685d7607f435d96434105e88b4030366cea3fbbacdd994fb75bf221a74687744ccfb13c4482bb8a75d1b53883e9a7e0bdf836381e9a");
+    TEST_STR("\"markus\"", "markus", 512, "3bf4c43d76d8414df6bb8ed325583533874d588c40a589a8f0765abad8c04e3e2dc8fe3facb40980cd38639a0efaf67b43964675043eb7834c42337a272d60b6");
+    TEST_STR("\"maRkus\"", "maRkus", 512, "2070f917fcc83908c4eaf6044d5f537f8fc6f2f10c149b3f97c2eff71297ce546fb3ffbfb55f4bb85efa0182252cbae7acfc9c786d694d7f9603a2ee0d6a92f3");
+    TEST_STR("\"Hanna\"", "Hanna", 512, "9572554815e9adba188a0058b700e113b59dd8283b4f4c00c1054eb167affd9f1a0ffa298add933e905e85b72e16a875c7be228aa8fee38d9687962e8b1f6eb6");
+    TEST_STR("\"Antonette\"", "Antonette", 512, "2e85188b06c593828b3bccd647f7bc8c598f98390987a01c69cbba3708a776bff7f456708ef584efce737695aef2e450ab13e1592dc235ca299495994a4efcbc");
 
     /* ── 64-bit vectors ──────────────────────────────────────────── */
     printf("\n--- 64-bit ---\n");
-    TEST("\"\" (empty)",     EMPTY,   0,  64, "170cc4dcf0d6f182");
-    TEST_STR("\"a\"",        "a",     64, "920d7d34b8ac5dbf");
-    TEST_STR("\"abc\"",      "abc",   64, "8fd33a7c0c31b821");
-    TEST_STR("\"secasy\"",   "secasy",64, "51c42cb1e08f95bc");
-    TEST_STR("pangram (dog)", "The quick brown fox jumps over the lazy dog", 64, "feae885d7e5d5ede");
-    TEST_STR("pangram (cog)", "The quick brown fox jumps over the lazy cog", 64, "860e1653369d48aa");
-    TEST_STR("\"Markus\"",   "Markus",64, "f60952a118cb936b");
-    TEST_STR("\"Anna\"",     "Anna",  64, "52a4087c20be4545");
-    TEST_STR("\"markus\"",   "markus",64, "359a202190a89def");
-    TEST_STR("\"maRkus\"",   "maRkus",64, "66f4b76a53345f34");
-    TEST_STR("\"Hanna\"",    "Hanna", 64, "44986085b29f103e");
-    TEST_STR("\"Antonette\"","Antonette",64,"7e9e13182dadc6b5");
+    TEST("\"\" (empty)", EMPTY, 0, 64, "170cc4dcf0d6f182");
+    TEST_STR("\"a\"", "a", 64, "3a29643d127dc5db");
+    TEST_STR("\"abc\"", "abc", 64, "0daae080dab87f0b");
+    TEST_STR("\"secasy\"", "secasy", 64, "ea791c8897d5abff");
+    TEST_STR("pangram (dog)", "The quick brown fox jumps over the lazy dog", 64, "29982929a9a81356");
+    TEST_STR("pangram (cog)", "The quick brown fox jumps over the lazy cog", 64, "5e7fac4bdfc5b792");
+    TEST_STR("\"Markus\"", "Markus", 64, "fe638bdac5e04f1b");
+    TEST_STR("\"Anna\"", "Anna", 64, "fa8c9eeda7c7dc8d");
+    TEST_STR("\"markus\"", "markus", 64, "3bf4c43d76d8414d");
+    TEST_STR("\"maRkus\"", "maRkus", 64, "2070f917fcc83908");
+    TEST_STR("\"Hanna\"", "Hanna", 64, "9572554815e9adba");
+    TEST_STR("\"Antonette\"", "Antonette", 64, "2e85188b06c59382");
 
     /* ── Summary ─────────────────────────────────────────────────── */
     printf("\n================================\n");

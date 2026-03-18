@@ -37,12 +37,12 @@
 #include "util.h"
 
 /* ── Tunable parameters ────────────────────────────────────── */
-#define NUM_SAMPLES    50000   /* hashes for statistical tests  */
-#define HASH_BITS       DEFAULT_BIT_SIZE    /* hash length in bits           */
-#define HASH_HEX_CHARS  (HASH_BITS / 4)
-#define HASH_BYTES      (HASH_BITS / 8)
-#define INPUT_LEN       16     /* bytes per test input          */
-#define TEST_ROUNDS     10
+#define NUM_SAMPLES 50000          /* hashes for statistical tests  */
+#define HASH_BITS DEFAULT_BIT_SIZE /* hash length in bits           */
+#define HASH_HEX_CHARS (HASH_BITS / 4)
+#define HASH_BYTES (HASH_BITS / 8)
+#define INPUT_LEN 16 /* bytes per test input          */
+#define TEST_ROUNDS 10
 
 unsigned long numberOfRounds = TEST_ROUNDS;
 int hashLengthInBits = HASH_BITS;
@@ -54,9 +54,12 @@ extern Position_t pos;
 
 static int hex_val(char c)
 {
-    if (c >= '0' && c <= '9') return c - '0';
-    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F')
+        return c - 'A' + 10;
     return 0;
 }
 
@@ -64,9 +67,14 @@ static int hex_val(char c)
 static int hamming_hex(const char *a, const char *b, size_t hex_len)
 {
     int dist = 0;
-    for (size_t i = 0; i < hex_len; i++) {
+    for (size_t i = 0; i < hex_len; i++)
+    {
         int x = hex_val(a[i]) ^ hex_val(b[i]);
-        while (x) { dist += x & 1; x >>= 1; }
+        while (x)
+        {
+            dist += x & 1;
+            x >>= 1;
+        }
     }
     return dist;
 }
@@ -80,9 +88,10 @@ static char *hash_buffer(const uint8_t *data, size_t len)
 }
 
 /* ── Storage for (input, hash) pairs ────────────────────────── */
-typedef struct {
+typedef struct
+{
     uint8_t input[INPUT_LEN];
-    char    hash[HASH_HEX_CHARS + 1];
+    char hash[HASH_HEX_CHARS + 1];
 } HashPair;
 
 static HashPair *pairs;
@@ -91,21 +100,29 @@ static void generate_pairs(void)
 {
     printf("Generating %d hash pairs...\n", NUM_SAMPLES);
     pairs = malloc(NUM_SAMPLES * sizeof(HashPair));
-    if (!pairs) { fprintf(stderr, "OOM\n"); exit(1); }
+    if (!pairs)
+    {
+        fprintf(stderr, "OOM\n");
+        exit(1);
+    }
 
     srand((unsigned)time(NULL));
 
-    for (int i = 0; i < NUM_SAMPLES; i++) {
+    for (int i = 0; i < NUM_SAMPLES; i++)
+    {
         /* First half: sequential counter   */
         /* Second half: random data         */
-        if (i < NUM_SAMPLES / 2) {
+        if (i < NUM_SAMPLES / 2)
+        {
             /* Little-endian counter in first 4 bytes, rest zero-padded */
             memset(pairs[i].input, 0, INPUT_LEN);
             pairs[i].input[0] = (uint8_t)(i & 0xFF);
             pairs[i].input[1] = (uint8_t)((i >> 8) & 0xFF);
             pairs[i].input[2] = (uint8_t)((i >> 16) & 0xFF);
             pairs[i].input[3] = (uint8_t)((i >> 24) & 0xFF);
-        } else {
+        }
+        else
+        {
             for (int j = 0; j < INPUT_LEN; j++)
                 pairs[i].input[j] = (uint8_t)(rand() & 0xFF);
         }
@@ -132,11 +149,14 @@ static int test_positional_bit_bias(void)
     int counts[HASH_BITS];
     memset(counts, 0, sizeof(counts));
 
-    for (int i = 0; i < NUM_SAMPLES; i++) {
-        for (int b = 0; b < HASH_HEX_CHARS; b++) {
+    for (int i = 0; i < NUM_SAMPLES; i++)
+    {
+        for (int b = 0; b < HASH_HEX_CHARS; b++)
+        {
             int nibble = hex_val(pairs[i].hash[b]);
             int bit_offset = b * 4;
-            for (int k = 3; k >= 0; k--) {
+            for (int k = 3; k >= 0; k--)
+            {
                 counts[bit_offset + (3 - k)] += (nibble >> k) & 1;
             }
         }
@@ -148,11 +168,17 @@ static int test_positional_bit_bias(void)
     /* 99% confidence interval for binomial: |p - 0.5| < 2.576 / (2*sqrt(N)) */
     double threshold = 2.576 / (2.0 * sqrt((double)NUM_SAMPLES));
 
-    for (int b = 0; b < HASH_BITS; b++) {
+    for (int b = 0; b < HASH_BITS; b++)
+    {
         double ratio = (double)counts[b] / NUM_SAMPLES;
         double dev = fabs(ratio - 0.5);
-        if (dev > max_dev) { max_dev = dev; worst_bit = b; }
-        if (dev > threshold) {
+        if (dev > max_dev)
+        {
+            max_dev = dev;
+            worst_bit = b;
+        }
+        if (dev > threshold)
+        {
             if (flagged < 5) /* only print first 5 */
                 printf("  WARNING: Bit %3d ratio=%.4f (dev=%.4f > threshold=%.4f)\n",
                        b, ratio, dev, threshold);
@@ -187,33 +213,50 @@ static int test_prefix_suffix(void)
     long suffix_match[4] = {0, 0, 0, 0};
     long comparisons = 0;
 
-    for (int i = 0; i < sample; i++) {
-        for (int j = i + 1; j < sample; j++) {
+    for (int i = 0; i < sample; i++)
+    {
+        for (int j = i + 1; j < sample; j++)
+        {
             comparisons++;
-            for (int k = 0; k < 4; k++) {
+            for (int k = 0; k < 4; k++)
+            {
                 /* prefix: first k+1 nibbles match? */
                 int pfx_match = 1;
-                for (int n = 0; n <= k; n++) {
-                    if (pairs[i].hash[n] != pairs[j].hash[n]) { pfx_match = 0; break; }
+                for (int n = 0; n <= k; n++)
+                {
+                    if (pairs[i].hash[n] != pairs[j].hash[n])
+                    {
+                        pfx_match = 0;
+                        break;
+                    }
                 }
-                if (pfx_match) prefix_match[k]++;
+                if (pfx_match)
+                    prefix_match[k]++;
 
                 /* suffix: last k+1 nibbles match? */
                 int sfx_match = 1;
-                for (int n = 0; n <= k; n++) {
+                for (int n = 0; n <= k; n++)
+                {
                     int idx = HASH_HEX_CHARS - 1 - n;
-                    if (pairs[i].hash[idx] != pairs[j].hash[idx]) { sfx_match = 0; break; }
+                    if (pairs[i].hash[idx] != pairs[j].hash[idx])
+                    {
+                        sfx_match = 0;
+                        break;
+                    }
                 }
-                if (sfx_match) suffix_match[k]++;
+                if (sfx_match)
+                    suffix_match[k]++;
             }
         }
     }
 
     int pass = 1;
-    for (int k = 0; k < 4; k++) {
+    for (int k = 0; k < 4; k++)
+    {
         /* Expected: 1/16^(k+1) of all pairs share k+1 nibbles */
         double expected_rate = 1.0;
-        for (int n = 0; n <= k; n++) expected_rate /= 16.0;
+        for (int n = 0; n <= k; n++)
+            expected_rate /= 16.0;
         double pfx_rate = (double)prefix_match[k] / comparisons;
         double sfx_rate = (double)suffix_match[k] / comparisons;
         double pfx_dev = fabs(pfx_rate - expected_rate) / expected_rate;
@@ -226,7 +269,8 @@ static int test_prefix_suffix(void)
 
         /* Allow up to 100% deviation for small expected values, 50% for large */
         double allowed = (k >= 2) ? 1.5 : 0.5;
-        if (pfx_dev > allowed || sfx_dev > allowed) {
+        if (pfx_dev > allowed || sfx_dev > allowed)
+        {
             printf("  WARNING: Excessive deviation at %d nibbles!\n", k + 1);
             pass = 0;
         }
@@ -250,7 +294,8 @@ static int test_sequential_correlation(void)
     /* Hamming distance between consecutive sequential inputs */
     double sum_adjacent = 0;
     int adj_count = 0;
-    for (int i = 0; i < seq_count - 1; i++) {
+    for (int i = 0; i < seq_count - 1; i++)
+    {
         sum_adjacent += hamming_hex(pairs[i].hash, pairs[i + 1].hash, HASH_HEX_CHARS);
         adj_count++;
     }
@@ -259,10 +304,12 @@ static int test_sequential_correlation(void)
     /* Hamming distance between random (non-adjacent) pairs for baseline */
     double sum_random = 0;
     int rand_count = 0;
-    for (int i = 0; i < 2000 && i < adj_count; i++) {
+    for (int i = 0; i < 2000 && i < adj_count; i++)
+    {
         int a = rand() % seq_count;
         int b = rand() % seq_count;
-        if (a == b) continue;
+        if (a == b)
+            continue;
         sum_random += hamming_hex(pairs[a].hash, pairs[b].hash, HASH_HEX_CHARS);
         rand_count++;
     }
@@ -304,10 +351,15 @@ static int test_structured_inputs(void)
     /* --- 4a: Hamming-weight-1 inputs (INPUT_LEN*8 = 128 inputs) --- */
     int hw1_count = INPUT_LEN * 8;
     char **hw1_hashes = malloc((size_t)hw1_count * sizeof(char *));
-    if (!hw1_hashes) { fprintf(stderr, "OOM\n"); return 0; }
+    if (!hw1_hashes)
+    {
+        fprintf(stderr, "OOM\n");
+        return 0;
+    }
 
     printf("  4a) Hamming-weight-1 inputs (%d hashes)...\n", hw1_count);
-    for (int i = 0; i < hw1_count; i++) {
+    for (int i = 0; i < hw1_count; i++)
+    {
         uint8_t input[INPUT_LEN];
         memset(input, 0, INPUT_LEN);
         input[i / 8] = (uint8_t)(1 << (i % 8));
@@ -318,10 +370,13 @@ static int test_structured_inputs(void)
     int min_dist = HASH_BITS;
     double sum_dist = 0;
     long pair_count = 0;
-    for (int i = 0; i < hw1_count; i++) {
-        for (int j = i + 1; j < hw1_count; j++) {
+    for (int i = 0; i < hw1_count; i++)
+    {
+        for (int j = i + 1; j < hw1_count; j++)
+        {
             int d = hamming_hex(hw1_hashes[i], hw1_hashes[j], HASH_HEX_CHARS);
-            if (d < min_dist) min_dist = d;
+            if (d < min_dist)
+                min_dist = d;
             sum_dist += d;
             pair_count++;
         }
@@ -332,22 +387,31 @@ static int test_structured_inputs(void)
     printf("      Avg Hamming distance: %.1f / %d (%.1f%%)\n",
            avg_dist, HASH_BITS, 100.0 * avg_dist / HASH_BITS);
 
-    if (min_dist < HASH_BITS / 6) {
+    if (min_dist < HASH_BITS / 6)
+    {
         printf("      WARNING: Min distance too low — possible clustering!\n");
         pass = 0;
-    } else {
+    }
+    else
+    {
         printf("      OK\n");
     }
-    for (int i = 0; i < hw1_count; i++) free(hw1_hashes[i]);
+    for (int i = 0; i < hw1_count; i++)
+        free(hw1_hashes[i]);
     free(hw1_hashes);
 
     /* --- 4b: Repeated-byte inputs --- */
     int rb_count = 256;
     char **rb_hashes = malloc((size_t)rb_count * sizeof(char *));
-    if (!rb_hashes) { fprintf(stderr, "OOM\n"); return 0; }
+    if (!rb_hashes)
+    {
+        fprintf(stderr, "OOM\n");
+        return 0;
+    }
 
     printf("  4b) Repeated-byte inputs (256 hashes)...\n");
-    for (int i = 0; i < rb_count; i++) {
+    for (int i = 0; i < rb_count; i++)
+    {
         uint8_t input[INPUT_LEN];
         memset(input, (uint8_t)i, INPUT_LEN);
         rb_hashes[i] = hash_buffer(input, INPUT_LEN);
@@ -356,10 +420,13 @@ static int test_structured_inputs(void)
     min_dist = HASH_BITS;
     sum_dist = 0;
     pair_count = 0;
-    for (int i = 0; i < rb_count; i++) {
-        for (int j = i + 1; j < rb_count; j++) {
+    for (int i = 0; i < rb_count; i++)
+    {
+        for (int j = i + 1; j < rb_count; j++)
+        {
             int d = hamming_hex(rb_hashes[i], rb_hashes[j], HASH_HEX_CHARS);
-            if (d < min_dist) min_dist = d;
+            if (d < min_dist)
+                min_dist = d;
             sum_dist += d;
             pair_count++;
         }
@@ -370,13 +437,17 @@ static int test_structured_inputs(void)
     printf("      Avg Hamming distance: %.1f / %d (%.1f%%)\n",
            avg_dist, HASH_BITS, 100.0 * avg_dist / HASH_BITS);
 
-    if (min_dist < HASH_BITS / 6) {
+    if (min_dist < HASH_BITS / 6)
+    {
         printf("      WARNING: Min distance too low — possible clustering!\n");
         pass = 0;
-    } else {
+    }
+    else
+    {
         printf("      OK\n");
     }
-    for (int i = 0; i < rb_count; i++) free(rb_hashes[i]);
+    for (int i = 0; i < rb_count; i++)
+        free(rb_hashes[i]);
     free(rb_hashes);
 
     printf("  Result: %s\n\n", pass ? "PASS" : "FAIL");
@@ -396,11 +467,13 @@ static int test_byte_position_uniformity(void)
     double worst_p = 1.0;
     int worst_pos = 0;
 
-    for (int pos_idx = 0; pos_idx < HASH_BYTES; pos_idx++) {
+    for (int pos_idx = 0; pos_idx < HASH_BYTES; pos_idx++)
+    {
         int buckets[256];
         memset(buckets, 0, sizeof(buckets));
 
-        for (int i = 0; i < NUM_SAMPLES; i++) {
+        for (int i = 0; i < NUM_SAMPLES; i++)
+        {
             int hi = hex_val(pairs[i].hash[pos_idx * 2]);
             int lo = hex_val(pairs[i].hash[pos_idx * 2 + 1]);
             uint8_t byte_val = (uint8_t)((hi << 4) | lo);
@@ -410,7 +483,8 @@ static int test_byte_position_uniformity(void)
         /* Chi-squared with 255 degrees of freedom */
         double expected = (double)NUM_SAMPLES / 256.0;
         double chi2 = 0;
-        for (int b = 0; b < 256; b++) {
+        for (int b = 0; b < 256; b++)
+        {
             double diff = buckets[b] - expected;
             chi2 += (diff * diff) / expected;
         }
@@ -421,12 +495,14 @@ static int test_byte_position_uniformity(void)
         double z = (chi2 - df) / sqrt(2.0 * df);
         double p_approx = 0.5 * erfc(z / sqrt(2.0)); /* one-tailed */
 
-        if (p_approx < worst_p) {
+        if (p_approx < worst_p)
+        {
             worst_p = p_approx;
             worst_pos = pos_idx;
         }
 
-        if (p_approx < 0.001) {
+        if (p_approx < 0.001)
+        {
             printf("  WARNING: Byte position %d — chi2=%.1f, p=%.6f\n",
                    pos_idx, chi2, p_approx);
             pass = 0;
@@ -445,10 +521,15 @@ static void export_pairs_csv(const char *filename)
 {
     printf("=== Exporting %d pairs to %s ===\n", NUM_SAMPLES, filename);
     FILE *f = fopen(filename, "w");
-    if (!f) { fprintf(stderr, "Cannot open %s\n", filename); return; }
+    if (!f)
+    {
+        fprintf(stderr, "Cannot open %s\n", filename);
+        return;
+    }
 
     fprintf(f, "input_hex,hash_hex\n");
-    for (int i = 0; i < NUM_SAMPLES; i++) {
+    for (int i = 0; i < NUM_SAMPLES; i++)
+    {
         /* Print input as hex */
         for (int j = 0; j < INPUT_LEN; j++)
             fprintf(f, "%02x", pairs[i].input[j]);
