@@ -54,25 +54,20 @@ const char *dirName(int d)
 
 void calcAndSetDirections(int byte, int *directions)
 {
-    memset(directions, 0, DIRECTIONS * sizeof(int));
-    int index = 0;
-    while (byte != 0 && index < DIRECTIONS)
+    for (int i = 0; i < DIRECTIONS; i++)
     {
-        directions[index++] = (byte & 3);
-        byte = logicalShiftRight(byte, 2);
+        directions[i] = (byte >> (i * 2)) & 3;
     }
-    // Rest stays 0 (= UP)
 }
 
-int nextPrimeNumber(int x, int y)
+int nextPrimeNumber(int x, int y, int direction)
 {
     int pi = fieldPrimeIndex[x][y];
     int ci = fieldColorIndex[x][y];
     int numPrimes = 16;
-    int colorLen = 5;
 
-    pi = (pi + 1) < numPrimes ? (pi + 1) : 0;
-    ci = (pi != 0 && (ci + 1) < colorLen) ? (ci + 1) : 0;
+    pi = (pi + 1 + direction) % numPrimes;
+    ci = (ci + 1) % 6;
 
     fieldPrimeIndex[x][y] = pi;
     fieldColorIndex[x][y] = ci;
@@ -83,7 +78,7 @@ int nextPrimeNumber(int x, int y)
 void writeNextNumberOnMove(int move, int step)
 {
     int oldPrime = field[state.x][state.y];
-    int newPrime = nextPrimeNumber(state.x, state.y);
+    int newPrime = nextPrimeNumber(state.x, state.y, move);
 
     printf("  Step %d: pos=(%u,%u) oldValue=%d -> newValue=%d\n",
            step, state.x, state.y, oldPrime, newPrime);
@@ -95,10 +90,10 @@ void writeNextNumberOnMove(int move, int step)
     switch (move)
     {
     case UP:
-        state.y = (uint32_t)(((int)state.y - oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1));
+        state.y = (uint32_t)(((int)state.y - oldPrime) & (FIELD_SIZE - 1));
         break;
     case DOWN:
-        state.y = (uint32_t)(((int)state.y + oldPrime) & (FIELD_SIZE - 1));
+        state.y = (uint32_t)(((int)state.y + oldPrime + SQUARE_AVOIDANCE_VALUE) & (FIELD_SIZE - 1));
         break;
     case LEFT:
         state.x = (uint32_t)(((int)state.x - oldPrime) & (FIELD_SIZE - 1));
@@ -143,14 +138,7 @@ void processBuffer(unsigned char *data, size_t len)
             printf("%d", (byte >> b) & 1);
         printf(") ---\n");
 
-        if (byte != 0)
-        {
-            calcAndSetDirections(byte, directions);
-        }
-        else
-        {
-            memset(directions, 0, DIRECTIONS * sizeof(int));
-        }
+        calcAndSetDirections(byte, directions);
 
         printf("Directions: [%s, %s, %s, %s]\n",
                dirName(directions[0]), dirName(directions[1]),
@@ -163,9 +151,9 @@ void processBuffer(unsigned char *data, size_t len)
         }
     }
 
-    // Final tile update
+    // Final tile update (direction = 0)
     printf("\n--- Final tile update ---\n");
-    int finalPrime = nextPrimeNumber(state.x, state.y);
+    int finalPrime = nextPrimeNumber(state.x, state.y, 0);
     printf("  At (%u,%u): update to %d\n", state.x, state.y, finalPrime);
     field[state.x][state.y] = finalPrime;
 }

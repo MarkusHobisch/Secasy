@@ -1,10 +1,19 @@
-# Security Testing Scripts
+# Security Testing & Visualisation Scripts
 
-This directory contains automation scripts for the Secasy security analysis plan.
+This directory contains automation scripts for the Secasy security analysis plan,
+organised by language:
+
+| Directory  | Language   | Contents                                          |
+|------------|------------|---------------------------------------------------|
+| `python/`  | Python 3   | Plot generators, parameter scanners, validators   |
+| `shell/`   | Bash       | Hash generation, test-battery orchestration        |
+| `c/`       | C11        | Standalone attack simulations (compiled manually)  |
 
 ## Available Scripts
 
-### 1. `generate_hashes.sh`
+### Shell Scripts (`shell/`)
+
+#### `generate_hashes.sh`
 
 Generate random hashes for statistical testing (NIST STS, Dieharder, etc.).
 
@@ -24,24 +33,26 @@ Generate random hashes for statistical testing (NIST STS, Dieharder, etc.).
 ./generate_hashes.sh 500000 128 50000
 ```
 
-### 2. `validate_sac.py`
+### Python Validation Scripts (`python/`)
+
+#### `validate_sac.py`
 
 Validate SAC (Strict Avalanche Criterion) matrix results.
 
 **Usage:**
 
 ```bash
-python validate_sac.py <sac_matrix.csv> [--threshold 0.95]
+python scripts/python/validate_sac.py <sac_matrix.csv> [--threshold 0.95]
 ```
 
 **Examples:**
 
 ```bash
 # Default: require 95% of cells in [0.48, 0.52]
-python validate_sac.py ../results/sac_matrix_64B.csv
+python scripts/python/validate_sac.py ../results/sac_matrix_64B.csv
 
 # Custom threshold and bounds
-python validate_sac.py ../results/sac_matrix.csv --threshold 0.90 --lower 0.47 --upper 0.53
+python scripts/python/validate_sac.py ../results/sac_matrix.csv --threshold 0.90 --lower 0.47 --upper 0.53
 ```
 
 **Output:**
@@ -51,24 +62,24 @@ python validate_sac.py ../results/sac_matrix.csv --threshold 0.90 --lower 0.47 -
 - Pass/fail decision
 - Exit code: 0 (pass) or 1 (fail)
 
-### 3. `validate_collisions.py`
+#### `validate_collisions.py`
 
 Validate collision test results against birthday bounds.
 
 **Usage:**
 
 ```bash
-python validate_collisions.py <collision_log.txt> [--sigma 3.0]
+python scripts/python/validate_collisions.py <collision_log.txt> [--sigma 3.0]
 ```
 
 **Examples:**
 
 ```bash
 # Default: ±3σ acceptance band
-python validate_collisions.py ../results/collision_sweep.log
+python scripts/python/validate_collisions.py ../results/collision_sweep.log
 
 # Stricter: ±2σ
-python validate_collisions.py ../results/collision_24bit.log --sigma 2.0
+python scripts/python/validate_collisions.py ../results/collision_24bit.log --sigma 2.0
 ```
 
 **Output:**
@@ -78,7 +89,7 @@ python validate_collisions.py ../results/collision_24bit.log --sigma 2.0
 - Overall pass/fail
 - Exit code: 0 (pass) or 1 (fail)
 
-### 4. `run_security_tests.sh`
+#### `run_security_tests.sh`
 
 Run comprehensive test battery with automated validation.
 
@@ -161,16 +172,27 @@ pip install numpy matplotlib
 
 ```
 scripts/
-├── README.md                    # This file
-├── generate_hashes.sh           # Hash generation
-├── validate_sac.py              # SAC matrix validation
-├── validate_collisions.py       # Collision test validation
-├── run_security_tests.sh        # Test battery orchestrator
-└── (future scripts)
-    ├── run_nist_sts.sh         # NIST Statistical Test Suite wrapper
-    ├── run_dieharder.sh        # Dieharder wrapper
-    ├── differential_search.py  # Differential cryptanalysis tool
-    └── linear_bias_sampler.py  # Linear cryptanalysis tool
+├── README.md                           # This file
+├── SECURITY_ANALYSIS.md                # Security analysis plan
+├── python/                             # Python 3 scripts
+│   ├── plot_arx_comparison.py          # ARX migration before/after chart
+│   ├── plot_cell_divergence_multi.py   # Cell divergence (5 flip positions)
+│   ├── plot_cell_divergence_seeds.py   # Cell divergence (cross-seed)
+│   ├── plot_color_isolation.py         # Colour-operation isolation plots
+│   ├── plot_field_size_sweep.py        # Field-size sweep plots
+│   ├── plot_grid_landscape.py          # 3D grid-state landscape
+│   ├── plot_round_reduction.py         # Round-reduction analysis
+│   ├── scan_reduced_params.py          # Reduced-parameter scanning
+│   ├── validate_collisions.py          # Collision test validation
+│   └── validate_sac.py                # SAC matrix validation
+├── shell/                              # Bash scripts
+│   ├── generate_hashes.sh             # Hash generation for stat. tests
+│   ├── run_extended_avalanche_wsl.sh  # Extended avalanche (WSL)
+│   └── run_security_tests.sh          # Test battery orchestrator
+└── c/                                  # Standalone C analysis tools
+    ├── avalanche.c                    # Avalanche analysis
+    ├── collision_finder.c             # Collision search
+    └── targeted_attack.c             # Targeted attack simulation
 ```
 
 ## Next Steps

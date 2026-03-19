@@ -142,7 +142,7 @@ void printField(const char *phase)
 
 void printColorIndexes()
 {
-    static const char *opName[] = {"ADD", "SUB", "XOR", "AND", "OR ", "INV"};
+    static const char *opName[] = {"ADD", "SUB", "XOR", "RLX", "RRA", "INV"};
     printf("  +-----------------------------------------------------------------------+\n");
     printf("  |  Color Indexes  (operation per cell)                                  |\n");
     printf("  +-----------------------------------------------------------------------+\n");
@@ -374,4 +374,31 @@ void printPathMap(void)
         printf("-");
     printf("+\n");
     printf("  (Number=step, ^v<>=direction, *=final position)\n\n");
+}
+
+void exportGridCSV(const char *filename, const char *phase)
+{
+    FILE *fp = fopen(filename, "w");
+    if (!fp)
+    {
+        LOG_WARNING("Could not open %s for writing", filename);
+        return;
+    }
+
+    fprintf(fp, "# phase: %s\n", phase ? phase : "unknown");
+    fprintf(fp, "# cursor: %u,%u\n", pos.x, pos.y);
+    fprintf(fp, "x,y,value,primeIndex,colorIndex\n");
+
+    for (uint32_t y = 0; y < FIELD_SIZE; y++)
+    {
+        for (uint32_t x = 0; x < FIELD_SIZE; x++)
+        {
+            const Tile_t *t = &field[x][y];
+            fprintf(fp, "%u,%u,%" PRIu64 ",%u,%d\n",
+                    x, y, t->value, t->primeIndex, (int)t->colorIndex);
+        }
+    }
+
+    fclose(fp);
+    LOG_INFO("Grid state exported to %s", filename);
 }

@@ -17,4 +17,6 @@ void printInputBits(const unsigned char *data, size_t len);
 
 void printPathMap(void);
 
+void exportGridCSV(const char *filename, const char *phase);
+
 #endif

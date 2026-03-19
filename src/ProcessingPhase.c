@@ -114,16 +114,18 @@ static void processData(const ColorIndex_t colorIndex, const uint32_t posX, cons
             tile->value ^= field[posX - 1][posY].value;
         break;
 
-    case BITWISE_AND:
-        if (posX != (FIELD_SIZE - 1))
-            tile->value &= field[posX + 1][posY].value;
+    case ROTATE_LEFT_XOR:
+        if (posX == (FIELD_SIZE - 1))
+            tile->value = ROTATE_LEFT_64(tile->value, 13) ^ 1;
+        else
+            tile->value = ROTATE_LEFT_64(tile->value, 13) ^ field[posX + 1][posY].value;
         break;
 
-    case BITWISE_OR:
+    case ROTATE_RIGHT_ADD:
         if (posX == 0)
-            tile->value |= 1;
+            tile->value = ROTATE_RIGHT_64(tile->value, 7) + 1;
         else
-            tile->value |= field[posX - 1][posY].value;
+            tile->value = ROTATE_RIGHT_64(tile->value, 7) + field[posX - 1][posY].value;
         break;
 
     case INVERT:

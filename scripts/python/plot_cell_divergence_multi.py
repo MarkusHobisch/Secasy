@@ -12,7 +12,7 @@ Output: docs/en/img/cell_divergence_flip_byte{N}.png   (individual)
         docs/en/img/cell_divergence_comparison.png      (overlay)
 
 Usage:
-    python scripts/plot_cell_divergence_multi.py
+    python scripts/python/plot_cell_divergence_multi.py
 """
 
 import os

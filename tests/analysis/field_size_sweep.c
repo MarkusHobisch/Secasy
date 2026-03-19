@@ -40,7 +40,7 @@
  * OUTPUT:
  *   - ASCII report to stdout (histograms + summary table)
  *   - CSV: field_size_results.csv in the current working directory
- *     (intended to be read by scripts/plot_field_size_sweep.py)
+ *     (intended to be read by scripts/python/plot_field_size_sweep.py)
  *
  * BUILD TARGET:  SecasyFieldSizeSweep  (see CMakeLists.txt)
  */
@@ -67,7 +67,7 @@ int hashLengthInBits = DEFAULT_BIT_SIZE;
 #define HASH_BITS_512 512 /* always produce a 512-bit hash               */
 #define HASH_HEX_LEN 128  /* HASH_BITS_512 / 4 hex chars                 */
 #define N_HASH_BLOCKS 8   /* HASH_BITS_512 / 64 blocks                   */
-#define N_MESSAGES 100    /* random messages per field size               */
+#define N_MESSAGES 400    /* random messages per field size               */
 #define MSG_BYTES 32      /* input message length in bytes                */
 #define N_BINS 20         /* histogram bins  (each 5 % wide, 0–100 %)    */
 #define N_NIBBLES 128     /* = HASH_HEX_LEN                               */
@@ -155,11 +155,10 @@ static void sweep_init(int fs)
  *  Sweep core: advance one tile's metadata and return its next prime
  *  (mirrors updateColorAndPrimeIndexOfTile + nextPrimeNumber)
  * ──────────────────────────────────────────────────────────────────── */
-static int sweep_next_prime(Tile_t *t)
+static int sweep_next_prime(Tile_t *t, int direction)
 {
-    int pi = (int)t->primeIndex + 1;
-    if (pi >= NUMBER_OF_PRIMES)
-        pi = 0;
+    int pi = (int)t->primeIndex + 1 + direction;
+    pi = pi % NUMBER_OF_PRIMES;
     ColorIndex_t ci = (ColorIndex_t)(((unsigned int)t->colorIndex + 1U) % 6U);
     t->primeIndex = (uint32_t)pi;
     t->colorIndex = ci;
@@ -174,25 +173,21 @@ static void sweep_step(int move)
     uint32_t mask = (uint32_t)(g_fs - 1);
     Tile_t *t = &g_field[g_px][g_py];
     uint32_t old = (uint32_t)t->value; /* lower 32 bits sufficient for mask */
-    t->value = (uint64_t)sweep_next_prime(t);
+    t->value = (uint64_t)sweep_next_prime(t, move);
 
     switch (move)
     {
     case 0: /* UP */
-        g_py = (g_py - old + 1u) & mask;
-        g_px = (g_px + (g_py >> 1) + 1u) & mask;
+        g_py = (g_py - old) & mask;
         break;
     case 1: /* RIGHT */
         g_px = (g_px + old + 1u) & mask;
-        g_py = (g_py + (g_px >> 1) + 4u) & mask;
         break;
     case 2: /* LEFT */
         g_px = (g_px - old) & mask;
-        g_py = (g_py + (g_px >> 1) + 2u) & mask;
         break;
     case 3: /* DOWN */
-        g_py = (g_py + old) & mask;
-        g_px = (g_px + (g_py >> 1) + 3u) & mask;
+        g_py = (g_py + old + 1u) & mask;
         break;
     default:
         break;
@@ -225,7 +220,7 @@ static void sweep_phase2(const unsigned char *data, size_t len)
 
     /* finalise last touched tile (mirrors setPrimeNumberOfLastTile) */
     Tile_t *t = &g_field[g_px][g_py];
-    t->value = (uint64_t)sweep_next_prime(t);
+    t->value = (uint64_t)sweep_next_prime(t, 0);
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -248,12 +243,11 @@ static void sweep_cell(ColorIndex_t ci, uint32_t px, uint32_t py)
     case XOR:
         t->value ^= (px == 0u) ? 1ULL : g_field[px - 1u][py].value;
         break;
-    case BITWISE_AND:
-        if (px != (uint32_t)(fs - 1))
-            t->value &= g_field[px + 1u][py].value;
+    case ROTATE_LEFT_XOR:
+        t->value = ROTATE_LEFT_64(t->value, 13) ^ ((px == (uint32_t)(fs - 1)) ? 1ULL : g_field[px + 1u][py].value);
         break;
-    case BITWISE_OR:
-        t->value |= (px == 0u) ? 1ULL : g_field[px - 1u][py].value;
+    case ROTATE_RIGHT_ADD:
+        t->value = ROTATE_RIGHT_64(t->value, 7) + ((px == 0u) ? 1ULL : g_field[px - 1u][py].value);
         break;
     case INVERT:
         t->value = ~t->value;
@@ -392,6 +386,24 @@ static void run_fs(int fs, FsResult *r)
             int d = hamming_and_nibbles(h0, h1);
             double pct = (double)d / (double)HASH_BITS_512 * 100.0;
 
+            /* ── Collision alert: log full details when HD = 0 ── */
+            if (d == 0)
+            {
+                printf("\n  *** COLLISION FOUND (fs=%d) ***\n", fs);
+                printf("  Message #%d, bit %d (byte %d, bit %d)\n",
+                       m, bit, bi, bj);
+                printf("  Message: ");
+                for (int k = 0; k < MSG_BYTES; k++)
+                    printf("%02x", msg[k] ^ ((k == bi) ? (1u << bj) : 0u));
+                printf("\n");
+                printf("  Flipped: ");
+                for (int k = 0; k < MSG_BYTES; k++)
+                    printf("%02x", msg[k]);
+                printf("\n");
+                printf("  H(orig): %s\n", h0);
+                printf("  H(flip): %s\n", h1);
+            }
+
             int bin = (int)(pct / 5.0);
             if (bin >= N_BINS)
                 bin = N_BINS - 1;
@@ -510,15 +522,14 @@ static void write_csv(const FsResult rs[], int n, const char *path)
  * ──────────────────────────────────────────────────────────────────── */
 int main(void)
 {
-    rng_s = (uint64_t)time(NULL) ^ UINT64_C(0xDEADBEEFCAFEBABE);
-    if (rng_s == 0)
-        rng_s = 1;
+    rng_s = UINT64_C(0xDEADBEEFCAFE1234);  /* fixed seed for reproducibility */
 
     printf("=== Secasy Field-Size Diffusion & Symmetry Sweep ===\n");
     printf("Config: %d messages x %d bytes, %d input bits each\n",
            N_MESSAGES, MSG_BYTES, MSG_BYTES * 8);
-    printf("        -> %lld avalanche samples per field size\n\n",
+    printf("        -> %lld avalanche samples per field size\n",
            (long long)N_MESSAGES * MSG_BYTES * 8);
+    printf("        RNG seed: fixed (0xDEADBEEFCAFE1234)\n\n");
 
     FsResult results[N_FS];
 

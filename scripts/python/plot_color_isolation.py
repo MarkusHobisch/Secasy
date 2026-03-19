@@ -9,7 +9,7 @@ Hard-coded from the measured results of SecasyColorIsolation.exe
 (100 messages × 32 bytes × 256 bit-flips = 25 600 samples per mode).
 
 Usage:
-    python scripts/plot_color_isolation.py
+    python scripts/python/plot_color_isolation.py
 """
 
 import os
@@ -21,33 +21,34 @@ import numpy as np
 
 # ── Measured histogram data (bin = 5% wide, 20 bins covering 0–100%) ──
 # Format: list of 20 counts, one per 5%-bin.
+# Data from SecasyColorIsolation.exe with ARX operations (2026-03-19).
 RESULTS = {
-    "Baseline\n(mixed: ADD/SUB/XOR/AND/OR/INVERT)": {
-        "bins": [0,0,0,0,0,0,0,0,344,11934,12984,338,0,0,0,0,0,0,0,0],
+    "Baseline\n(mixed: ADD/SUB/XOR/RLX/RRA/INVERT)": {
+        "bins": [0,0,0,0,0,0,0,0,293,12092,12890,325,0,0,0,0,0,0,0,0],
         "mean": 50.0, "std": 2.2,
     },
     "ADD only": {
-        "bins": [0,0,0,0,2,8,10,5,332,11878,13062,303,0,0,0,0,0,0,0,0],
+        "bins": [0,0,0,0,4,2,3,6,308,12178,12778,321,0,0,0,0,0,0,0,0],
         "mean": 50.0, "std": 2.3,
     },
     "SUB only": {
-        "bins": [0,0,0,0,0,0,2,2,306,11931,13048,310,1,0,0,0,0,0,0,0],
+        "bins": [0,0,0,0,0,0,0,2,355,12022,12918,303,0,0,0,0,0,0,0,0],
         "mean": 50.0, "std": 2.2,
     },
     "XOR only": {
-        "bins": [0,1,2,14,43,61,104,144,577,11746,12488,415,5,0,0,0,0,0,0,0],
-        "mean": 49.7, "std": 3.3,
+        "bins": [0,0,3,14,49,66,93,148,607,11865,12386,368,1,0,0,0,0,0,0,0],
+        "mean": 49.6, "std": 3.3,
     },
-    "AND only": {
-        "bins": [202,87,103,154,165,248,269,492,1478,10661,10978,738,25,0,0,0,0,0,0,0],
-        "mean": 48.1, "std": 7.6,
+    "RLX only\n(rotate-left + XOR)": {
+        "bins": [0,0,1,0,5,16,29,42,427,12064,12693,323,0,0,0,0,0,0,0,0],
+        "mean": 49.9, "std": 2.5,
     },
-    "OR only": {
-        "bins": [164,21,31,40,81,124,142,181,650,11674,12124,367,1,0,0,0,0,0,0,0],
-        "mean": 49.1, "std": 5.8,
+    "RRA only\n(rotate-right + ADD)": {
+        "bins": [0,0,0,0,0,2,1,2,312,12049,12920,314,0,0,0,0,0,0,0,0],
+        "mean": 50.0, "std": 2.2,
     },
     "INVERT only": {
-        "bins": [0,0,4,26,60,98,139,180,697,11768,12278,350,0,0,0,0,0,0,0,0],
+        "bins": [0,2,3,21,64,101,122,191,656,11791,12239,407,3,0,0,0,0,0,0,0],
         "mean": 49.5, "std": 3.6,
     },
 }
@@ -172,7 +173,7 @@ def save(fig, paths, name):
 
 
 if __name__ == "__main__":
-    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     img_paths = [
         os.path.join(base, "docs", "en", "img"),
     ]

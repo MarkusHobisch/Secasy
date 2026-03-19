@@ -86,6 +86,9 @@ int main(int argc, char **argv)
         printSumsAndValues();
     }
 
+    if (g_debug_mode)
+        exportGridCSV("grid_init.csv", "Init Phase");
+
     char *hashValue = calculateHashValue();
 
     if (g_debug_mode && g_debug_extended)
@@ -93,6 +96,9 @@ int main(int argc, char **argv)
         printField("Processing Phase");
         printSumsAndValues();
     }
+
+    if (g_debug_mode)
+        exportGridCSV("grid_processed.csv", "Processing Phase");
 
     if (hashValue)
     {
@@ -118,6 +124,6 @@ int main(int argc, char **argv)
         g_debug_fp = NULL;
         LOG_INFO("Debug output written to debug.txt");
     }
-    
+
     return EXIT_SUCCESS;
 }

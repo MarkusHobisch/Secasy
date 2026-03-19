@@ -22,7 +22,7 @@
 #define DIRECTIONS_PER_BYTE 4
 #define DIRECTION_MASK 0x3 // 2-bit mask to extract direction from a byte
 
-// Number of color operations (ADD, SUB, XOR, AND, OR, INVERT)
+// Number of color operations (ADD, SUB, XOR, RLX, RRA, INVERT)
 #define NUM_COLOR_OPERATIONS 6
 
 // Default I/O block size
@@ -37,13 +37,17 @@ typedef struct
     uint32_t y;
 } Position_t;
 
+// 64-bit bitwise rotation (portable, branchless)
+#define ROTATE_LEFT_64(v, n)  (((v) << (n)) | ((v) >> (64 - (n))))
+#define ROTATE_RIGHT_64(v, n) (((v) >> (n)) | ((v) << (64 - (n))))
+
 typedef enum
 {
     ADD = 0,
     SUB = 1,
     XOR = 2,
-    BITWISE_AND = 3,
-    BITWISE_OR = 4,
+    ROTATE_LEFT_XOR = 3,
+    ROTATE_RIGHT_ADD = 4,
     INVERT = 5
 } ColorIndex_t;
 

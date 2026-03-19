@@ -7,36 +7,30 @@
 #include <stdint.h>
 
 #define FIELD_SIZE 8
+#define FIELD_SIZE_MASK (FIELD_SIZE - 1)
 #define UP 0
 #define RIGHT 1
 #define LEFT 2
 #define DOWN 3
 #define DIRECTIONS 4
+#define SQUARE_AVOIDANCE_VALUE 1
+#define NUM_COLOR_OPERATIONS 6
 
 // Primes: 2, 3, 5, 7, 11, 13, 17, 19, ...
-static int primes[] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37};
+static int primes[] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53};
+#define NUM_PRIMES 16
 
 typedef struct
 {
-    int x, y;
-    int value;
-    int primeIndex;
-} State;
+    uint64_t value;
+    uint32_t primeIndex;
+    uint32_t colorIndex;
+} Tile;
 
-static inline int logicalShiftRight(int a, int b)
+typedef struct
 {
-    return (int)((unsigned int)a >> b);
-}
-
-void calcDirections(int byte, int *dirs, int *count)
-{
-    *count = 0;
-    while (byte != 0 && *count < DIRECTIONS)
-    {
-        dirs[(*count)++] = byte & 3;
-        byte = logicalShiftRight(byte, 2);
-    }
-}
+    uint32_t x, y;
+} Position;
 
 const char *dirName(int d)
 {
@@ -63,14 +57,16 @@ void traceInput(const char *label, unsigned char *input, size_t len)
         printf("0x%02X ", input[i]);
     printf("\n\n");
 
-    // Initial state
-    State s = {0, 0, 2, 0}; // Start at (0,0), value=2 (first prime), primeIndex=0
-
-    int field[FIELD_SIZE][FIELD_SIZE];
+    Tile field[FIELD_SIZE][FIELD_SIZE];
     for (int i = 0; i < FIELD_SIZE; i++)
         for (int j = 0; j < FIELD_SIZE; j++)
-            field[i][j] = 2; // All start with prime 2
+        {
+            field[i][j].value = 2;
+            field[i][j].primeIndex = 0;
+            field[i][j].colorIndex = 0;
+        }
 
+    Position pos = {0, 0};
     int step = 0;
 
     for (size_t b = 0; b < len; b++)
@@ -81,70 +77,73 @@ void traceInput(const char *label, unsigned char *input, size_t len)
             printf("%d", (byte >> i) & 1);
         printf(") ---\n");
 
-        int dirs[4], dirCount;
-        calcDirections(byte, dirs, &dirCount);
+        // Always extract 4 directions (matching real processByteDirections)
+        int dirs[DIRECTIONS];
+        for (int i = 0; i < DIRECTIONS; i++)
+            dirs[i] = (byte >> (i * 2)) & 0x3;
 
-        printf("Directions extracted: ");
-        for (int i = 0; i < dirCount; i++)
-            printf("%s ", dirName(dirs[i]));
-        printf("(%d total)\n\n", dirCount);
+        printf("Directions: %s %s %s %s (4 total)\n\n",
+               dirName(dirs[0]), dirName(dirs[1]),
+               dirName(dirs[2]), dirName(dirs[3]));
 
-        for (int d = 0; d < dirCount; d++)
+        for (int d = 0; d < DIRECTIONS; d++)
         {
-            int oldPrime = field[s.x][s.y];
-            int newPrimeIndex = s.primeIndex + 1;
-            int newPrime = primes[newPrimeIndex];
+            Tile *tile = &field[pos.x][pos.y];
+            uint64_t oldPrime = tile->value;
 
-            printf("Step %d: At (%d,%d), value=%d\n", step, s.x, s.y, oldPrime);
-            printf("        Update tile to prime[%d]=%d\n", newPrimeIndex, newPrime);
-            field[s.x][s.y] = newPrime;
-            s.primeIndex = newPrimeIndex;
+            // Advance per-tile prime and color (matching real nextPrimeNumber)
+            tile->primeIndex = (tile->primeIndex + 1 + dirs[d]) % NUM_PRIMES;
+            tile->colorIndex = (tile->colorIndex + 1) % NUM_COLOR_OPERATIONS;
+            int newPrime = primes[tile->primeIndex];
+            tile->value = (uint64_t)newPrime;
 
-            int oldX = s.x, oldY = s.y;
+            printf("Step %d: At (%u,%u), value=%llu\n", step, pos.x, pos.y, (unsigned long long)oldPrime);
+            printf("        Update tile to prime[%u]=%d\n", tile->primeIndex, newPrime);
 
+            uint32_t oldX = pos.x, oldY = pos.y;
+
+            // Cursor walk (matching real processDirectionStep: SAV on DOWN/RIGHT)
             switch (dirs[d])
             {
             case UP:
-                // y = (y - oldPrime + 1) mod 8
-                s.y = ((s.y - oldPrime + 1) % FIELD_SIZE + FIELD_SIZE) % FIELD_SIZE;
+                pos.y = (pos.y - (uint32_t)oldPrime) & FIELD_SIZE_MASK;
                 break;
             case DOWN:
-                // y = (y + oldPrime) mod 8
-                s.y = (s.y + oldPrime) % FIELD_SIZE;
+                pos.y = (pos.y + (uint32_t)oldPrime + SQUARE_AVOIDANCE_VALUE) & FIELD_SIZE_MASK;
                 break;
             case LEFT:
-                // x = (x - oldPrime) mod 8
-                s.x = ((s.x - oldPrime) % FIELD_SIZE + FIELD_SIZE) % FIELD_SIZE;
+                pos.x = (pos.x - (uint32_t)oldPrime) & FIELD_SIZE_MASK;
                 break;
             case RIGHT:
-                // x = (x + oldPrime + 1) mod 8
-                s.x = (s.x + oldPrime + 1) % FIELD_SIZE;
+                pos.x = (pos.x + (uint32_t)oldPrime + SQUARE_AVOIDANCE_VALUE) & FIELD_SIZE_MASK;
                 break;
             }
 
-            printf("        Move %s by %d: (%d,%d) -> (%d,%d)\n\n",
-                   dirName(dirs[d]), oldPrime, oldX, oldY, s.x, s.y);
+            printf("        Move %s by %llu: (%u,%u) -> (%u,%u)\n\n",
+                   dirName(dirs[d]), (unsigned long long)oldPrime, oldX, oldY, pos.x, pos.y);
             step++;
         }
     }
 
-    // Final update
-    int newPrimeIndex = s.primeIndex + 1;
-    int newPrime = primes[newPrimeIndex];
-    printf("Final: At (%d,%d), update to prime[%d]=%d\n", s.x, s.y, newPrimeIndex, newPrime);
-    field[s.x][s.y] = newPrime;
+    // Final tile update (direction = 0)
+    Tile *tile = &field[pos.x][pos.y];
+    tile->primeIndex = (tile->primeIndex + 1) % NUM_PRIMES;
+    tile->colorIndex = (tile->colorIndex + 1) % NUM_COLOR_OPERATIONS;
+    int finalPrime = primes[tile->primeIndex];
+    tile->value = (uint64_t)finalPrime;
 
-    printf("\nFinal Position: (%d, %d)\n", s.x, s.y);
-    printf("Final lastPrime: %d\n", newPrime);
+    printf("Final: At (%u,%u), update to prime[%u]=%d\n", pos.x, pos.y, tile->primeIndex, finalPrime);
+    printf("\nFinal Position: (%u, %u)\n", pos.x, pos.y);
+    printf("Final lastPrime: %d\n", finalPrime);
 
     printf("\nFinal Field (non-2 values only):\n");
     for (int i = 0; i < FIELD_SIZE; i++)
     {
         for (int j = 0; j < FIELD_SIZE; j++)
         {
-            if (field[i][j] != 2)
+            if (field[i][j].value != 2)
             {
-                printf("  [%d][%d] = %d\n", i, j, field[i][j]);
+                printf("  [%d][%d] = %llu\n", i, j, (unsigned long long)field[i][j].value);
             }
         }
     }

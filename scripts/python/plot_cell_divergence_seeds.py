@@ -9,7 +9,7 @@ Reads: build/cell_div_seed{1..5}.csv
 Output: docs/en/img/cell_divergence_seeds.png
 
 Usage:
-    python scripts/plot_cell_divergence_seeds.py
+    python scripts/python/plot_cell_divergence_seeds.py
 """
 
 import os

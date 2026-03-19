@@ -15,7 +15,7 @@ Usage (from repo root):
     cd build && cmake --build . --target SecasyFieldSizeSweep
     ./SecasyFieldSizeSweep          # or SecasyFieldSizeSweep.exe on Windows
     cd ..
-    python scripts/plot_field_size_sweep.py
+    python scripts/python/plot_field_size_sweep.py
 """
 
 import os
@@ -263,7 +263,7 @@ def save(fig, paths, name):
 # ── Entry point ──────────────────────────────────────────────────────
 
 def main():
-    base     = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base     = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     csv_path = os.path.join(base, "build", "field_size_results.csv")
 
     if not os.path.isfile(csv_path):
