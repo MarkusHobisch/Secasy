@@ -11,6 +11,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 # ── Core library sources (shared by all targets) ──────────────────────
 set(CORE_SOURCES
         src/Calculations.c
+        src/CommandLine.c
         src/InitializationPhase.c
         src/Printing.c
         src/ProcessingPhase.c

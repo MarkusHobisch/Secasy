@@ -94,7 +94,6 @@ void initFieldWithDefaultNumbers(const unsigned long maxPrimeIndex)
 
 void readAndProcessFile(const char *filename)
 {
-    /* Allocate large buffer (4MB) on heap to avoid stack overflow on some platforms */
     unsigned char *buffer = (unsigned char *)malloc(DEFAULT_IO_BLOCK_SIZE);
     if (!buffer)
     {
@@ -120,6 +119,7 @@ void readAndProcessFile(const char *filename)
         fclose(file);
         exit(EXIT_FAILURE);
     }
+
     fclose(file);
     free(buffer);
     setPrimeNumberOfLastTile();
@@ -141,6 +141,7 @@ void processBuffer(const unsigned char *data, size_t len)
         int byte = data[i] & 0xFF;
         processByteDirections(byte);
     }
+
     setPrimeNumberOfLastTile();
     lastPrime = (int)field[pos.x][pos.y].value;
     if (g_debug_mode)
@@ -189,6 +190,7 @@ static void createTile(const uint32_t posX, const uint32_t posY)
 {
     if (posX >= FIELD_SIZE || posY >= FIELD_SIZE)
         return;
+
     Tile_t tile;
     tile.posX = (uint32_t)posX;
     tile.posY = (uint32_t)posY;
@@ -205,12 +207,14 @@ static FILE *readFile(const char *filename)
         LOG_ERROR("Input file not provided (-f <file> required)");
         exit(EXIT_FAILURE);
     }
+
     FILE *file = fopen(filename, "rb");
     if (file == NULL)
     {
         LOG_ERROR("Could not open file: %s", filename);
         exit(EXIT_FAILURE);
     }
+
     return file;
 }
 
@@ -243,10 +247,11 @@ static void processByteDirections(int byte)
                (byte >> 3) & 1, (byte >> 2) & 1, (byte >> 1) & 1, byte & 1);
         printf("  |   From       OldPrime      NewPrime  Dir       To      |\n");
     }
-    processDirectionStep((byte >> (0 * BITS_PER_DIRECTION)) & DIRECTION_MASK);
-    processDirectionStep((byte >> (1 * BITS_PER_DIRECTION)) & DIRECTION_MASK);
-    processDirectionStep((byte >> (2 * BITS_PER_DIRECTION)) & DIRECTION_MASK);
-    processDirectionStep((byte >> (3 * BITS_PER_DIRECTION)) & DIRECTION_MASK);
+
+    processDirectionStep((byte) & DIRECTION_MASK);
+    processDirectionStep((byte >> 2) & DIRECTION_MASK);
+    processDirectionStep((byte >> 4) & DIRECTION_MASK);
+    processDirectionStep((byte >> 6) & DIRECTION_MASK);
 }
 
 /*
@@ -286,7 +291,7 @@ static void processDirectionStep(const int direction)
                fromX, fromY, oldPrime, nextPrime,
                direction < DIRECTIONS_PER_BYTE ? dirName[direction] : "?????",
                pos.x, pos.y);
-               
+
         if (g_pathStepCount < MAX_PATH_STEPS)
         {
             g_pathSteps[g_pathStepCount].fromX = fromX;
