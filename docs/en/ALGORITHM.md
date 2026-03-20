@@ -392,10 +392,19 @@ Mixing and extraction are **strictly separated**: all $r$ rounds of
 cell-level diffusion complete first, then — from the final grid state —
 the required number of 64-bit blocks is extracted in Phase 4.
 
-Empirically, all security metrics are stable from as few as 1 round (see
-Round Reduction Analysis). This is because collision resistance and the
-avalanche effect originate primarily in Phase 2; the processing rounds amplify
-diffusion but are not its source.
+Empirically, all security metrics (avalanche effect, bit bias, collision
+resistance, sequential correlation, byte-position uniformity) are stable from
+as few as 1 round across all supported hash sizes (see Round Reduction
+Analysis). This is because collision resistance and the avalanche effect
+originate primarily in Phase 2; the processing rounds amplify diffusion but
+are not its source.
+
+The production default of `DEFAULT_NUMBER_OF_ROUNDS = 10` reflects a
+conservative engineering choice: while a single round is empirically
+sufficient, 10 rounds are chosen as a defence-in-depth margin against
+algebraic attacks on the initialisation phase that the statistical tests above
+cannot detect. The overhead is modest — empirically less than 10 % throughput
+reduction compared to a single round.
 
 > **Structural contrast to SHA/sponge constructions:** In classical hash
 > functions such as SHA-2 or Keccak, security is analysed primarily through

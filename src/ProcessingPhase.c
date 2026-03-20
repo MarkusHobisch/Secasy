@@ -54,7 +54,8 @@ char *calculateHashValue()
     }
     size_t writePos = 0;
 
-    /* Phase 3: Run all mixing rounds (pure diffusion, no extraction) */
+   /* Phase 3: Run all mixing rounds (pure diffusion, no extraction) */
+   
     for (unsigned long roundCounter = 0; roundCounter < actualRounds; roundCounter++)
     {
         /* Iterate through the whole field */
@@ -71,7 +72,8 @@ char *calculateHashValue()
             }
         }
         advanceGridPosition(&posX, &posY);
-    }
+    } 
+    
 
     /* Phase 4: Extract all blocks from the final grid state */
     for (size_t b = 0; b < blocksNeeded; b++)

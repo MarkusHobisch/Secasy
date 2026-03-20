@@ -39,9 +39,10 @@ CommandLineOptions_t parseCommandLineOptions(int argc, char **argv)
     opts.inputString = NULL;
     opts.inputHexBytes = NULL;
     opts.inputHexLen = 0;
+    opts.pipeMode = 0;
 
     int opt;
-    while ((opt = getopt(argc, argv, "r:i:n:f:s:x:deh")) != -1)
+    while ((opt = getopt(argc, argv, "r:i:n:f:s:x:pdeh")) != -1)
     {
         switch (opt)
         {
@@ -63,6 +64,9 @@ CommandLineOptions_t parseCommandLineOptions(int argc, char **argv)
         case 'x':
             readAndStoreHexOption();
             break;
+        case 'p':
+            opts.pipeMode = 1;
+            break;
         case 'd':
             g_debug_mode = 1;
             break;
@@ -74,15 +78,20 @@ CommandLineOptions_t parseCommandLineOptions(int argc, char **argv)
             printHelperText();
             exit(EXIT_SUCCESS);
         default:
-            LOG_ERROR("Usage: %s supported arguments [-r] [-i] [-n] [-f] [-s] [-x] [-d] [-e] [-h]", argv[0]);
+            LOG_ERROR("Usage: %s supported arguments [-r] [-i] [-n] [-f] [-s] [-x] [-p] [-d] [-e] [-h]", argv[0]);
             exit(EXIT_FAILURE);
         }
+    }
+
+    if (opts.pipeMode)
+    {
+        return opts;
     }
 
     int inputCount = (opts.inputFilename ? 1 : 0) + (opts.inputString ? 1 : 0) + (opts.inputHexBytes ? 1 : 0);
     if (inputCount == 0)
     {
-        LOG_ERROR("Missing input. Provide -f <file>, -s <string>, or -x <hex>");
+        LOG_ERROR("Missing input. Provide -f <file>, -s <string>, -x <hex>, or -p (pipe mode)");
         exit(EXIT_FAILURE);
     }
 
@@ -336,7 +345,7 @@ static void printHelperText(void)
 {
     printf("\n");
     printf("+--------------------------------------------------------------------------------------------------+\n");
-    printf("| Arguments: [-r] [-i] [-n] [-f] [-s] [-x] [-d] [-e] [-h]                                          |\n");
+    printf("| Arguments: [-r] [-i] [-n] [-f] [-s] [-x] [-p] [-d] [-e] [-h]                                          |\n");
     printf("|  -n <bits>  : bit size of hash value (power of two, >= %d)                                       |\n", HASH_OUTPUT_BITS);
     printf("|  -i <index> : max prime index for calculation of prime numbers                                   |\n");
     printf("|  -r <rounds>: number of processing rounds                                                        |\n");
@@ -345,6 +354,7 @@ static void printHelperText(void)
     printf("|  -x <hex>   : hash hex bytes, e.g. -x \"0x45,0x47,0x78\"                                         |\n");
     printf("|  -d         : enable debug mode (writes debug.txt)                                               |\n");
     printf("|  -e         : enable extended debug output (implies -d)                                          |\n");
+    printf("|  -p         : pipe mode (read lines from stdin, output hex hash per line)                          |\n");
     printf("|  -h         : show this help                                                                     |\n");
     printf("+--------------------------------------------------------------------------------------------------+\n\n");
 }

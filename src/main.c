@@ -9,6 +9,42 @@
 #include "Printing.h"
 #include "util.h"
 
+#define PIPE_LINE_BUFFER_SIZE 4096
+#define EXIT_SIGNAL "EXIT"
+
+static int runPipeMode(unsigned long maxPrimeIndex)
+{
+    char line[PIPE_LINE_BUFFER_SIZE];
+
+    while (fgets(line, sizeof(line), stdin) != NULL)
+    {
+        size_t len = strlen(line);
+        while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r'))
+            line[--len] = '\0';
+
+        if (strcmp(line, EXIT_SIGNAL) == 0)
+            break;
+
+        if (len == 0)
+        {
+            printf("\n");
+            fflush(stdout);
+            continue;
+        }
+
+        initFieldWithDefaultNumbers(maxPrimeIndex);
+        processBuffer((const unsigned char *)line, len);
+        char *hashValue = calculateHashValue();
+
+        printf("%s\n", hashValue ? hashValue : "");
+        fflush(stdout);
+
+        free(hashValue);
+    }
+
+    return EXIT_SUCCESS;
+}
+
 unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
 int hashLengthInBits = DEFAULT_BIT_SIZE;
 
@@ -21,6 +57,11 @@ int main(int argc, char **argv)
     CommandLineOptions_t opts = parseCommandLineOptions(argc, argv);
     numberOfRounds = opts.numberOfRounds;
     hashLengthInBits = opts.hashLengthInBits;
+
+    if (opts.pipeMode)
+    {
+        return runPipeMode(opts.maximumPrimeIndex);
+    }
 
     if (g_debug_mode)
     {

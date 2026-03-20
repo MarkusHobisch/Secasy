@@ -12,6 +12,7 @@ typedef struct
     char *inputString;
     unsigned char *inputHexBytes;
     size_t inputHexLen;
+    int pipeMode;
 } CommandLineOptions_t;
 
 CommandLineOptions_t parseCommandLineOptions(int argc, char **argv);
