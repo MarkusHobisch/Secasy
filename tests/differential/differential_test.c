@@ -51,26 +51,10 @@ char *compute_hash(const unsigned char *data, size_t len, int maxPrimeIndex)
     return calculateHashValue();
 }
 
-// Count differing bits between two hex strings
-int hamming_distance_hex(const char *h1, const char *h2)
+/* Delegates to util.c — avoids duplicating the hex-nibble logic here. */
+static int hamming_distance_hex(const char *h1, const char *h2)
 {
-    int dist = 0;
-    size_t len = strlen(h1) < strlen(h2) ? strlen(h1) : strlen(h2);
-
-    for (size_t i = 0; i < len; i++)
-    {
-        int v1 = (h1[i] >= 'a') ? (h1[i] - 'a' + 10) : (h1[i] >= 'A') ? (h1[i] - 'A' + 10)
-                                                                      : (h1[i] - '0');
-        int v2 = (h2[i] >= 'a') ? (h2[i] - 'a' + 10) : (h2[i] >= 'A') ? (h2[i] - 'A' + 10)
-                                                                      : (h2[i] - '0');
-        int xored = v1 ^ v2;
-        while (xored)
-        {
-            dist += (xored & 1);
-            xored >>= 1;
-        }
-    }
-    return dist;
+    return secasy_hamming_hex(h1, h2);
 }
 
 static size_t hex_hash_bits(const char *hex)
@@ -156,8 +140,15 @@ void test_single_bit_pairs(int count, int inputLen, int maxPrimeIndex)
     printf("Testing %d pairs with single-bit differences\n\n", count);
 
     srand(42);
-    unsigned char *input1 = malloc(inputLen);
-    unsigned char *input2 = malloc(inputLen);
+    unsigned char *input1 = malloc((size_t)inputLen);
+    unsigned char *input2 = malloc((size_t)inputLen);
+    if (!input1 || !input2)
+    {
+        free(input1);
+        free(input2);
+        fprintf(stderr, "[ERROR] Out of memory in test_single_bit_pairs\n");
+        return;
+    }
 
     double total_hamming = 0;
     int min_hamming = INT_MAX;

@@ -63,30 +63,11 @@ extern Position_t pos;
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
-static int hex_val(char c)
-{
-    if (c >= '0' && c <= '9')
-        return c - '0';
-    if (c >= 'a' && c <= 'f')
-        return c - 'a' + 10;
-    if (c >= 'A' && c <= 'F')
-        return c - 'A' + 10;
-    return 0;
-}
+/* secasy_hex_nibble() and secasy_hamming_hex() are provided by util.h / util.c */
 
-static int hamming_hex(const char *a, const char *b, int hex_len)
+static int cmp_str_ptr(const void *a, const void *b)
 {
-    int dist = 0;
-    for (int i = 0; i < hex_len; i++)
-    {
-        int x = hex_val(a[i]) ^ hex_val(b[i]);
-        while (x)
-        {
-            dist += x & 1;
-            x >>= 1;
-        }
-    }
-    return dist;
+    return strcmp(*(const char *const *)a, *(const char *const *)b);
 }
 
 static char *hash_buffer(const uint8_t *data, size_t len)
@@ -94,16 +75,6 @@ static char *hash_buffer(const uint8_t *data, size_t len)
     initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
     processBuffer(data, len);
     return calculateHashValue();
-}
-
-static uint64_t hash_to_uint64(const char *h)
-{
-    uint64_t r = 0;
-    for (int i = 0; i < 16 && h[i]; i++)
-    {
-        r = (r << 4) | (uint64_t)hex_val(h[i]);
-    }
-    return r;
 }
 
 /* ── Metric Functions ────────────────────────────────────── */
@@ -130,7 +101,7 @@ static double measure_avalanche(void)
 
         char *flipped = hash_buffer(modified, INPUT_LEN);
 
-        int dist = hamming_hex(original, flipped, hash_hex_chars);
+        int dist = secasy_hamming_hex(original, flipped);
         total_ratio += (double)dist / hash_bits;
 
         free(original);
@@ -158,7 +129,7 @@ static double measure_bit_bias(void)
 
         for (int b = 0; b < hash_hex_chars; b++)
         {
-            int nibble = hex_val(h[b]);
+            int nibble = secasy_hex_nibble(h[b]);
             int offset = b * 4;
             for (int k = 3; k >= 0; k--)
                 counts[offset + (3 - k)] += (nibble >> k) & 1;
@@ -193,19 +164,7 @@ static int measure_collisions(void)
         hashes[i] = hash_buffer(input, INPUT_LEN);
     }
 
-    /* Sort full hex strings and count duplicates */
-    for (int i = 0; i < COLLISION_SAMPLES - 1; i++)
-    {
-        for (int j = i + 1; j < COLLISION_SAMPLES; j++)
-        {
-            if (strcmp(hashes[i], hashes[j]) > 0)
-            {
-                char *tmp = hashes[i];
-                hashes[i] = hashes[j];
-                hashes[j] = tmp;
-            }
-        }
-    }
+    qsort(hashes, (size_t)COLLISION_SAMPLES, sizeof(char *), cmp_str_ptr);
 
     int collisions = 0;
     for (int i = 1; i < COLLISION_SAMPLES; i++)
@@ -239,7 +198,7 @@ static double measure_sequential_correlation(void)
     double sum = 0;
     for (int i = 0; i < SEQ_SAMPLES - 1; i++)
     {
-        sum += hamming_hex(hashes[i], hashes[i + 1], hash_hex_chars);
+        sum += secasy_hamming_hex(hashes[i], hashes[i + 1]);
     }
 
     for (int i = 0; i < SEQ_SAMPLES; i++)
@@ -267,8 +226,8 @@ static double measure_byte_uniformity(void)
 
         for (int p = 0; p < hash_bytes; p++)
         {
-            int hi = hex_val(h[p * 2]);
-            int lo = hex_val(h[p * 2 + 1]);
+            int hi = secasy_hex_nibble(h[p * 2]);
+            int lo = secasy_hex_nibble(h[p * 2 + 1]);
             buckets[p][(hi << 4) | lo]++;
         }
         free(h);
@@ -317,7 +276,7 @@ static double measure_min_hamming(void)
     {
         for (int j = i + 1; j < n; j++)
         {
-            int d = hamming_hex(hashes[i], hashes[j], hash_hex_chars);
+            int d = secasy_hamming_hex(hashes[i], hashes[j]);
             if (d < min_dist)
                 min_dist = d;
         }

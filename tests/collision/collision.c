@@ -118,19 +118,6 @@ static int table_init(size_t cap)
     return table ? 0 : -1;
 }
 
-/* Provide local strdup fallback if util.h does not offer secasy_strdup */
-#ifndef HAVE_SECASY_STRDUP
-static char *local_strdup(const char *s)
-{
-    size_t len = strlen(s) + 1;
-    char *d = (char *)malloc(len);
-    if (d)
-        memcpy(d, s, len);
-    return d;
-}
-#define secasy_strdup local_strdup
-#endif
-
 static int table_insert_or_collision(const char *hex)
 {
     uint64_t k = hash_hex(hex);
@@ -150,10 +137,12 @@ static int table_insert_or_collision(const char *hex)
             tableCount++;
             return 0; /* new */
         }
+
         if (table[idx].key == k && strcmp(table[idx].hex, hex) == 0)
         {
             return 1; /* collision (same hash string already seen) */
         }
+
         idx = (idx + 1) & mask;
     }
 }
@@ -321,6 +310,7 @@ int main(int argc, char **argv)
             free(buf);
             return 1;
         }
+
         if (doFreq || doPos || detailPos >= 0 || byteAnalyze > 0)
         {
             size_t len = strlen(hv);
@@ -346,6 +336,7 @@ int main(int argc, char **argv)
                 observedMaxHexLen = len;
             }
         }
+
         if (doFreq)
         {
             for (const char *p = hv; *p; ++p)
@@ -363,6 +354,7 @@ int main(int argc, char **argv)
                 hexFreq[v]++;
             }
         }
+
         if (doPos || detailPos >= 0)
         {
             for (size_t pos = 0; hv[pos]; ++pos)
@@ -381,6 +373,7 @@ int main(int argc, char **argv)
                 posFreq[offset]++;
             }
         }
+
         if (byteAnalyze > 0)
         {
             if (byteAnalyze > 64)
@@ -417,6 +410,7 @@ int main(int argc, char **argv)
                 }
             }
         }
+
         if (sweepMode)
         {
             allHashes[m] = hv;
@@ -450,6 +444,7 @@ int main(int argc, char **argv)
             free(hv);
         }
     }
+
     double elapsed = wall_time_seconds() - start;
     if (!sweepMode)
     {
@@ -539,6 +534,7 @@ int main(int argc, char **argv)
                 expectedColl = ((double)messages * (double)(messages - 1)) / (2.0 * space);
                 approxUsed = 1;
             }
+
             if (approxUsed)
             {
                 printf("  Bits=%3d  Collisions=%-8zu Unique=%-8zu Rate=%.8f  Expected~%.2f  Birthday~%.0f\n", bits, localColl, tableCount, rate, expectedColl, birthdayApprox);
@@ -557,6 +553,7 @@ int main(int argc, char **argv)
             free(allHashes[m]);
         free(allHashes);
     }
+
     if (doFreq)
     {
         printf("Hex frequencies (0-f):\n");
@@ -565,22 +562,23 @@ int main(int argc, char **argv)
             total += hexFreq[i];
         if (total > 0)
         {
-            long double expected = (long double)total / 16.0L;
-            long double chi2 = 0.0L;
+            double expected = (double)total / 16.0;
+            double chi2 = 0.0;
             for (int i = 0; i < 16; i++)
             {
-                long double diff = (long double)hexFreq[i] - expected;
+                double diff = (double)hexFreq[i] - expected;
                 chi2 += (diff * diff) / expected;
             }
             for (int i = 0; i < 16; i++)
             {
-                long double pct = 100.0L * (long double)hexFreq[i] / (long double)total;
-                printf("  %X : %12llu  (%6.2Lf%%)\n", i, (unsigned long long)hexFreq[i], pct);
+                double pct = 100.0 * (double)hexFreq[i] / (double)total;
+                printf("  %X : %12llu  (%6.2f%%)\n", i, (unsigned long long)hexFreq[i], pct);
             }
             /* df = 15 for 16 classes */
-            printf("Chi^2 = %.3Lf  (df=15)  Note: p-value lookup external (R, tables)\n", chi2);
+            printf("Chi^2 = %.3f  (df=15)  Note: p-value lookup external (R, tables)\n", chi2);
         }
     }
+
     if (doPos && observedMaxHexLen > 0)
     {
         printf("Positional analysis (each position separately, Chi^2 per position):\n");
@@ -592,19 +590,21 @@ int main(int argc, char **argv)
                 size_t idx = pos * 16u + (unsigned)s;
                 rowTotal += posFreq[idx];
             }
+
             if (rowTotal == 0ULL)
                 continue;
-            long double expected = (long double)rowTotal / 16.0L;
-            long double chi2p = 0.0L;
+            double expected = (double)rowTotal / 16.0;
+            double chi2p = 0.0;
             for (int s = 0; s < 16; s++)
             {
                 size_t idx = pos * 16u + (unsigned)s;
-                long double diff = (long double)posFreq[idx] - expected;
+                double diff = (double)posFreq[idx] - expected;
                 chi2p += (diff * diff) / expected;
             }
-            printf("  Pos %03zu: Chi^2=%.3Lf  (df=15)\n", pos, chi2p);
+            printf("  Pos %03zu: Chi^2=%.3f  (df=15)\n", pos, chi2p);
         }
     }
+
     if (detailPos >= 0)
     {
         if (observedMaxHexLen == 0 || posFreq == NULL || (size_t)detailPos >= observedMaxHexLen)
@@ -620,27 +620,28 @@ int main(int argc, char **argv)
                 rowTotal += posFreq[dpos * 16u + (unsigned)s];
             if (rowTotal > 0)
             {
-                long double expected = (long double)rowTotal / 16.0L;
-                long double chi2p = 0.0L;
+                double expected = (double)rowTotal / 16.0;
+                double chi2p = 0.0;
                 for (int s = 0; s < 16; s++)
                 {
                     uint64_t c = posFreq[dpos * 16u + (unsigned)s];
-                    long double diff = (long double)c - expected;
+                    double diff = (double)c - expected;
                     chi2p += (diff * diff) / expected;
                 }
-                printf("  Total Nibbles: %llu  Chi^2=%.3Lf\n", (unsigned long long)rowTotal, chi2p);
+                printf("  Total Nibbles: %llu  Chi^2=%.3f\n", (unsigned long long)rowTotal, chi2p);
                 printf("  Symbol  Count        %%       Z\n");
                 for (int s = 0; s < 16; s++)
                 {
                     uint64_t c = posFreq[dpos * 16u + (unsigned)s];
-                    long double pct = 100.0L * (long double)c / (long double)rowTotal;
-                    long double diff = (long double)c - expected;
-                    long double z = diff / sqrtl(expected); /* rough normal approximation */
-                    printf("    %X  %10llu  %6.2Lf%%  %7.3Lf\n", s, (unsigned long long)c, pct, z);
+                    double pct = 100.0 * (double)c / (double)rowTotal;
+                    double diff = (double)c - expected;
+                    double z = diff / sqrt(expected); /* rough normal approximation */
+                    printf("    %X  %10llu  %6.2f%%  %7.3f\n", s, (unsigned long long)c, pct, z);
                 }
             }
         }
     }
+
     if (byteAnalyze > 0)
     {
         printf("Byte analysis of first %ld bytes (256 classes):\n", byteAnalyze);
@@ -649,27 +650,27 @@ int main(int argc, char **argv)
             totalB += byteFreq[i];
         if (totalB > 0)
         {
-            long double expectedB = (long double)totalB / 256.0L;
-            long double chi2b = 0.0L;
+            double expectedB = (double)totalB / 256.0;
+            double chi2b = 0.0;
             for (int i = 0; i < 256; i++)
             {
-                long double diff = (long double)byteFreq[i] - expectedB;
+                double diff = (double)byteFreq[i] - expectedB;
                 chi2b += (diff * diff) / expectedB;
             }
-            printf("  Total samples: %llu  Chi^2=%.3Lf (df=255)\n", (unsigned long long)totalB, chi2b);
+            printf("  Total samples: %llu  Chi^2=%.3f (df=255)\n", (unsigned long long)totalB, chi2b);
             /* Show top absolute deviations */
             int show = 8;
             /* Simple selection: linear scan for largest absolute deviations */
-            long double bestDev[8];
+            double bestDev[8];
             int bestIdx[8];
             for (int k = 0; k < 8; k++)
             {
-                bestDev[k] = -1.0L;
+                bestDev[k] = -1.0;
                 bestIdx[k] = -1;
             }
             for (int i = 0; i < 256; i++)
             {
-                long double diff = fabsl((long double)byteFreq[i] - expectedB);
+                double diff = fabs((double)byteFreq[i] - expectedB);
                 /* Largest absolute deviation */
                 for (int k = 0; k < show; k++)
                 {
@@ -692,9 +693,9 @@ int main(int argc, char **argv)
                 if (bestIdx[k] >= 0)
                 {
                     int i = bestIdx[k];
-                    long double pct = 100.0L * (long double)byteFreq[i] / (long double)totalB;
-                    long double z = ((long double)byteFreq[i] - expectedB) / sqrtl(expectedB);
-                    printf("    0x%02X  count=%8llu  %6.3Lf%%  Z=%7.3Lf\n", i, (unsigned long long)byteFreq[i], pct, z);
+                    double pct = 100.0 * (double)byteFreq[i] / (double)totalB;
+                    double z = ((double)byteFreq[i] - expectedB) / sqrt(expectedB);
+                    printf("    0x%02X  count=%8llu  %6.3f%%  Z=%7.3f\n", i, (unsigned long long)byteFreq[i], pct, z);
                 }
         }
     }

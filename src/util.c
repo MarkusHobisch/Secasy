@@ -4,6 +4,50 @@
 #include <time.h>
 #ifdef _WIN32
 #include <windows.h>
+#endif
+
+void secasy_enable_utf8_console(void)
+{
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+}
+
+/*
+ * On MinGW-w64 / GCC, this constructor runs automatically before main()
+ * in every executable that links util.c.  No call-site changes needed.
+ */
+#if defined(_WIN32) && defined(__GNUC__)
+__attribute__((constructor))
+static void win_utf8_init(void)
+{
+    SetConsoleOutputCP(CP_UTF8);
+}
+#endif
+
+int secasy_hex_nibble(char c)
+{
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+}
+
+int secasy_hamming_hex(const char *h1, const char *h2)
+{
+    int dist = 0;
+    size_t len = strlen(h1) < strlen(h2) ? strlen(h1) : strlen(h2);
+    for (size_t i = 0; i < len; i++)
+    {
+        int n1 = secasy_hex_nibble(h1[i]);
+        int n2 = secasy_hex_nibble(h2[i]);
+        int xored = (n1 >= 0 && n2 >= 0) ? (n1 ^ n2) : 0;
+        while (xored) { dist += (xored & 1); xored >>= 1; }
+    }
+    return dist;
+}
+#ifdef _WIN32
+#include <windows.h>
 #else
 #include <sys/time.h>
 #include <unistd.h>

@@ -55,32 +55,6 @@ extern Position_t pos;
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
-static int hex_val(char c)
-{
-    if (c >= '0' && c <= '9')
-        return c - '0';
-    if (c >= 'a' && c <= 'f')
-        return c - 'a' + 10;
-    if (c >= 'A' && c <= 'F')
-        return c - 'A' + 10;
-    return 0;
-}
-
-static int hamming_hex(const char *a, const char *b, int hex_len)
-{
-    int dist = 0;
-    for (int i = 0; i < hex_len; i++)
-    {
-        int x = hex_val(a[i]) ^ hex_val(b[i]);
-        while (x)
-        {
-            dist += x & 1;
-            x >>= 1;
-        }
-    }
-    return dist;
-}
-
 static char *hash_buffer(const uint8_t *data, size_t len)
 {
     initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
@@ -157,7 +131,7 @@ static double measure_avalanche_n(int samples)
         mod[bit / 8] ^= (uint8_t)(1 << (bit % 8));
 
         char *flip = hash_buffer(mod, INPUT_LEN);
-        total += (double)hamming_hex(orig, flip, hash_hex_chars) / hash_bits;
+        total += (double)secasy_hamming_hex(orig, flip) / hash_bits;
         free(orig);
         free(flip);
     }
@@ -179,7 +153,7 @@ static double measure_bit_bias_n(int samples)
         char *h = hash_buffer(input, INPUT_LEN);
         for (int b = 0; b < hash_hex_chars; b++)
         {
-            int nibble = hex_val(h[b]);
+            int nibble = secasy_hex_nibble(h[b]);
             int offset = b * 4;
             for (int k = 3; k >= 0; k--)
                 counts[offset + (3 - k)] += (nibble >> k) & 1;
@@ -256,7 +230,7 @@ static double measure_seq_corr_n(int samples)
 
     double sum = 0;
     for (int i = 0; i < samples - 1; i++)
-        sum += hamming_hex(hashes[i], hashes[i + 1], hash_hex_chars);
+        sum += secasy_hamming_hex(hashes[i], hashes[i + 1]);
 
     for (int i = 0; i < samples; i++)
         free(hashes[i]);
@@ -282,7 +256,7 @@ static double measure_min_hamming_n(int n)
     for (int i = 0; i < n; i++)
         for (int j = i + 1; j < n; j++)
         {
-            int d = hamming_hex(hashes[i], hashes[j], hash_hex_chars);
+            int d = secasy_hamming_hex(hashes[i], hashes[j]);
             if (d < min_dist)
                 min_dist = d;
         }

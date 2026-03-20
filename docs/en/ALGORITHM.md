@@ -24,6 +24,8 @@ Appendix C — Cell Divergence Growth per Input Byte
 
 Appendix D — ARX Migration: Replacing AND/OR with Rotation-Based Operations
 
+Appendix E — Grid-State Landscape: Hashing ALGORITHM.md
+
 ---
 
 \newpage
@@ -100,11 +102,11 @@ internal state — algebraic reconstruction of the grid is not feasible.
 The grid consists of **256 cells** arranged in a 16×16 raster. Each cell
 stores three independent values:
 
-| Field        | Type                      | Purpose                                                                 |
-|--------------|---------------------------|-------------------------------------------------------------------------|
+| Field        | Type                         | Purpose                                                                 |
+|--------------|------------------------------|-------------------------------------------------------------------------|
 | `value`      | `uint64_t` (64-bit unsigned) | Numeric cell value; modified by operations                              |
-| `primeIndex` | `uint32_t`                | Pointer into the pre-computed prime number table                        |
-| `colorIndex` | `uint8_t` (0–5)           | Determines which of the 6 operations is applied to this cell in Phase 3 |
+| `primeIndex` | `uint32_t`                   | Pointer into the pre-computed prime number table                        |
+| `colorIndex` | `uint8_t` (0–5)              | Determines which of the 6 operations is applied to this cell in Phase 3 |
 
 Additionally there is a **prime number table** (`primes.h`) containing the
 first 16,000,000 primes (~355 KB). This table is compiled from the header
@@ -169,12 +171,12 @@ The cursor moves to the next position. Each direction updates exactly
 **one** coordinate — the **primary axis** — by a data-dependent offset
 derived from the old cell value:
 
-| Direction | Formula                                 |
-|-----------|-----------------------------------------|
-| UP        | `y = (y - oldPrime) & 15`               |
-| DOWN      | `y = (y + oldPrime + SAV) & 15`         |
-| LEFT      | `x = (x - oldPrime) & 15`               |
-| RIGHT     | `x = (x + oldPrime + SAV) & 15`         |
+| Direction | Formula                         |
+|-----------|---------------------------------|
+| UP        | `y = (y - oldPrime) & 15`       |
+| DOWN      | `y = (y + oldPrime + SAV) & 15` |
+| LEFT      | `x = (x - oldPrime) & 15`       |
+| RIGHT     | `x = (x + oldPrime + SAV) & 15` |
 
 (`SAV` = `SQUARE_AVOIDANCE_VALUE` = 1, a constant offset applied only to
 DOWN and RIGHT. This breaks the symmetry between opposite directions on the
@@ -229,7 +231,7 @@ single-byte inputs confirms 0 collisions.
 The originally identified groups were:
 
 | Group | Byte values with equivalent path structure |
-|-------|---------------------------------------------|
+|-------|--------------------------------------------|
 | 1     | `0x1A`, `0x1B`, `0x1E`, `0x1F`             |
 | 2     | `0x26`, `0x27`, `0x36`, `0x37`             |
 | 3     | `0x29`, `0x2D`, `0x39`, `0x3D`             |
@@ -281,12 +283,12 @@ yields the direction sequence LEFT, DOWN, UP, RIGHT.
 
 Initial state: cursor at $(0, 0)$, all cells hold `value=2`, `primeIndex=0`.
 
-| Step | Bits | Dir.  | $\Delta$prime | New prime | Old value | Jump formula                 | New pos.  |
-|------|------|-------|-------------|-----------|-----------|------------------------------|-----------|
-| 1    | `10` | LEFT  | +3          | 7         | 2         | $x=(0-2)\&15=14$            | $(14, 0)$ |
-| 2    | `11` | DOWN  | +4          | 11        | 2         | $y=(0+2+1)\&15=3$           | $(14, 3)$ |
-| 3    | `00` | UP    | +1          | 3         | 2         | $y=(3-2)\&15=1$             | $(14, 1)$ |
-| 4    | `01` | RIGHT | +2          | 5         | 2         | $x=(14+2+1)\&15=1$          | $(1, 1)$  |
+| Step | Bits | Dir.  | $\Delta$prime | New prime | Old value | Jump formula       | New pos.  |
+|------|------|-------|---------------|-----------|-----------|--------------------|-----------|
+| 1    | `10` | LEFT  | +3            | 7         | 2         | $x=(0-2)\&15=14$   | $(14, 0)$ |
+| 2    | `11` | DOWN  | +4            | 11        | 2         | $y=(0+2+1)\&15=3$  | $(14, 3)$ |
+| 3    | `00` | UP    | +1            | 3         | 2         | $y=(3-2)\&15=1$    | $(14, 1)$ |
+| 4    | `01` | RIGHT | +2            | 5         | 2         | $x=(14+2+1)\&15=1$ | $(1, 1)$  |
 
 After one byte, four cells have been visited. Each now holds a different
 prime (7, 11, 3, 5) instead of the initial 2 — and the cursor sits at
@@ -299,24 +301,24 @@ four directions** as `0x4E`, just in a different order. Since all source cells
 initially hold `value = 2`, the net displacement on each axis is identical:
 both cursors arrive at $(1, 1)$.
 
-| Step | Bits | Dir.  | $\Delta$prime | New prime | Old value | Jump formula               | New pos.  |
-|------|------|-------|-------------|-----------|-----------|------------------------------|-----------|
-| 1    | `11` | DOWN  | +4          | 11        | 2         | $y=(0+2+1)\&15=3$            | $(0, 3)$  |
-| 2    | `10` | LEFT  | +3          | 7         | 2         | $x=(0-2)\&15=14$             | $(14, 3)$ |
-| 3    | `01` | RIGHT | +2          | 5         | 2         | $x=(14+2+1)\&15=1$           | $(1, 3)$  |
-| 4    | `00` | UP    | +1          | 3         | 2         | $y=(3-2)\&15=1$              | $(1, 1)$  |
+| Step | Bits | Dir.  | $\Delta$prime | New prime | Old value | Jump formula       | New pos.  |
+|------|------|-------|---------------|-----------|-----------|--------------------|-----------|
+| 1    | `11` | DOWN  | +4            | 11        | 2         | $y=(0+2+1)\&15=3$  | $(0, 3)$  |
+| 2    | `10` | LEFT  | +3            | 7         | 2         | $x=(0-2)\&15=14$   | $(14, 3)$ |
+| 3    | `01` | RIGHT | +2            | 5         | 2         | $x=(14+2+1)\&15=1$ | $(1, 3)$  |
+| 4    | `00` | UP    | +1            | 3         | 2         | $y=(3-2)\&15=1$    | $(1, 1)$  |
 
 Both bytes end at $(1, 1)$. Yet they leave **different grid states** —
 demonstrating both collision-prevention mechanisms in action:
 
-| Cell      | `0x4E`              | `0x1B`              |
-|-----------|---------------------|---------------------|
-| $(0, 0)$  | 7 (LEFT, $+3$)     | 11 (DOWN, $+4$)     |
-| $(14, 3)$ | 3 (UP, $+1$)       | 5 (RIGHT, $+2$)     |
-| $(14, 0)$ | 11 (DOWN, $+4$)    | untouched (= 2)     |
-| $(14, 1)$ | 5 (RIGHT, $+2$)    | untouched (= 2)     |
-| $(0, 3)$  | untouched (= 2)    | 7 (LEFT, $+3$)      |
-| $(1, 3)$  | untouched (= 2)    | 3 (UP, $+1$)        |
+| Cell      | `0x4E`          | `0x1B`          |
+|-----------|-----------------|-----------------|
+| $(0, 0)$  | 7 (LEFT, $+3$)  | 11 (DOWN, $+4$) |
+| $(14, 3)$ | 3 (UP, $+1$)    | 5 (RIGHT, $+2$) |
+| $(14, 0)$ | 11 (DOWN, $+4$) | untouched (= 2) |
+| $(14, 1)$ | 5 (RIGHT, $+2$) | untouched (= 2) |
+| $(0, 3)$  | untouched (= 2) | 7 (LEFT, $+3$)  |
+| $(1, 3)$  | untouched (= 2) | 3 (UP, $+1$)    |
 
 **Two independent effects prevent a collision:**
 
@@ -342,14 +344,14 @@ After input integration, the entire grid is swept $r$ times (default: $r = 10$)
 in processing rounds. In each round **every cell** is updated — depending on
 its `colorIndex`, which was fixed during Phase 2:
 
-| colorIndex | Operation                   | Neighbour          |
-|------------|-----------------------------|--------------------|
-| 0 — ADD    | `value += neighbour.value`  | above              |
-| 1 — SUB    | `value -= neighbour.value`  | below              |
-| 2 — XOR    | `value ^= neighbour.value`  | left               |
-| 3 — AND    | `value &= neighbour.value`  | right              |
-| 4 — OR     | `value \|= neighbour.value` | left               |
-| 5 — INVERT | `value = ~value`            | —                  |
+| colorIndex | Operation                                    | Neighbour      |
+|------------|----------------------------------------------|----------------|
+| 0 — ADD    | `value += neighbour.value`                   | above (posY−1) |
+| 1 — SUB    | `value -= neighbour.value`                   | below (posY+1) |
+| 2 — XOR    | `value ^= neighbour.value`                   | left  (posX−1) |
+| 3 — RLX    | `value = ROL64(value, 13) ^ neighbour.value` | right (posX+1) |
+| 4 — RRA    | `value = ROR64(value, 7)  + neighbour.value` | left  (posX−1) |
+| 5 — INVERT | `value = ~value`                             | —              |
 
 Boundary handling: at grid edges, constant fallback values (1 or unchanged
 value) are used to avoid undefined behaviour.
@@ -485,12 +487,12 @@ This distinguishes Secasy fundamentally from SHA-256.
 
 **Comparison:**
 
-| Function      | Internal State  | Output       | Ratio    | Length Ext. Vulnerable? |
-|---------------|-----------------|--------------|----------|-------------------------|
-| SHA-256 [@nist_fips180_4]   | 256 bits        | 256 bits     | 1:1      | Yes                     |
-| SHA-512 [@nist_fips180_4]   | 512 bits        | 512 bits     | 1:1      | Yes                     |
+| Function                  | Internal State  | Output       | Ratio    | Length Ext. Vulnerable? |
+|---------------------------|-----------------|--------------|----------|-------------------------|
+| SHA-256 [@nist_fips180_4] | 256 bits        | 256 bits     | 1:1      | Yes                     |
+| SHA-512 [@nist_fips180_4] | 512 bits        | 512 bits     | 1:1      | Yes                     |
 | SHA-3-256 [@nist_fips202] | 1,600 bits      | 256 bits     | 6.25:1   | No                      |
-| **Secasy**    | **16,384 bits** | **512 bits** | **32:1** | **No**                  |
+| **Secasy**                | **16,384 bits** | **512 bits** | **32:1** | **No**                  |
 
 ### 8.4 Avalanche Effect (empirically confirmed) [@webster1986_sboxes]
 
@@ -525,13 +527,13 @@ Collision.
 
 ### 9.1 Deviation from Ideal (empirical)
 
-| Algorithm    | Avalanche     | Bit Distribution | Deviation from Ideal |
-|--------------|---------------|------------------|----------------------|
-| BLAKE2b [@aumasson2013_blake2]  | 50.0 %        | 50.01 %          | 0.03 %               |
-| SHA-512 [@nist_fips180_4]  | 49.9 %        | 50.18 %          | 0.06 %               |
-| SHA3-256 [@nist_fips202] | 49.9 %        | 50.28 %          | 0.06 %               |
-| SHA-256 [@nist_fips180_4]  | 50.2 %        | 49.87 %          | 0.21 %               |
-| **Secasy**   | **50.00 %**   | **49.96 %**      | **0.04 %**           |
+| Algorithm                      | Avalanche   | Bit Distribution | Deviation from Ideal |
+|--------------------------------|-------------|------------------|----------------------|
+| BLAKE2b [@aumasson2013_blake2] | 50.0 %      | 50.01 %          | 0.03 %               |
+| SHA-512 [@nist_fips180_4]      | 49.9 %      | 50.18 %          | 0.06 %               |
+| SHA3-256 [@nist_fips202]       | 49.9 %      | 50.28 %          | 0.06 %               |
+| SHA-256 [@nist_fips180_4]      | 50.2 %      | 49.87 %          | 0.21 %               |
+| **Secasy**                     | **50.00 %** | **49.96 %**      | **0.04 %**           |
 
 Secasy shows the smallest empirical deviation from the theoretical ideal.
 This comparison measures only statistical surface properties, however — it
@@ -539,14 +541,14 @@ says nothing about algebraic attackability.
 
 ### 9.2 Construction Comparison
 
-| Property                | Merkle-Damgård  | SHA-3 (Sponge)       | Secasy (Grid)   |
-|-------------------------|-----------------|----------------------|-----------------|
-| Internal state > output | No              | Yes (6.25:1)         | Yes (32:1)      |
-| Length extension safe   | No              | Yes                  | Yes             |
+| Property                | Merkle-Damgård  | SHA-3 (Sponge)       | Secasy (Grid)                 |
+|-------------------------|-----------------|----------------------|-------------------------------|
+| Internal state > output | No              | Yes (6.25:1)         | Yes (32:1)                    |
+| Length extension safe   | No              | Yes                  | Yes                           |
 | Non-linear mixing ops   | Partially       | No (χ is invertible) | Yes (ARX: rotation + add/XOR) |
-| Formally proven secure  | Yes (reducible) | Yes                  | No              |
-| Peer reviewed           | Yes             | Yes                  | No              |
-| Round invariance        | No              | No                   | Yes (empirical) |
+| Formally proven secure  | Yes (reducible) | Yes                  | No                            |
+| Peer reviewed           | Yes             | Yes                  | No                            |
+| Round invariance        | No              | No                   | Yes (empirical)               |
 
 ### 9.3 Structural Difference from AES-Based Constructions
 
@@ -572,13 +574,13 @@ be cryptographically worthless.
 
 ### Untested Attack Techniques
 
-| Technique               | Target                                    | Status           |
-|-------------------------|-------------------------------------------|------------------|
-| Algebraic attacks [@courtois2002]  | Polynomial representation of the function | Not investigated |
-| Meet-in-the-middle [@diffie1977] | Splitting the computation                 | Not investigated |
-| Rebound attacks [@mendel2009_rebound]    | Weaknesses in the diffusion layer         | Not investigated |
-| Cube attacks [@dinur2009_cube]       | Low-degree approximations                 | Not investigated |
-| SAT-solver attacks      | Constraint-based preimage search          | Not investigated |
+| Technique                             | Target                                    | Status           |
+|---------------------------------------|-------------------------------------------|------------------|
+| Algebraic attacks [@courtois2002]     | Polynomial representation of the function | Not investigated |
+| Meet-in-the-middle [@diffie1977]      | Splitting the computation                 | Not investigated |
+| Rebound attacks [@mendel2009_rebound] | Weaknesses in the diffusion layer         | Not investigated |
+| Cube attacks [@dinur2009_cube]        | Low-degree approximations                 | Not investigated |
+| SAT-solver attacks                    | Constraint-based preimage search          | Not investigated |
 
 ### Identified Open Questions
 
@@ -640,15 +642,15 @@ and the Hamming distance to the original hash was measured
 
 **Table: Mean Hamming distance and standard deviation by mode**
 
-| Mode                          | Mean $\mu$ | Std. dev. $\sigma$ | Min       | Max       | Assessment              |
-|-------------------------------|-----------|-------------------|-----------|-----------|-------------------------|
-| Baseline (full mix)           | 50.0 %    | ±2.2 %            | 41.4 %    | 59.2 %    | Optimal                 |
-| ADD only                      | 50.0 %    | ±2.3 %            | 21.3 %    | 58.8 %    | Strong                  |
-| SUB only                      | 50.0 %    | ±2.2 %            | 38.3 %    | 60.0 %    | Strong                  |
-| XOR only                      | 49.6 %    | ±3.3 %            | 12.7 %    | 60.5 %    | Strong                  |
-| RLX only (Rotate-Left–XOR)    | 49.9 %    | ±2.5 %            | 11.9 %    | 58.8 %    | Strong                  |
-| RRA only (Rotate-Right–Add)   | 50.0 %    | ±2.2 %            | 27.0 %    | 58.8 %    | Strong                  |
-| INVERT only                   | 49.5 %    | ±3.6 %            | 8.6 %     | 61.1 %    | Strong                  |
+| Mode                        | Mean $\mu$ | Std. dev. $\sigma$ | Min    | Max    | Assessment |
+|-----------------------------|------------|--------------------|--------|--------|------------|
+| Baseline (full mix)         | 50.0 %     | ±2.2 %             | 41.4 % | 59.2 % | Optimal    |
+| ADD only                    | 50.0 %     | ±2.3 %             | 21.3 % | 58.8 % | Strong     |
+| SUB only                    | 50.0 %     | ±2.2 %             | 38.3 % | 60.0 % | Strong     |
+| XOR only                    | 49.6 %     | ±3.3 %             | 12.7 % | 60.5 % | Strong     |
+| RLX only (Rotate-Left–XOR)  | 49.9 %     | ±2.5 %             | 11.9 % | 58.8 % | Strong     |
+| RRA only (Rotate-Right–Add) | 50.0 %     | ±2.2 %             | 27.0 % | 58.8 % | Strong     |
+| INVERT only                 | 49.5 %     | ±3.6 %             | 8.6 %  | 61.1 % | Strong     |
 
 > **On the standard deviation $\sigma$:** It describes the **spread of Hamming
 > distances** around the mean. A small $\sigma$ means that *every individual*
@@ -719,14 +721,13 @@ flip rate from the ideal $50\,\%$.
 
 **Table: Diffusion quality by field size**
 
-| Field size      | Cells  | $\mu$           | $\sigma$         | Min         | Max         | Nibble bias   | Assessment        |
-|-----------------|--------|-----------------|------------------|-------------|-------------|---------------|-------------------|
-| $4 \times 4$    | 16     | 50.0 %          | ±2.4 %           | 2.7 %       | 67.6 %      | 0.20 pp       | Marginal          |
-| $8 \times 8$    | 64     | 50.0 %          | ±2.2 %           | 10.6 %      | 59.6 %      | 0.20 pp       | Near-baseline     |
-| $16 \times 16$  | 256    | 50.0 %          | ±2.2 %           | 40.2 %      | 59.4 %      | 0.20 pp       | **Baseline**      |
-| $32 \times 32$  | 1024   | 50.0 %          | ±2.2 %           | 40.4 %      | 60.2 %      | 0.26 pp       | Equivalent        |
-| $64 \times 64$  | 4096   | 50.0 %          | ±2.2 %           | 40.8 %      | 59.6 %      | 0.18 pp       | Equivalent        |
-
+| Field size     | Cells | $\mu$  | $\sigma$ | Min    | Max    | Nibble bias | Assessment    |
+|----------------|-------|--------|----------|--------|--------|-------------|---------------|
+| $4 \times 4$   | 16    | 50.0 % | ±2.4 %   | 2.7 %  | 67.6 % | 0.20 pp     | Marginal      |
+| $8 \times 8$   | 64    | 50.0 % | ±2.2 %   | 10.6 % | 59.6 % | 0.20 pp     | Near-baseline |
+| $16 \times 16$ | 256   | 50.0 % | ±2.2 %   | 40.2 % | 59.4 % | 0.20 pp     | **Baseline**  |
+| $32 \times 32$ | 1024  | 50.0 % | ±2.2 %   | 40.4 % | 60.2 % | 0.26 pp     | Equivalent    |
+| $64 \times 64$ | 4096  | 50.0 % | ±2.2 %   | 40.8 % | 59.6 % | 0.18 pp     | Equivalent    |
 
 > **Interpretation note:** The mean $\mu$ alone is not very informative — the
 > decisive metric is the standard deviation $\sigma$, which measures the
@@ -780,9 +781,9 @@ row and column; the vertical axis represents the cell value ($\texttt{uint64\_t}
 Colours encode the cell's assigned operation (ADD, SUB, XOR, RLX, RRA, INVERT).
 
 ![Grid landscape: 3-D view of cell values after hashing a $\approx 50$ KB file.
-  The values are spread across the full 64-bit range with no visible
-  clustering or pattern — consistent with the statistical findings
-  above.](img/grid_landscape_file_input.png)
+The values are spread across the full 64-bit range with no visible
+clustering or pattern — consistent with the statistical findings
+above.](img/grid_landscape_file_input.png)
 
 The plot confirms visually that the grid state exhibits no spatial
 correlation: neighbouring cells hold unrelated values, the six operations
@@ -878,9 +879,9 @@ and after all 128 bytes.
 |---------------------------|------------------|--------------------|---------------------|
 | `0xDEADBEEFCAFE1234`      | 6.29             | 230.91             | 244.04              |
 | `0x123456789ABCDEF0`      | 5.92             | 230.97             | 244.28              |
-| `0xAAAAAAAAAAAAAAAA`       | 6.10             | 230.76             | 244.35              |
-| `0x5555555555555555`       | 5.87             | 231.16             | 244.22              |
-| `0xFEDCBA9876543210`       | 5.67             | 231.29             | 244.50              |
+| `0xAAAAAAAAAAAAAAAA`      | 6.10             | 230.76             | 244.35              |
+| `0x5555555555555555`      | 5.87             | 231.16             | 244.22              |
+| `0xFEDCBA9876543210`      | 5.67             | 231.29             | 244.50              |
 | **Grand mean**            | **5.97**         | **231.02**         | **244.28**          |
 | **$\sigma$ across seeds** | **0.21**         | **0.19**           | **0.15**            |
 
@@ -936,13 +937,13 @@ exhibited a healthy uniform distribution.
 
 Grid-state analysis of the input `16x0x1B` (16 repetitions of byte `0x1B`):
 
-| Metric                        | AND/OR (original) | ARX (current) | Change           |
-|-------------------------------|-------------------|---------------|------------------|
-| Distinct cell values (of 256) | 110               | 256           | +133 %           |
-| Minimum cell value            | 0                 | 15,810        | No zero fixpoint |
-| Maximum cell value            | $1.84 \times 10^{19}$ | $1.84 \times 10^{19}$ | Unchanged |
-| Standard deviation            | $8.0 \times 10^{18}$  | $5.5 \times 10^{18}$  | More uniform |
-| Bimodal clustering            | Yes (at 0 and max) | No            | Eliminated       |
+| Metric                        | AND/OR (original)     | ARX (current)         | Change           |
+|-------------------------------|-----------------------|-----------------------|------------------|
+| Distinct cell values (of 256) | 110                   | 256                   | +133 %           |
+| Minimum cell value            | 0                     | 15,810                | No zero fixpoint |
+| Maximum cell value            | $1.84 \times 10^{19}$ | $1.84 \times 10^{19}$ | Unchanged        |
+| Standard deviation            | $8.0 \times 10^{18}$  | $5.5 \times 10^{18}$  | More uniform     |
+| Bimodal clustering            | Yes (at 0 and max)    | No                    | Eliminated       |
 
 The AND/OR version lost 57 % of cell value diversity during processing.
 The ARX version retains 100 % — every cell holds a unique value after
@@ -957,10 +958,10 @@ primitives** — a well-established construction family used in SHA-512
 [@nist_fips180_4], BLAKE2 [@aumasson2013_blake2], and ChaCha20
 [@bernstein2008_chacha]:
 
-| Slot | Old Operation | New Operation | Formula |
-|------|---------------|---------------|---------|
-| 3    | `value &= neighbour` (AND) | **RLX** (Rotate-Left–XOR) | `value = ROL(value, 13) ^ neighbour` |
-| 4    | `value \|= neighbour` (OR) | **RRA** (Rotate-Right–Add) | `value = ROR(value, 7) + neighbour` |
+| Slot | Old Operation              | New Operation              | Formula                              |
+|------|----------------------------|----------------------------|--------------------------------------|
+| 3    | `value &= neighbour` (AND) | **RLX** (Rotate-Left–XOR)  | `value = ROL(value, 13) ^ neighbour` |
+| 4    | `value \|= neighbour` (OR) | **RRA** (Rotate-Right–Add) | `value = ROR(value, 7) + neighbour`  |
 
 **Rotation constants:** 13 (left) and 7 (right). Both are coprime to 64
 and avoid alignment with byte boundaries (multiples of 8), ensuring that
@@ -997,7 +998,8 @@ two different inputs. Each point represents one of the 256 grid cells;
 the $z$-axis encodes the cell's `value` and colour indicates the assigned
 operation (colorIndex).
 
-![Grid landscape for input `16×0x1B` — ARX version. All 256 cells occupy distinct heights with no visible clustering.](img/grid_landscape_16x1B.png)
+![Grid landscape for input
+`16×0x1B` — ARX version. All 256 cells occupy distinct heights with no visible clustering.](img/grid_landscape_16x1B.png)
 
 ![Grid landscape for input `16×0x4E` — ARX version.](img/grid_landscape_16x4E.png)
 
@@ -1011,5 +1013,28 @@ on this construction or on variants where Phase 3 operations have minimal
 impact (see round-reduction analysis in Section 6). Updated isolation
 measurements for the RLX and RRA modes individually are planned.
 
+---
+
 \newpage
+
+## Appendix E — Grid-State Landscape: Hashing ALGORITHM.md
+
+The following 3-D scatter plot shows the Secasy grid state after hashing
+this very document (`ALGORITHM.md`, $\approx 40$ KB). Each point represents
+one of the 256 cells; the vertical axis encodes the cell's `uint64_t` value
+and colour indicates the assigned operation (ADD, SUB, XOR, RLX, RRA, INVERT).
+
+![Grid-state landscape after hashing ALGORITHM.md. All 256 cells occupy
+distinct, scattered heights across the full 64-bit range with no visible
+spatial clustering — consistent with the diffusion results reported in
+Appendix B.](img/grid_landscape_algorithm_md.png)
+
+The absence of clustering or periodiciy in the final state is the spatial
+counterpart of the statistical claim that $\sigma \leq 2.2\,\%$ for the
+$16 \times 16$ grid (Appendix B). It also demonstrates that the ARX
+operations (Appendix D) produce visually indistinguishable diffusion
+for realistic, structured inputs such as a formatted text document.
+
+\newpage
+
 ## 11. References

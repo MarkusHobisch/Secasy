@@ -101,11 +101,11 @@ Rekonstruktion des Feldes ist algebraisch nicht durchführbar.
 Das Gitter besteht aus **256 Zellen** in einem 16×16-Raster. Jede Zelle
 speichert drei unabhängige Werte:
 
-| Feld               | Typ            | Bedeutung                                                                     |
-|--------------------|----------------|-------------------------------------------------------------------------------|
-| `value`            | `uint64_t`     | Numerischer Zellwert; wird durch Operationen verändert                        |
-| `primeIndex`       | `uint32_t`     | Zeiger in die vorberechnete Primzahltabelle                                   |
-| `colorIndex`       | `uint8_t`      | Bestimmt, welche der 6 Operationen in Phase 3 auf diese Zelle angewendet wird |
+| Feld         | Typ        | Bedeutung                                                                     |
+|--------------|------------|-------------------------------------------------------------------------------|
+| `value`      | `uint64_t` | Numerischer Zellwert; wird durch Operationen verändert                        |
+| `primeIndex` | `uint32_t` | Zeiger in die vorberechnete Primzahltabelle                                   |
+| `colorIndex` | `uint8_t`  | Bestimmt, welche der 6 Operationen in Phase 3 auf diese Zelle angewendet wird |
 
 Zusätzlich gibt es eine **Primzahltabelle** (`primes.h`) mit den ersten
 16.000.000 Primzahlen (~355 KB). Diese Tabelle wird bei der Initialisierung
@@ -125,7 +125,8 @@ Jede Ausführung beginnt vom selben Ausgangszustand:
 - Alle 256 Zellen: `value = 2`, `primeIndex = 0`, `colorIndex = ADD`
 - Cursor: Position $(0, 0)$
 
-Der Wert 2 ist der Startwert. Es ist die erste Primzahl und dient als Initialisierung. Natürlich hätte man auch 1 oder jede andere Initialisierung nehmen können, wir haben uns aus rein pragmatischen Gründen für die 2 entschieden. 
+Der Wert 2 ist der Startwert. Es ist die erste Primzahl und dient als Initialisierung. Natürlich hätte man auch 1 oder
+jede andere Initialisierung nehmen können, wir haben uns aus rein pragmatischen Gründen für die 2 entschieden.
 
 ---
 
@@ -170,12 +171,12 @@ Der Cursor bewegt sich zur nächsten Position. Jede Richtung aktualisiert
 genau **eine** Koordinate — die **Primärachse** — um einen datenabhängigen
 Offset, der vom alten Zellwert abgeleitet wird:
 
-| Richtung | Formel                                  |
-|----------|-----------------------------------------|
-| UP       | `y = (y - oldPrime) & 15`               |
-| DOWN     | `y = (y + oldPrime + SAV) & 15`         |
-| LEFT     | `x = (x - oldPrime) & 15`               |
-| RIGHT    | `x = (x + oldPrime + SAV) & 15`         |
+| Richtung | Formel                          |
+|----------|---------------------------------|
+| UP       | `y = (y - oldPrime) & 15`       |
+| DOWN     | `y = (y + oldPrime + SAV) & 15` |
+| LEFT     | `x = (x - oldPrime) & 15`       |
+| RIGHT    | `x = (x + oldPrime + SAV) & 15` |
 
 (`SAV` = `SQUARE_AVOIDANCE_VALUE` = 1, ein konstanter Offset der nur bei DOWN
 und RIGHT angewendet wird. Dies bricht die Symmetrie zwischen
@@ -229,13 +230,13 @@ wiederholten Einzelbyte-Eingaben bestätigen 0 Kollisionen.
 
 Die ursprünglich identifizierten Gruppen waren:
 
-| Gruppe | Byte-Werte mit äquivalenter Pfadstruktur    |
-|--------|---------------------------------------------|
-| 1      | `0x1A`, `0x1B`, `0x1E`, `0x1F`              |
-| 2      | `0x26`, `0x27`, `0x36`, `0x37`              |
-| 3      | `0x29`, `0x2D`, `0x39`, `0x3D`              |
-| 4      | `0x4A`, `0x4B`, `0x4E`, `0x4F`              |
-| 5      | `0x86`, `0x87`, `0xC6`, `0xC7`              |
+| Gruppe | Byte-Werte mit äquivalenter Pfadstruktur |
+|--------|------------------------------------------|
+| 1      | `0x1A`, `0x1B`, `0x1E`, `0x1F`           |
+| 2      | `0x26`, `0x27`, `0x36`, `0x37`           |
+| 3      | `0x29`, `0x2D`, `0x39`, `0x3D`           |
+| 4      | `0x4A`, `0x4B`, `0x4E`, `0x4F`           |
+| 5      | `0x86`, `0x87`, `0xC6`, `0xC7`           |
 
 Das gemeinsame Muster: In jeder Gruppe unterscheiden sich die Bytes nur
 in Bits, die zu Richtungen auf **verschiedenen Achsen** führen — die
@@ -286,12 +287,12 @@ ergibt sich die Richtungsfolge LEFT, DOWN, UP, RIGHT.
 
 Ausgangszustand: Cursor bei $(0, 0)$, alle Zellen haben `value=2`, `primeIndex=0`.
 
-| Schritt | Bits | Richtung | $\Delta$prime | Neue Primzahl | Alter Wert | Sprungformel                 | Neue Pos. |
-|---------|------|----------|-------------|---------------|------------|------------------------------|-----------|
-| 1       | `10` | LEFT     | +3          | 7             | 2          | $x=(0-2)\&15=14$            | $(14, 0)$ |
-| 2       | `11` | DOWN     | +4          | 11            | 2          | $y=(0+2+1)\&15=3$           | $(14, 3)$ |
-| 3       | `00` | UP       | +1          | 3             | 2          | $y=(3-2)\&15=1$             | $(14, 1)$ |
-| 4       | `01` | RIGHT    | +2          | 5             | 2          | $x=(14+2+1)\&15=1$          | $(1, 1)$  |
+| Schritt | Bits | Richtung | $\Delta$prime | Neue Primzahl | Alter Wert | Sprungformel       | Neue Pos. |
+|---------|------|----------|---------------|---------------|------------|--------------------|-----------|
+| 1       | `10` | LEFT     | +3            | 7             | 2          | $x=(0-2)\&15=14$   | $(14, 0)$ |
+| 2       | `11` | DOWN     | +4            | 11            | 2          | $y=(0+2+1)\&15=3$  | $(14, 3)$ |
+| 3       | `00` | UP       | +1            | 3             | 2          | $y=(3-2)\&15=1$    | $(14, 1)$ |
+| 4       | `01` | RIGHT    | +2            | 5             | 2          | $x=(14+2+1)\&15=1$ | $(1, 1)$  |
 
 Nach einem Byte wurden vier Zellen besucht. Jede enthält nun eine andere
 Primzahl (7, 11, 3, 5) statt des initialen Werts 2 — und der Cursor
@@ -304,24 +305,24 @@ Das Byte `0x1B` = `00011011` dekodiert zu DOWN, LEFT, RIGHT, UP — die
 Quellzellen initial `value = 2` haben, ist die Netto-Verschiebung auf jeder
 Achse identisch: Beide Cursor landen auf $(1, 1)$.
 
-| Schritt | Bits | Richtung | $\Delta$prime | Neue Primzahl | Alter Wert | Sprungformel               | Neue Pos. |
-|---------|------|----------|-------------|---------------|------------|------------------------------|-----------|
-| 1       | `11` | DOWN     | +4          | 11            | 2          | $y=(0+2+1)\&15=3$            | $(0, 3)$  |
-| 2       | `10` | LEFT     | +3          | 7             | 2          | $x=(0-2)\&15=14$             | $(14, 3)$ |
-| 3       | `01` | RIGHT    | +2          | 5             | 2          | $x=(14+2+1)\&15=1$           | $(1, 3)$  |
-| 4       | `00` | UP       | +1          | 3             | 2          | $y=(3-2)\&15=1$              | $(1, 1)$  |
+| Schritt | Bits | Richtung | $\Delta$prime | Neue Primzahl | Alter Wert | Sprungformel       | Neue Pos. |
+|---------|------|----------|---------------|---------------|------------|--------------------|-----------|
+| 1       | `11` | DOWN     | +4            | 11            | 2          | $y=(0+2+1)\&15=3$  | $(0, 3)$  |
+| 2       | `10` | LEFT     | +3            | 7             | 2          | $x=(0-2)\&15=14$   | $(14, 3)$ |
+| 3       | `01` | RIGHT    | +2            | 5             | 2          | $x=(14+2+1)\&15=1$ | $(1, 3)$  |
+| 4       | `00` | UP       | +1            | 3             | 2          | $y=(3-2)\&15=1$    | $(1, 1)$  |
 
 Beide Bytes enden auf $(1, 1)$. Trotzdem hinterlassen sie **verschiedene
 Gitterzustände** — was beide Kollisions-Verhinderungsmechanismen demonstriert:
 
-| Zelle     | `0x4E`              | `0x1B`               |
-|-----------|---------------------|----------------------|
-| $(0, 0)$  | 7 (LEFT, $+3$)     | 11 (DOWN, $+4$)      |
-| $(14, 3)$ | 3 (UP, $+1$)       | 5 (RIGHT, $+2$)      |
-| $(14, 0)$ | 11 (DOWN, $+4$)    | unverändert (= 2)    |
-| $(14, 1)$ | 5 (RIGHT, $+2$)    | unverändert (= 2)    |
-| $(0, 3)$  | unverändert (= 2)  | 7 (LEFT, $+3$)       |
-| $(1, 3)$  | unverändert (= 2)  | 3 (UP, $+1$)         |
+| Zelle     | `0x4E`            | `0x1B`            |
+|-----------|-------------------|-------------------|
+| $(0, 0)$  | 7 (LEFT, $+3$)    | 11 (DOWN, $+4$)   |
+| $(14, 3)$ | 3 (UP, $+1$)      | 5 (RIGHT, $+2$)   |
+| $(14, 0)$ | 11 (DOWN, $+4$)   | unverändert (= 2) |
+| $(14, 1)$ | 5 (RIGHT, $+2$)   | unverändert (= 2) |
+| $(0, 3)$  | unverändert (= 2) | 7 (LEFT, $+3$)    |
+| $(1, 3)$  | unverändert (= 2) | 3 (UP, $+1$)      |
 
 **Zwei unabhängige Effekte verhindern eine Kollision:**
 
@@ -348,14 +349,14 @@ Nach der Eingabe-Integration wird das gesamte Gitter $r$ Mal (Standard: $r = 10$
 in Verarbeitungsrunden durchlaufen. In jeder Runde wird **jede Zelle**
 aktualisiert — abhängig von ihrem `colorIndex`, der in Phase 2 festgelegt wurde:
 
-| colorIndex | Operation                                | Nachbar          |
-|------------|------------------------------------------|------------------|
-| 0 — ADD    | `value += Nachbar.value`                 | oben             |
-| 1 — SUB    | `value -= Nachbar.value`                 | unten            |
-| 2 — XOR    | `value ^= Nachbar.value`                 | links            |
-| 3 — RLX    | `value = ROL(value, 13) ^ Nachbar`       | rechts           |
-| 4 — RRA    | `value = ROR(value, 7) + Nachbar`        | links            |
-| 5 — INVERT | `value = ~value`                         | —                |
+| colorIndex | Operation                          | Nachbar |
+|------------|------------------------------------|---------|
+| 0 — ADD    | `value += Nachbar.value`           | oben    |
+| 1 — SUB    | `value -= Nachbar.value`           | unten   |
+| 2 — XOR    | `value ^= Nachbar.value`           | links   |
+| 3 — RLX    | `value = ROL(value, 13) ^ Nachbar` | rechts  |
+| 4 — RRA    | `value = ROR(value, 7) + Nachbar`  | links   |
+| 5 — INVERT | `value = ~value`                   | —       |
 
 Die Abkürzungen RLX und RRA stehen für **Rotate-Left–XOR** und
 **Rotate-Right–Add**. Zusammen mit ADD, SUB und XOR bilden sie eine
@@ -505,12 +506,12 @@ weil ihm 15.872 Bit fehlen. Dies unterscheidet Secasy fundamental von SHA-256.
 
 **Vergleich:**
 
-| Funktion                         | Interner Zustand | Ausgabe     | Verhältnis | Length Ext. anfällig? |
-|----------------------------------|------------------|-------------|------------|-----------------------|
-| SHA-256 [@nist_fips180_4]        | 256 Bit          | 256 Bit     | 1:1        | Ja                    |
-| SHA-512 [@nist_fips180_4]        | 512 Bit          | 512 Bit     | 1:1        | Ja                    |
-| SHA-3-256 [@nist_fips202]        | 1.600 Bit        | 256 Bit     | 6,25:1     | Nein                  |
-| **Secasy**                       | **16.384 Bit**   | **512 Bit** | **32:1**   | **Nein**              |
+| Funktion                  | Interner Zustand | Ausgabe     | Verhältnis | Length Ext. anfällig? |
+|---------------------------|------------------|-------------|------------|-----------------------|
+| SHA-256 [@nist_fips180_4] | 256 Bit          | 256 Bit     | 1:1        | Ja                    |
+| SHA-512 [@nist_fips180_4] | 512 Bit          | 512 Bit     | 1:1        | Ja                    |
+| SHA-3-256 [@nist_fips202] | 1.600 Bit        | 256 Bit     | 6,25:1     | Nein                  |
+| **Secasy**                | **16.384 Bit**   | **512 Bit** | **32:1**   | **Nein**              |
 
 ### 8.4 Avalanche-Effekt (empirisch bestätigt) [@webster1986_sboxes]
 
@@ -545,13 +546,13 @@ Bit Transition, Hash Collision.
 
 ### 9.1 Abweichung vom Ideal (empirisch)
 
-| Algorithmus  | Avalanche     | Bit-Verteilung | Abweichung vom Ideal |
-|--------------|---------------|----------------|----------------------|
-| BLAKE2b [@aumasson2013_blake2]  | 50,0 %        | 50,01 %        | 0,03 %               |
-| SHA-512 [@nist_fips180_4]  | 49,9 %        | 50,18 %        | 0,06 %               |
-| SHA3-256 [@nist_fips202] | 49,9 %        | 50,28 %        | 0,06 %               |
-| SHA-256 [@nist_fips180_4]  | 50,2 %        | 49,87 %        | 0,21 %               |
-| **Secasy**   | **50,00 %**   | **49,96 %**    | **0,04 %**           |
+| Algorithmus                    | Avalanche   | Bit-Verteilung | Abweichung vom Ideal |
+|--------------------------------|-------------|----------------|----------------------|
+| BLAKE2b [@aumasson2013_blake2] | 50,0 %      | 50,01 %        | 0,03 %               |
+| SHA-512 [@nist_fips180_4]      | 49,9 %      | 50,18 %        | 0,06 %               |
+| SHA3-256 [@nist_fips202]       | 49,9 %      | 50,28 %        | 0,06 %               |
+| SHA-256 [@nist_fips180_4]      | 50,2 %      | 49,87 %        | 0,21 %               |
+| **Secasy**                     | **50,00 %** | **49,96 %**    | **0,04 %**           |
 
 Secasy zeigt die geringste empirische Abweichung vom theoretischen Ideal.
 Dieser Vergleich misst jedoch nur statistische Oberflächeneigenschaften —
@@ -559,14 +560,14 @@ er sagt nichts über algebraische Angreifbarkeit aus.
 
 ### 9.2 Konstruktionsvergleich
 
-| Eigenschaft                | Merkle-Damgård   | SHA-3 (Sponge)            | Secasy (Gitter) |
-|----------------------------|------------------|---------------------------|-----------------|
-| Interner Zustand > Ausgabe | Nein             | Ja (6,25:1)               | Ja (32:1)       |
-| Length Extension sicher    | Nein             | Ja                        | Ja              |
+| Eigenschaft                | Merkle-Damgård   | SHA-3 (Sponge)            | Secasy (Gitter)              |
+|----------------------------|------------------|---------------------------|------------------------------|
+| Interner Zustand > Ausgabe | Nein             | Ja (6,25:1)               | Ja (32:1)                    |
+| Length Extension sicher    | Nein             | Ja                        | Ja                           |
 | Nichtlineare Misch-Ops     | Teilweise        | Nein (χ ist invertierbar) | Ja (ARX: Rotation + Add/XOR) |
-| Formal bewiesen sicher     | Ja (reduzierbar) | Ja                        | Nein            |
-| Peer reviewed              | Ja               | Ja                        | Nein            |
-| Rundeninvarianz            | Nein             | Nein                      | Ja (empirisch)  |
+| Formal bewiesen sicher     | Ja (reduzierbar) | Ja                        | Nein                         |
+| Peer reviewed              | Ja               | Ja                        | Nein                         |
+| Rundeninvarianz            | Nein             | Nein                      | Ja (empirisch)               |
 
 ### 9.3 Struktureller Unterschied zu AES-basierten Konstruktionen
 
@@ -593,13 +594,13 @@ statistische Tests bestehen und ist dennoch kryptographisch wertlos.
 
 ### Nicht getestete Angriffstechniken
 
-| Technik                    | Ziel                               | Status           |
-|----------------------------|------------------------------------|------------------|
-| Algebraische Angriffe [@courtois2002] | Polynomdarstellung der Funktion    | Nicht untersucht |
-| Meet-in-the-Middle [@diffie1977]    | Aufteilung der Berechnung          | Nicht untersucht |
-| Rebound-Angriffe [@mendel2009_rebound]      | Schwächen in der Diffusionsschicht | Nicht untersucht |
-| Cube-Angriffe [@dinur2009_cube]         | Niedriggrad-Approximationen        | Nicht untersucht |
-| SAT-Solver-Angriffe        | Constraint-basierte Preimage-Suche | Nicht untersucht |
+| Technik                                | Ziel                               | Status           |
+|----------------------------------------|------------------------------------|------------------|
+| Algebraische Angriffe [@courtois2002]  | Polynomdarstellung der Funktion    | Nicht untersucht |
+| Meet-in-the-Middle [@diffie1977]       | Aufteilung der Berechnung          | Nicht untersucht |
+| Rebound-Angriffe [@mendel2009_rebound] | Schwächen in der Diffusionsschicht | Nicht untersucht |
+| Cube-Angriffe [@dinur2009_cube]        | Niedriggrad-Approximationen        | Nicht untersucht |
+| SAT-Solver-Angriffe                    | Constraint-basierte Preimage-Suche | Nicht untersucht |
 
 ### Identifizierte offene Fragen
 
@@ -665,15 +666,15 @@ pro Modus).
 
 **Tabelle: Mittlere Hamming-Distanz und Standardabweichung nach Modus**
 
-| Modus                          | Mittelwert $\mu$ | Stdabw. $\sigma$ | Min         | Max         | Bewertung             |
-|-------------------------------|-----------------|-----------------|-------------|-------------|-----------------------|
-| Baseline (voller Mix)         | 50,0 %          | ±2,2 %          | 41,4 %      | 59,2 %      | Optimal                |
-| ADD only                      | 50,0 %          | ±2,3 %          | 21,3 %      | 58,8 %      | Stark                  |
-| SUB only                      | 50,0 %          | ±2,2 %          | 38,3 %      | 60,0 %      | Stark                  |
-| XOR only                      | 49,6 %          | ±3,3 %          | 12,7 %      | 60,5 %      | Stark                  |
-| RLX only (Rotate-Left–XOR)    | 49,9 %          | ±2,5 %          | 11,9 %      | 58,8 %      | Stark                  |
-| RRA only (Rotate-Right–Add)   | 50,0 %          | ±2,2 %          | 27,0 %      | 58,8 %      | Stark                  |
-| INVERT only                   | 49,5 %          | ±3,6 %          | 8,6 %       | 61,1 %      | Stark                  |
+| Modus                       | Mittelwert $\mu$ | Stdabw. $\sigma$ | Min    | Max    | Bewertung |
+|-----------------------------|------------------|------------------|--------|--------|-----------|
+| Baseline (voller Mix)       | 50,0 %           | ±2,2 %           | 41,4 % | 59,2 % | Optimal   |
+| ADD only                    | 50,0 %           | ±2,3 %           | 21,3 % | 58,8 % | Stark     |
+| SUB only                    | 50,0 %           | ±2,2 %           | 38,3 % | 60,0 % | Stark     |
+| XOR only                    | 49,6 %           | ±3,3 %           | 12,7 % | 60,5 % | Stark     |
+| RLX only (Rotate-Left–XOR)  | 49,9 %           | ±2,5 %           | 11,9 % | 58,8 % | Stark     |
+| RRA only (Rotate-Right–Add) | 50,0 %           | ±2,2 %           | 27,0 % | 58,8 % | Stark     |
+| INVERT only                 | 49,5 %           | ±3,6 %           | 8,6 %  | 61,1 % | Stark     |
 
 > **Zur Standardabweichung $\sigma$:** Sie beschreibt die **Streubreite der
 > Hamming-Abstände** um den Mittelwert. Ein kleines $\sigma$ bedeutet, dass
@@ -747,14 +748,13 @@ vom Ideal $50\,\%$.
 
 **Tabelle: Diffusionsqualität nach Feldgröße**
 
-| Feldgröße       | Zellen | $\mu$           | $\sigma$         | Min         | Max         | Nibble-Bias   | Bewertung         |
-|-----------------|--------|-----------------|------------------|-------------|-------------|---------------|-------------------|
-| $4 \times 4$    | 16     | 50,0 %          | ±2,4 %           | 2,7 %       | 67,6 %      | 0,20 pp       | Marginal          |
-| $8 \times 8$    | 64     | 50,0 %          | ±2,2 %           | 10,6 %      | 59,6 %      | 0,20 pp       | Nahe Baseline     |
-| $16 \times 16$  | 256    | 50,0 %          | ±2,2 %           | 40,2 %      | 59,4 %      | 0,20 pp       | **Baseline**      |
-| $32 \times 32$  | 1024   | 50,0 %          | ±2,2 %           | 40,4 %      | 60,2 %      | 0,26 pp       | Gleichwertig      |
-| $64 \times 64$  | 4096   | 50,0 %          | ±2,2 %           | 40,8 %      | 59,6 %      | 0,18 pp       | Gleichwertig      |
-
+| Feldgröße      | Zellen | $\mu$  | $\sigma$ | Min    | Max    | Nibble-Bias | Bewertung     |
+|----------------|--------|--------|----------|--------|--------|-------------|---------------|
+| $4 \times 4$   | 16     | 50,0 % | ±2,4 %   | 2,7 %  | 67,6 % | 0,20 pp     | Marginal      |
+| $8 \times 8$   | 64     | 50,0 % | ±2,2 %   | 10,6 % | 59,6 % | 0,20 pp     | Nahe Baseline |
+| $16 \times 16$ | 256    | 50,0 % | ±2,2 %   | 40,2 % | 59,4 % | 0,20 pp     | **Baseline**  |
+| $32 \times 32$ | 1024   | 50,0 % | ±2,2 %   | 40,4 % | 60,2 % | 0,26 pp     | Gleichwertig  |
+| $64 \times 64$ | 4096   | 50,0 % | ±2,2 %   | 40,8 % | 59,6 % | 0,18 pp     | Gleichwertig  |
 
 > **Zur Interpretation:** Der Mittelwert $\mu$ allein ist wenig aussagekräftig —
 > entscheidend ist die Standardabweichung $\sigma$, die die *Konsistenz* der
@@ -811,10 +811,10 @@ positioniert; die vertikale Achse repräsentiert den Zellwert
 der Zelle (ADD, SUB, XOR, RLX, RRA, INVERT).
 
 ![Gitter-Landschaft: 3-D-Ansicht der Zellwerte nach Hashing einer
-  $\approx 50$ KB großen Datei. Die Werte verteilen sich über den
-  gesamten 64-Bit-Bereich ohne erkennbares Clustering oder Muster —
-  konsistent mit den statistischen Befunden
-  oben.](../en/img/grid_landscape_file_input.png)
+$\approx 50$ KB großen Datei. Die Werte verteilen sich über den
+gesamten 64-Bit-Bereich ohne erkennbares Clustering oder Muster —
+konsistent mit den statistischen Befunden
+oben.](../en/img/grid_landscape_file_input.png)
 
 Der Plot bestätigt visuell, dass der Gitterzustand keine räumliche
 Korrelation aufweist: Benachbarte Zellen enthalten voneinander
@@ -893,12 +893,12 @@ danach, und desto weniger Zellen werden bis zum Ende der Nachricht
 divergiert sein.
 
 | Flip bei Byte | Verbleibende Bytes | Finaler HDC(128) | % von 256 |
-|---------------|---------------------|------------------|-----------|
-| 0             | 128                 | 244,0            | 95,3 %    |
-| 1             | 127                 | 244,1            | 95,4 %    |
-| 32            | 96                  | 233,8            | 91,3 %    |
-| 64            | 64                  | 209,4            | 81,8 %    |
-| 127           | 1                   | 6,0              | 2,3 %     |
+|---------------|--------------------|------------------|-----------|
+| 0             | 128                | 244,0            | 95,3 %    |
+| 1             | 127                | 244,1            | 95,4 %    |
+| 32            | 96                 | 233,8            | 91,3 %    |
+| 64            | 64                 | 209,4            | 81,8 %    |
+| 127           | 1                  | 6,0              | 2,3 %     |
 
 *Lesebeispiel:* Wenn der Flip bei Byte 64 liegt, verbleiben nur 64 Bytes
 Eingabe zur Propagation des Unterschieds — was dazu führt, dass 209 von
@@ -914,15 +914,15 @@ unabhängigen Seeds ($N = 200$ je) wiederholt. Die Tabelle zeigt HDC an
 drei Kontrollpunkten der Wachstumskurve: nach 1 Byte, nach 87 Bytes
 (dem 90 %-Sättigungspunkt) und nach allen 128 Bytes.
 
-| Seed                      | HDC nach 1 Byte | HDC nach 87 Bytes | HDC nach 128 Bytes |
-|---------------------------|-----------------|-------------------|--------------------|
-| `0xDEADBEEFCAFE1234`      | 6,29            | 230,91            | 244,04             |
-| `0x123456789ABCDEF0`      | 5,92            | 230,97            | 244,28             |
-| `0xAAAAAAAAAAAAAAAA`       | 6,10            | 230,76            | 244,35             |
-| `0x5555555555555555`       | 5,87            | 231,16            | 244,22             |
-| `0xFEDCBA9876543210`       | 5,67            | 231,29            | 244,50             |
-| **Gesamtmittel**          | **5,97**        | **231,02**        | **244,28**         |
-| **$\sigma$ über Seeds**   | **0,21**        | **0,19**          | **0,15**           |
+| Seed                    | HDC nach 1 Byte | HDC nach 87 Bytes | HDC nach 128 Bytes |
+|-------------------------|-----------------|-------------------|--------------------|
+| `0xDEADBEEFCAFE1234`    | 6,29            | 230,91            | 244,04             |
+| `0x123456789ABCDEF0`    | 5,92            | 230,97            | 244,28             |
+| `0xAAAAAAAAAAAAAAAA`    | 6,10            | 230,76            | 244,35             |
+| `0x5555555555555555`    | 5,87            | 231,16            | 244,22             |
+| `0xFEDCBA9876543210`    | 5,67            | 231,29            | 244,50             |
+| **Gesamtmittel**        | **5,97**        | **231,02**        | **244,28**         |
+| **$\sigma$ über Seeds** | **0,21**        | **0,19**          | **0,15**           |
 
 Die Inter-Seed-Standardabweichung ($\sigma \leq 0{,}21$) ist um mehr als
 eine Größenordnung kleiner als die Intra-Seed-Varianz und bestätigt, dass
@@ -979,13 +979,13 @@ Initialisierungsphase eine gesunde Gleichverteilung aufwies.
 Gitterzustands-Analyse der Eingabe `16x0x1B` (16 Wiederholungen von Byte
 `0x1B`):
 
-| Metrik                             | AND/OR (Original) | ARX (aktuell) | Veränderung      |
-|------------------------------------|-------------------|---------------|------------------|
-| Verschiedene Zellwerte (von 256)   | 110               | 256           | +133 %           |
-| Minimaler Zellwert                 | 0                 | 15.810        | Kein Null-Fixpunkt |
-| Maximaler Zellwert                 | $1{,}84 \times 10^{19}$ | $1{,}84 \times 10^{19}$ | Unverändert |
-| Standardabweichung                 | $8{,}0 \times 10^{18}$  | $5{,}5 \times 10^{18}$  | Gleichmäßiger |
-| Bimodale Clusterbildung            | Ja (bei 0 und max) | Nein          | Eliminiert       |
+| Metrik                           | AND/OR (Original)       | ARX (aktuell)           | Veränderung        |
+|----------------------------------|-------------------------|-------------------------|--------------------|
+| Verschiedene Zellwerte (von 256) | 110                     | 256                     | +133 %             |
+| Minimaler Zellwert               | 0                       | 15.810                  | Kein Null-Fixpunkt |
+| Maximaler Zellwert               | $1{,}84 \times 10^{19}$ | $1{,}84 \times 10^{19}$ | Unverändert        |
+| Standardabweichung               | $8{,}0 \times 10^{18}$  | $5{,}5 \times 10^{18}$  | Gleichmäßiger      |
+| Bimodale Clusterbildung          | Ja (bei 0 und max)      | Nein                    | Eliminiert         |
 
 Die AND/OR-Version verlor 57 % der Zellwert-Diversität während der
 Verarbeitung. Die ARX-Version behält 100 % — jede Zelle enthält nach 10
@@ -1000,10 +1000,10 @@ ARX-Primitive** ersetzt — eine gut etablierte Konstruktionsfamilie, die in
 SHA-512 [@nist_fips180_4], BLAKE2 [@aumasson2013_blake2] und ChaCha20
 [@bernstein2008_chacha] eingesetzt wird:
 
-| Slot | Alte Operation | Neue Operation | Formel |
-|------|----------------|----------------|--------|
-| 3    | `value &= Nachbar` (AND) | **RLX** (Rotate-Left–XOR) | `value = ROL(value, 13) ^ Nachbar` |
-| 4    | `value \|= Nachbar` (OR) | **RRA** (Rotate-Right–Add) | `value = ROR(value, 7) + Nachbar` |
+| Slot | Alte Operation           | Neue Operation             | Formel                             |
+|------|--------------------------|----------------------------|------------------------------------|
+| 3    | `value &= Nachbar` (AND) | **RLX** (Rotate-Left–XOR)  | `value = ROL(value, 13) ^ Nachbar` |
+| 4    | `value \|= Nachbar` (OR) | **RRA** (Rotate-Right–Add) | `value = ROR(value, 7) + Nachbar`  |
 
 **Rotationskonstanten:** 13 (links) und 7 (rechts). Beide sind teilerfremd
 zu 64 und vermeiden die Ausrichtung an Bytegrenzen (Vielfache von 8), womit
@@ -1040,7 +1040,8 @@ Verarbeitung für zwei verschiedene Eingaben. Jeder Punkt repräsentiert eine
 der 256 Gitterzellen; die $z$-Achse kodiert den `value` der Zelle und die
 Farbe zeigt die zugewiesene Operation (colorIndex).
 
-![Gitter-Landschaft für Eingabe `16×0x1B` — ARX-Version. Alle 256 Zellen besetzen unterschiedliche Höhen ohne sichtbare Clusterbildung.](../en/img/grid_landscape_16x1B.png)
+![Gitter-Landschaft für Eingabe
+`16×0x1B` — ARX-Version. Alle 256 Zellen besetzen unterschiedliche Höhen ohne sichtbare Clusterbildung.](../en/img/grid_landscape_16x1B.png)
 
 ![Gitter-Landschaft für Eingabe `16×0x4E` — ARX-Version.](../en/img/grid_landscape_16x4E.png)
 
@@ -1056,4 +1057,5 @@ Rundenreduktionsanalyse in Abschnitt 6). Aktualisierte Isolationsmessungen
 für die RLX- und RRA-Modi einzeln sind geplant.
 
 \newpage
+
 ## 11. Literatur

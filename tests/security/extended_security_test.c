@@ -76,7 +76,8 @@ void compute_hash(const uint8_t *input, size_t len, char *hashOut)
     char *result = calculateHashValue();
     if (result)
     {
-        strcpy(hashOut, result);
+        strncpy(hashOut, result, MAX_HASH_LEN - 1);
+        hashOut[MAX_HASH_LEN - 1] = '\0';
         free(result);
     }
     else
@@ -88,27 +89,18 @@ void compute_hash(const uint8_t *input, size_t len, char *hashOut)
 }
 
 /* Convert hex string to binary for bit operations */
-void hex_to_bits(const char *hex, uint8_t *bits, int *bitCount)
+static void hex_to_bits(const char *hex, uint8_t *bits, int *bitCount)
 {
-    int len = strlen(hex);
+    int len = (int)strlen(hex);
     *bitCount = len * 4;
-
     for (int i = 0; i < len; i++)
     {
-        int val;
-        if (hex[i] >= '0' && hex[i] <= '9')
-            val = hex[i] - '0';
-        else if (hex[i] >= 'a' && hex[i] <= 'f')
-            val = hex[i] - 'a' + 10;
-        else if (hex[i] >= 'A' && hex[i] <= 'F')
-            val = hex[i] - 'A' + 10;
-        else
-            val = 0;
-
-        bits[i * 4 + 0] = (val >> 3) & 1;
-        bits[i * 4 + 1] = (val >> 2) & 1;
-        bits[i * 4 + 2] = (val >> 1) & 1;
-        bits[i * 4 + 3] = (val >> 0) & 1;
+        int val = secasy_hex_nibble(hex[i]);
+        if (val < 0) val = 0;
+        bits[i * 4 + 0] = (uint8_t)((val >> 3) & 1);
+        bits[i * 4 + 1] = (uint8_t)((val >> 2) & 1);
+        bits[i * 4 + 2] = (uint8_t)((val >> 1) & 1);
+        bits[i * 4 + 3] = (uint8_t)((val >> 0) & 1);
     }
 }
 
@@ -195,8 +187,15 @@ int test_bit_independence(int trials)
     int maxBits = 64; /* Limit for performance */
 
     /* Correlation matrix between bit pairs */
-    int *both_flip = calloc(maxBits * maxBits, sizeof(int));
-    int *bit_flip = calloc(maxBits, sizeof(int));
+    int *both_flip = calloc((size_t)(maxBits * maxBits), sizeof(int));
+    int *bit_flip  = calloc((size_t)maxBits, sizeof(int));
+    if (!both_flip || !bit_flip)
+    {
+        free(both_flip);
+        free(bit_flip);
+        fprintf(stderr, "[ERROR] Out of memory in test_bit_independence\n");
+        return 0;
+    }
 
     for (int t = 0; t < trials; t++)
     {
@@ -306,10 +305,22 @@ int test_near_collisions(int trials)
     printf("\n=== TEST 3: Near-Collision Detection ===\n");
 
     /* Store hashes and check for unusually close pairs */
-    char **hashes = malloc(trials * sizeof(char *));
+    char **hashes = malloc((size_t)trials * sizeof(char *));
+    if (!hashes)
+    {
+        fprintf(stderr, "[ERROR] Out of memory in test_near_collisions\n");
+        return 0;
+    }
     for (int i = 0; i < trials; i++)
     {
         hashes[i] = malloc(MAX_HASH_LEN);
+        if (!hashes[i])
+        {
+            for (int k = 0; k < i; k++) free(hashes[k]);
+            free(hashes);
+            fprintf(stderr, "[ERROR] Out of memory in test_near_collisions (entry %d)\n", i);
+            return 0;
+        }
     }
 
     /* Generate random hashes */

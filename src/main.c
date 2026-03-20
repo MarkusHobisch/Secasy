@@ -14,6 +14,7 @@ int hashLengthInBits = DEFAULT_BIT_SIZE;
 
 int main(int argc, char **argv)
 {
+    secasy_enable_utf8_console();
     clock_t cpuStart = clock();
     double wallStart = wall_time_seconds();
 
@@ -100,14 +101,7 @@ int main(int argc, char **argv)
     if (g_debug_mode)
         exportGridCSV("grid_processed.csv", "Processing Phase");
 
-    if (hashValue)
-    {
-        LOG_INFO("HASH VALUE (%d-bit): %s", hashLengthInBits, hashValue);
-    }
-    else
-    {
-        LOG_ERROR("Hash calculation failed");
-    }
+    printHashValue(hashValue, hashLengthInBits);
 
     double cpuSeconds = (double)(clock() - cpuStart) / CLOCKS_PER_SEC;
     double wallSeconds = wall_time_seconds() - wallStart;

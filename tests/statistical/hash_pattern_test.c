@@ -37,8 +37,9 @@
 #include "util.h"
 
 /* ── Tunable parameters ────────────────────────────────────── */
-#define NUM_SAMPLES 50000          /* hashes for statistical tests  */
-#define HASH_BITS DEFAULT_BIT_SIZE /* hash length in bits           */
+#define NUM_SAMPLES 50000               /* hashes for statistical tests  */
+#undef HASH_BITS                        /* Defines.h also defines HASH_BITS; use DEFAULT_BIT_SIZE */
+#define HASH_BITS DEFAULT_BIT_SIZE      /* hash length in bits           */
 #define HASH_HEX_CHARS (HASH_BITS / 4)
 #define HASH_BYTES (HASH_BITS / 8)
 #define INPUT_LEN 16 /* bytes per test input          */
@@ -51,33 +52,6 @@ extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 extern Position_t pos;
 
 /* ── Helpers ───────────────────────────────────────────────── */
-
-static int hex_val(char c)
-{
-    if (c >= '0' && c <= '9')
-        return c - '0';
-    if (c >= 'a' && c <= 'f')
-        return c - 'a' + 10;
-    if (c >= 'A' && c <= 'F')
-        return c - 'A' + 10;
-    return 0;
-}
-
-/* Hamming distance between two hex strings */
-static int hamming_hex(const char *a, const char *b, size_t hex_len)
-{
-    int dist = 0;
-    for (size_t i = 0; i < hex_len; i++)
-    {
-        int x = hex_val(a[i]) ^ hex_val(b[i]);
-        while (x)
-        {
-            dist += x & 1;
-            x >>= 1;
-        }
-    }
-    return dist;
-}
 
 /* Hash an in-memory buffer and return malloc'd hex string */
 static char *hash_buffer(const uint8_t *data, size_t len)
@@ -153,7 +127,7 @@ static int test_positional_bit_bias(void)
     {
         for (int b = 0; b < HASH_HEX_CHARS; b++)
         {
-            int nibble = hex_val(pairs[i].hash[b]);
+            int nibble = secasy_hex_nibble(pairs[i].hash[b]);
             int bit_offset = b * 4;
             for (int k = 3; k >= 0; k--)
             {
@@ -296,7 +270,7 @@ static int test_sequential_correlation(void)
     int adj_count = 0;
     for (int i = 0; i < seq_count - 1; i++)
     {
-        sum_adjacent += hamming_hex(pairs[i].hash, pairs[i + 1].hash, HASH_HEX_CHARS);
+        sum_adjacent += secasy_hamming_hex(pairs[i].hash, pairs[i + 1].hash);
         adj_count++;
     }
     double avg_adjacent = sum_adjacent / adj_count;
@@ -310,7 +284,7 @@ static int test_sequential_correlation(void)
         int b = rand() % seq_count;
         if (a == b)
             continue;
-        sum_random += hamming_hex(pairs[a].hash, pairs[b].hash, HASH_HEX_CHARS);
+        sum_random += secasy_hamming_hex(pairs[a].hash, pairs[b].hash);
         rand_count++;
     }
     double avg_random = sum_random / rand_count;
@@ -374,7 +348,7 @@ static int test_structured_inputs(void)
     {
         for (int j = i + 1; j < hw1_count; j++)
         {
-            int d = hamming_hex(hw1_hashes[i], hw1_hashes[j], HASH_HEX_CHARS);
+            int d = secasy_hamming_hex(hw1_hashes[i], hw1_hashes[j]);
             if (d < min_dist)
                 min_dist = d;
             sum_dist += d;
@@ -424,7 +398,7 @@ static int test_structured_inputs(void)
     {
         for (int j = i + 1; j < rb_count; j++)
         {
-            int d = hamming_hex(rb_hashes[i], rb_hashes[j], HASH_HEX_CHARS);
+            int d = secasy_hamming_hex(rb_hashes[i], rb_hashes[j]);
             if (d < min_dist)
                 min_dist = d;
             sum_dist += d;
@@ -474,8 +448,8 @@ static int test_byte_position_uniformity(void)
 
         for (int i = 0; i < NUM_SAMPLES; i++)
         {
-            int hi = hex_val(pairs[i].hash[pos_idx * 2]);
-            int lo = hex_val(pairs[i].hash[pos_idx * 2 + 1]);
+            int hi = secasy_hex_nibble(pairs[i].hash[pos_idx * 2]);
+            int lo = secasy_hex_nibble(pairs[i].hash[pos_idx * 2 + 1]);
             uint8_t byte_val = (uint8_t)((hi << 4) | lo);
             buckets[byte_val]++;
         }

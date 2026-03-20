@@ -16,6 +16,7 @@ typedef struct
 
 CommandLineOptions_t parseCommandLineOptions(int argc, char **argv);
 void printCommandLineOptions(const CommandLineOptions_t *opts);
+void printHashValue(const char *hash, int bits);
 void printStatistics(double cpuSeconds, double wallSeconds, unsigned long long fileSizeBytes);
 int getFileSize64(const char *path, unsigned long long *outSize);
 

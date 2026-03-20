@@ -39,7 +39,8 @@ add_secasy_test(SecasyAvalanche              tests/avalanche/avalanche.c)
 # ── Collision resistance ──────────────────────────────────────────────
 add_secasy_test(SecasyCollision              tests/collision/collision.c)
 add_secasy_test(SecasyTruncCollisionPoC      tests/collision/trunc_collision_poc.c)
-
+add_secasy_test(SecasySingleBitCollision     tests/collision/single_bit_collision_test.c)
+add_secasy_test(SecasyClassCollision         tests/collision/class_collision_test.c)
 # ── Differential cryptanalysis ────────────────────────────────────────
 add_secasy_test(SecasyDifferential           tests/differential/differential_test.c)
 
@@ -75,6 +76,7 @@ add_secasy_test(SecasyCellDivergence          tests/analysis/cell_divergence.c)
 set(ALL_TEST_TARGETS
     SecasyComprehensiveSecurity SecasyDeepSecurity SecasyExtendedSecurity
     SecasyPracticalExploit SecasyAvalanche SecasyCollision SecasyTruncCollisionPoC
+    SecasySingleBitCollision
     SecasyDifferential SecasyStatisticalRandomness SecasyStatRigor SecasyHashPattern
     SecasyBenchmark SecasyPreciseTiming SecasyProfiling SecasyRoundReduction
     SecasyFuzzTest SecasyTestVectors SecasyVerifyVectors SecasyColorIsolation
@@ -152,6 +154,10 @@ if(PANDOC)
                 -o ${EN_PDFS}/ALGORITHM.pdf
                 ${PDOC_OPTS} ${CITE_OPTS} "-V" "geometry:margin=2.5cm" "-V" "fontsize=11pt" --toc
                 --resource-path=${CMAKE_SOURCE_DIR}/docs/en
+
+        COMMAND ${PANDOC} ${CMAKE_SOURCE_DIR}/docs/en/SCRIPTS_CHEATSHEET.md
+                -o ${EN_PDFS}/SCRIPTS_CHEATSHEET.pdf
+                ${PDOC_OPTS} "-V" "geometry:margin=2cm" "-V" "fontsize=10pt" --toc
 
         COMMENT "Generating documentation PDFs into docs/*/pdfs/"
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}

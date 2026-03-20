@@ -61,7 +61,12 @@ void generate_bitstream(unsigned long rounds)
 
     printf("Generating %d hashes (%d bits total)...\n", NUM_HASHES, TOTAL_BITS);
 
-    bitstream = malloc(TOTAL_BITS * sizeof(int));
+    bitstream = malloc((size_t)TOTAL_BITS * sizeof(int));
+    if (!bitstream)
+    {
+        fprintf(stderr, "[ERROR] Out of memory: cannot allocate bitstream (%d bits)\n", TOTAL_BITS);
+        return;
+    }
     bitstream_len = 0;
 
     for (int h = 0; h < NUM_HASHES; h++)
@@ -271,7 +276,9 @@ double test_approximate_entropy(void)
 
     // Count m-bit patterns
     int num_patterns = 1 << m; // 4 for m=2
-    int *counts = calloc(num_patterns, sizeof(int));
+    int *counts = calloc((size_t)num_patterns, sizeof(int));
+    if (!counts)
+        return 0.0;
 
     for (int i = 0; i < bitstream_len; i++)
     {
@@ -298,7 +305,9 @@ double test_approximate_entropy(void)
     // Now for m+1
     int m1 = m + 1;
     int num_patterns1 = 1 << m1;
-    int *counts1 = calloc(num_patterns1, sizeof(int));
+    int *counts1 = calloc((size_t)num_patterns1, sizeof(int));
+    if (!counts1)
+        return 0.0;
 
     for (int i = 0; i < bitstream_len; i++)
     {

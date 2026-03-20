@@ -44,20 +44,6 @@ int hashLengthInBits = DEFAULT_BIT_SIZE;
 extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 extern Position_t pos;
 
-// Helper: Convert hex string to bit array
-void hex_to_bits(const char *hex, int *bits, int num_bits)
-{
-    for (int i = 0; i < num_bits; i++)
-    {
-        int hex_idx = i / 4;
-        int bit_in_nibble = 3 - (i % 4);
-        int nibble = (hex[hex_idx] >= '0' && hex[hex_idx] <= '9')
-                         ? (hex[hex_idx] - '0')
-                         : (hex[hex_idx] - 'a' + 10);
-        bits[i] = (nibble >> bit_in_nibble) & 1;
-    }
-}
-
 // Test 1: Linear Approximation Test
 // Check if there are linear relationships between input and output bits
 double test_linear_approximation(unsigned long rounds, int num_samples)
@@ -81,7 +67,7 @@ double test_linear_approximation(unsigned long rounds, int num_samples)
             unsigned char input[32];
             for (int i = 0; i < 32; i++)
             {
-                input[i] = rand() % 256;
+                input[i] = (unsigned char)(rand() % 256);
             }
 
             initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
@@ -148,9 +134,12 @@ double test_differential_properties(unsigned long rounds, int num_samples)
         int output_diff_hamming;
     } DiffPair;
 
-    DiffPair *pairs = malloc(num_samples * sizeof(DiffPair));
-
-    // Test with 1-bit differences
+    DiffPair *pairs = malloc((size_t)num_samples * sizeof(DiffPair));
+    if (!pairs)
+    {
+        fprintf(stderr, "OOM: pairs allocation failed\n");
+        return 0.0;
+    }
     for (int sample = 0; sample < num_samples; sample++)
     {
         unsigned char input1[32];
@@ -159,7 +148,7 @@ double test_differential_properties(unsigned long rounds, int num_samples)
         // Generate random input
         for (int i = 0; i < 32; i++)
         {
-            input1[i] = rand() % 256;
+            input1[i] = (unsigned char)(rand() % 256);
             input2[i] = input1[i];
         }
 
@@ -261,14 +250,19 @@ double test_state_complexity(unsigned long rounds, int num_samples)
         uint64_t state_hash;
     } StateInfo;
 
-    StateInfo *states = malloc(num_samples * sizeof(StateInfo));
+    StateInfo *states = malloc((size_t)num_samples * sizeof(StateInfo));
+    if (!states)
+    {
+        fprintf(stderr, "OOM: states allocation failed\n");
+        return 0.0;
+    }
 
     for (int sample = 0; sample < num_samples; sample++)
     {
         unsigned char input[32];
         for (int i = 0; i < 32; i++)
         {
-            input[i] = rand() % 256;
+            input[i] = (unsigned char)(rand() % 256);
         }
 
         initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
@@ -281,7 +275,7 @@ double test_state_complexity(unsigned long rounds, int num_samples)
         {
             for (int y = 0; y < FIELD_SIZE; y++)
             {
-                state_hash ^= (uint64_t)field[x][y].value * (x * 11 + y * 13 + 17);
+                state_hash ^= field[x][y].value * ((uint64_t)x * 11u + (uint64_t)y * 13u + 17u);
                 state_hash = (state_hash << 5) | (state_hash >> 59);
             }
         }

@@ -76,23 +76,7 @@ uint64_t hash_to_uint64(const char *hash)
     return result;
 }
 
-int hamming_distance_hex(const char *h1, const char *h2)
-{
-    int dist = 0;
-    size_t len = strlen(h1) < strlen(h2) ? strlen(h1) : strlen(h2);
-    for (size_t i = 0; i < len; i++)
-    {
-        int v1 = (h1[i] >= '0' && h1[i] <= '9') ? (h1[i] - '0') : (h1[i] - 'a' + 10);
-        int v2 = (h2[i] >= '0' && h2[i] <= '9') ? (h2[i] - '0') : (h2[i] - 'a' + 10);
-        int xor = v1 ^ v2;
-        for (int b = 0; b < 4; b++)
-        {
-            if (xor & (1 << b))
-                dist++;
-        }
-    }
-    return dist;
-}
+#define hamming_distance_hex secasy_hamming_hex
 
 // ============================================================
 // Test 1: Birthday Attack Resistance

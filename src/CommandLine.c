@@ -97,28 +97,54 @@ CommandLineOptions_t parseCommandLineOptions(int argc, char **argv)
 
 void printCommandLineOptions(const CommandLineOptions_t *o)
 {
-    if (o->inputHexBytes)
+    char line[256];
+
+    printf("╔══════════════════════════════════════════════════════════════╗\n");
+    printf("║  Secasy Hash Function                                        ║\n");
+    printf("╟──────────────────────────────────────────────────────────────╢\n");
+
+    snprintf(line, sizeof(line), "%lu", o->numberOfRounds);
+    printf("║  Rounds:          %-42s ║\n", line);
+
+    snprintf(line, sizeof(line), "%lu", o->maximumPrimeIndex);
+    printf("║  Max prime index: %-42s ║\n", line);
+
+    snprintf(line, sizeof(line), "%d bits", o->hashLengthInBits);
+    printf("║  Hash size:       %-42s ║\n", line);
+
+    printf("╚══════════════════════════════════════════════════════════════╝\n");
+    printf("\nHashing...\n");
+}
+
+void printHashValue(const char *hash, int bits)
+{
+    char title[64];
+    snprintf(title, sizeof(title), "  Digest (%d-bit)", bits);
+
+    printf("╔══════════════════════════════════════════════════════════════╗\n");
+    printf("║%-62s║\n", title);
+    printf("╟──────────────────────────────────────────────────────────────╢\n");
+
+    if (hash)
     {
-        if (o->inputHexLen > MAX_HEX_DISPLAY_BYTES)
+        size_t len    = strlen(hash);
+        size_t offset = 0;
+        char   chunk[59];
+        while (offset < len)
         {
-            LOG_ERROR("Hex input too long for display (%zu bytes, max %d)", o->inputHexLen, MAX_HEX_DISPLAY_BYTES);
-            exit(EXIT_FAILURE);
+            size_t take = (len - offset < 58) ? (len - offset) : 58;
+            memcpy(chunk, hash + offset, take);
+            chunk[take] = '\0';
+            printf("║  %-58s  ║\n", chunk);
+            offset += take;
         }
-
-        printf("[INFO] inputHex: ");
-        for (size_t i = 0; i < o->inputHexLen; i++)
-            printf("%s0x%02x", i > 0 ? "," : "", o->inputHexBytes[i]);
-        printf(" (%zu bytes)\n", o->inputHexLen);
     }
-    else if (o->inputString)
-        LOG_INFO("inputString: \"%s\" (%zu bytes)", o->inputString, strlen(o->inputString));
     else
-        LOG_INFO("inputFilename: %s", o->inputFilename ? o->inputFilename : "(null)");
+    {
+        printf("║  %-58s  ║\n", "(hash computation failed)");
+    }
 
-    LOG_INFO("numberOfRounds: %lu", o->numberOfRounds);
-    LOG_INFO("maximumPrimeIndex: %lu", o->maximumPrimeIndex);
-    LOG_INFO("hashLengthInBits: %d", o->hashLengthInBits);
-    LOG_INFO("hashing...");
+    printf("╚══════════════════════════════════════════════════════════════╝\n");
 }
 
 void printStatistics(const double cpuSeconds, const double wallSeconds, const unsigned long long fileSizeBytes)
@@ -127,19 +153,35 @@ void printStatistics(const double cpuSeconds, const double wallSeconds, const un
     double hashRateWall = (wallSeconds > 0.0 && fileSizeBytes > 0ULL) ? (fileMB / wallSeconds) : 0.0;
     double hashRateCpu = (cpuSeconds > 0.0 && fileSizeBytes > 0ULL) ? (fileMB / cpuSeconds) : 0.0;
 
-    printf("\n--- Statistics ---\n");
-    printf("CPU time:  %.3f s\n", cpuSeconds);
-    printf("Wall time: %.3f s\n", wallSeconds);
+    char line[256];
+
+    printf("\n╔══════════════════════════════════════════════════════════════╗\n");
+    printf("║  Statistics                                                  ║\n");
+    printf("╟──────────────────────────────────────────────────────────────╢\n");
+
+    snprintf(line, sizeof(line), "%.3f s", cpuSeconds);
+    printf("║  CPU time:        %-42s ║\n", line);
+
+    snprintf(line, sizeof(line), "%.3f s", wallSeconds);
+    printf("║  Wall time:       %-42s ║\n", line);
+
     if (fileSizeBytes)
     {
-        printf("File size: %.2f MB\n", fileMB);
-        printf("Hash rate (wall): %.2f MB/s\n", hashRateWall);
-        printf("Hash rate (CPU) : %.2f MB/s\n", hashRateCpu);
+        snprintf(line, sizeof(line), "%.2f MB", fileMB);
+        printf("║  File size:       %-42s ║\n", line);
+
+        snprintf(line, sizeof(line), "%.2f MB/s", hashRateWall);
+        printf("║  Hash rate (wall):%-42s ║\n", line);
+
+        snprintf(line, sizeof(line), "%.2f MB/s", hashRateCpu);
+        printf("║  Hash rate (CPU): %-42s ║\n", line);
     }
     else
     {
-        printf("File size: (unknown)\n");
+        printf("║  File size:       %-42s ║\n", "(unknown)");
     }
+
+    printf("╚══════════════════════════════════════════════════════════════╝\n");
 }
 
 int getFileSize64(const char *path, unsigned long long *outSize)

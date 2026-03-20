@@ -107,12 +107,12 @@ basis for collision resistance.
 
 The byte `0x4E` = `01001110` in binary. Reading 2-bit groups from LSB to MSB:
 
-| Step | Bits  | Direction | Prime advance | At cell | Action                                  |
-|------|-------|-----------|---------------|---------|---------------------------------------  |
-| 1    | `10`  | LEFT      | +3            | (0, 0)  | Write prime[3]=7, then jump x by −2     |
-| 2    | `11`  | DOWN      | +4            | (14, 0) | Write prime[4]=11, then jump y by +3    |
-| 3    | `00`  | UP        | +1            | (14, 3) | Write prime[1]=3, then jump y by −2     |
-| 4    | `01`  | RIGHT     | +2            | (14, 1) | Write prime[2]=5, then jump x by +3     |
+| Step | Bits | Direction | Prime advance | At cell | Action                               |
+|------|------|-----------|---------------|---------|--------------------------------------|
+| 1    | `10` | LEFT      | +3            | (0, 0)  | Write prime[3]=7, then jump x by −2  |
+| 2    | `11` | DOWN      | +4            | (14, 0) | Write prime[4]=11, then jump y by +3 |
+| 3    | `00` | UP        | +1            | (14, 3) | Write prime[1]=3, then jump y by −2  |
+| 4    | `01` | RIGHT     | +2            | (14, 1) | Write prime[2]=5, then jump x by +3  |
 
 After just one byte, the cursor has visited 4 cells, each now holding a different prime (7, 11, 3, 5
 instead of the initial 2), and the cursor ends at position (1, 1).
@@ -123,23 +123,23 @@ The byte `0x1B` = `00011011` decodes to the directions DOWN, LEFT, RIGHT, UP —
 as `0x4E` (LEFT, DOWN, UP, RIGHT), just in a different order. Since all source cells initially hold
 the same value (2), the net displacement is identical: both cursors end at **(1, 1)**.
 
-| Step | Bits  | Direction | Prime advance | At cell | Action                                  |
-|------|-------|-----------|---------------|---------|---------------------------------------  |
-| 1    | `11`  | DOWN      | +4            | (0, 0)  | Write prime[4]=11, then jump y by +3    |
-| 2    | `10`  | LEFT      | +3            | (0, 3)  | Write prime[3]=7, then jump x by −2     |
-| 3    | `01`  | RIGHT     | +2            | (14, 3) | Write prime[2]=5, then jump x by +3     |
-| 4    | `00`  | UP        | +1            | (1, 3)  | Write prime[1]=3, then jump y by −2     |
+| Step | Bits | Direction | Prime advance | At cell | Action                               |
+|------|------|-----------|---------------|---------|--------------------------------------|
+| 1    | `11` | DOWN      | +4            | (0, 0)  | Write prime[4]=11, then jump y by +3 |
+| 2    | `10` | LEFT      | +3            | (0, 3)  | Write prime[3]=7, then jump x by −2  |
+| 3    | `01` | RIGHT     | +2            | (14, 3) | Write prime[2]=5, then jump x by +3  |
+| 4    | `00` | UP        | +1            | (1, 3)  | Write prime[1]=3, then jump y by −2  |
 
 Both bytes end at (1, 1), yet they leave **different grid states**:
 
-| Cell     | Written by `0x4E`     | Written by `0x1B`     |
-|----------|-----------------------|-----------------------|
-| (0, 0)   | 7 (LEFT, Δ+3)        | 11 (DOWN, Δ+4)        |
-| (14, 3)  | 3 (UP, Δ+1)          | 5 (RIGHT, Δ+2)        |
-| (14, 0)  | 11 (DOWN, Δ+4)       | *untouched (=2)*      |
-| (14, 1)  | 5 (RIGHT, Δ+2)       | *untouched (=2)*      |
-| (0, 3)   | *untouched (=2)*      | 7 (LEFT, Δ+3)         |
-| (1, 3)   | *untouched (=2)*      | 3 (UP, Δ+1)           |
+| Cell    | Written by `0x4E` | Written by `0x1B` |
+|---------|-------------------|-------------------|
+| (0, 0)  | 7 (LEFT, Δ+3)     | 11 (DOWN, Δ+4)    |
+| (14, 3) | 3 (UP, Δ+1)       | 5 (RIGHT, Δ+2)    |
+| (14, 0) | 11 (DOWN, Δ+4)    | *untouched (=2)*  |
+| (14, 1) | 5 (RIGHT, Δ+2)    | *untouched (=2)*  |
+| (0, 3)  | *untouched (=2)*  | 7 (LEFT, Δ+3)     |
+| (1, 3)  | *untouched (=2)*  | 3 (UP, Δ+1)       |
 
 Even at the two **shared** cells — (0,0) and (14,3) — the direction-dependent prime advance writes
 different primes. The remaining visited cells don't overlap at all. This demonstrates how SAV and
@@ -231,15 +231,15 @@ gcc -std=c11 -O3 -Wall -Wextra -o secasy \
 
 Secasy is a command line tool supporting the following arguments:
 
-| Flag | Description                                            | Default      | Example                      |
-|------|--------------------------------------------------------|--------------|------------------------------|
-| `-f` | Input file path                                        | —            | `-f input.pdf`               |
-| `-s` | Hash a string directly                                 | —            | `-s "Hello"`                 |
-| `-x` | Hash raw hex bytes (comma-separated or single)         | —            | `-x "0x45,0x47,0x78"`       |
-| `-n` | Hash output size in bits (power of two, ≥64)           | 512          | `-n 256`                     |
-| `-r` | Number of processing rounds                            | 10           | `-r 20`                      |
-| `-i` | Maximum prime index                                    | 16,000,000   | `-i 100`                     |
-| `-h` | Print help text                                        | —            | `-h`                         |
+| Flag | Description                                    | Default    | Example               |
+|------|------------------------------------------------|------------|-----------------------|
+| `-f` | Input file path                                | —          | `-f input.pdf`        |
+| `-s` | Hash a string directly                         | —          | `-s "Hello"`          |
+| `-x` | Hash raw hex bytes (comma-separated or single) | —          | `-x "0x45,0x47,0x78"` |
+| `-n` | Hash output size in bits (power of two, ≥64)   | 512        | `-n 256`              |
+| `-r` | Number of processing rounds                    | 10         | `-r 20`               |
+| `-i` | Maximum prime index                            | 16,000,000 | `-i 100`              |
+| `-h` | Print help text                                | —          | `-h`                  |
 
 Exactly one input source (`-f`, `-s`, or `-x`) must be specified. They cannot be combined.
 
@@ -260,6 +260,7 @@ Exactly one input source (`-f`, `-s`, or `-x`) must be specified. They cannot be
 ```
 
 Sample output (512-bit hash of the string `"a"`):
+
 ```
 3a29643d127dc5db52e87165c6a6354f18e21f7af3ca01df6fa3e7a75aebae6d
 55b4836e98fdec67436705447af36e098df252cf471f4d21acfd939cd200a1fd
@@ -613,9 +614,11 @@ All 16 test suites were executed at the production configuration (10 rounds, 512
 | **Fuzzing**         | SecasyFuzzTest              | **PASS** — 500k iterations, 0 crashes, all hash sizes           |
 
 > **Note on HashPattern Test 5:** The byte-position uniformity Chi² test fails at one position (p=0.0009). This is a
-> known sample-size artifact: with 50,000 samples distributed across 256 byte values, the expected count per bucket (~195)
+> known sample-size artifact: with 50,000 samples distributed across 256 byte values, the expected count per bucket (~
+195)
 > is below the Chi² reliability threshold of ≥5 per expected count at individual byte positions.
-> See [docs/en/ROUND_REDUCTION_ANALYSIS.md](docs/en/ROUND_REDUCTION_ANALYSIS.md) Section 6 for a detailed explanation. All
+> See [docs/en/ROUND_REDUCTION_ANALYSIS.md](docs/en/ROUND_REDUCTION_ANALYSIS.md) Section 6 for a detailed explanation.
+> All
 > other uniformity tests (SecasyStatRigor, SecasyStatisticalRandomness) pass with large margins.
 
 ## 6. Profiling

@@ -19,8 +19,27 @@ extern "C"
     /* Portable strdup replacement (returns newly allocated copy or NULL). */
     char *secasy_strdup(const char *src);
 
+    /*
+     * On Windows: sets the console output codepage to UTF-8 (CP_UTF8) so that
+     * box-drawing characters render correctly in cmd.exe and PowerShell.
+     * No-op on Linux/macOS where UTF-8 is the default.
+     */
+    void secasy_enable_utf8_console(void);
+
     /* Returns non-zero if v is a power of two (>0). */
     int is_power_of_two(long v);
+
+    /*
+     * Convert one hex character ('0'-'9','a'-'f','A'-'F') to its 4-bit
+     * integer value [0..15].  Returns -1 for any other character.
+     */
+    int secasy_hex_nibble(char c);
+
+    /*
+     * Count differing bits between two hex-encoded hash strings.
+     * Compares min(strlen(h1), strlen(h2)) * 4 bits.
+     */
+    int secasy_hamming_hex(const char *h1, const char *h2);
 
     /*
      * When g_debug_mode is enabled, all printf output is mirrored to this
