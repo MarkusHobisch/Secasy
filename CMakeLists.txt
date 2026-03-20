@@ -53,6 +53,7 @@ add_secasy_test(SecasyHashPattern            tests/statistical/hash_pattern_test
 add_secasy_test(SecasyBenchmark              tests/performance/benchmark_rounds.c)
 add_secasy_test(SecasyPreciseTiming          tests/performance/precise_timing.c)
 add_secasy_test(SecasyProfiling              tests/performance/profiling.c)
+add_secasy_test(SecasyHashrate               tests/performance/hashrate_test.c)
 
 # ── Round-reduction analysis ──────────────────────────────────────────
 add_secasy_test(SecasyRoundReduction         tests/round_reduction/round_reduction_test.c)
@@ -78,7 +79,7 @@ set(ALL_TEST_TARGETS
     SecasyPracticalExploit SecasyAvalanche SecasyCollision SecasyTruncCollisionPoC
     SecasySingleBitCollision
     SecasyDifferential SecasyStatisticalRandomness SecasyStatRigor SecasyHashPattern
-    SecasyBenchmark SecasyPreciseTiming SecasyProfiling SecasyRoundReduction
+    SecasyBenchmark SecasyPreciseTiming SecasyProfiling SecasyHashrate SecasyRoundReduction
     SecasyFuzzTest SecasyTestVectors SecasyVerifyVectors SecasyColorIsolation
     SecasyFieldSizeSweep SecasyDebugCollision SecasyTraceCollision
     SecasyCellDivergence)
