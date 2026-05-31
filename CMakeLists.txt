@@ -75,6 +75,12 @@ add_secasy_test(SecasyTraceCollision         tests/analysis/trace_collision.c)
 add_secasy_test(SecasyCellDivergence          tests/analysis/cell_divergence.c)
 # ── Brute-force collision scan (1/2/3 byte) ─────────────────────────
 add_secasy_test(SecasyBruteCollisionScan      tests/analysis/brute_collision_scan.c)
+# ── Targeted attack suite (linearity / differential / cross-length) ─
+add_secasy_test(SecasyLinearityAttack         tests/analysis/linearity_attack.c)
+# ── Differential replay (follow-up to suspect bit in attack 2) ────
+add_secasy_test(SecasyDifferentialReplay      tests/analysis/differential_replay.c)
+# ── White-box structural attack (internal-state instrumentation) ──
+add_secasy_test(SecasyStructuralAttack        tests/analysis/structural_attack.c)
 # Collect all test target names for bulk property assignment
 set(ALL_TEST_TARGETS
     SecasyComprehensiveSecurity SecasyDeepSecurity SecasyExtendedSecurity
@@ -84,7 +90,8 @@ set(ALL_TEST_TARGETS
     SecasyBenchmark SecasyPreciseTiming SecasyProfiling SecasyHashrate SecasyRoundReduction
     SecasyFuzzTest SecasyTestVectors SecasyVerifyVectors SecasyColorIsolation
     SecasyFieldSizeSweep SecasyDebugCollision SecasyTraceCollision
-    SecasyCellDivergence SecasyBruteCollisionScan)
+    SecasyCellDivergence SecasyBruteCollisionScan SecasyLinearityAttack SecasyDifferentialReplay
+    SecasyStructuralAttack)
 
 # ── Per-target properties (applied in bulk) ───────────────────────────
 set(WARN_FLAGS -Wall -Wextra -Wundef -Wshadow -Wpointer-arith

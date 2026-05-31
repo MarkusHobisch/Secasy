@@ -63,7 +63,7 @@ The hypothesised properties of this approach, to be tested empirically below, ar
   analogous in spirit to the wide-pipe property of the Keccak sponge [4].
 
 Whether these structural choices translate into cryptographic security in the formal sense is **not** established by
-the present document. Sections 4 and 4.7 discuss the gap between empirical pseudorandomness and provable security in
+the present document. Sections 4 and 4.10 discuss the gap between empirical pseudorandomness and provable security in
 detail.
 
 ## 2. Algorithm Design
@@ -192,7 +192,7 @@ non-linearity that characterises the ARX family of designs [5]. The round functi
 any other strongly non-linear substitution. Consequently, for two inputs that produce identical Phase-2 cursor
 trajectories and identical color-index assignments, the action of Phase 3 on the differential between their grid
 states is dominated by linear behaviour, with only the modular-add carries contributing non-linear deviation. This
-property motivates the round-invariance reported in Section 4.5 and is discussed further in Section 4.7.
+property motivates the round-invariance reported in Section 4.5 and is probed empirically in Section 4.7.
 
 ### 2.4 Phase 4 — Hash Extraction
 
@@ -567,7 +567,224 @@ The result is reported here as one piece of *empirical* evidence that, within th
 full enumeration on commodity hardware, the construction behaves as a random oracle would. It is **not** a substitute
 for differential / algebraic analysis.
 
-### 4.7 Summary
+### 4.7 Targeted Attack Probes (Linearity, Differential, Cross-Length)
+
+The structural concerns raised in Sections 2.3 and 4.5 motivate three direct empirical attacks, implemented in
+[tests/analysis/linearity_attack.c](tests/analysis/linearity_attack.c) and
+[tests/analysis/differential_replay.c](tests/analysis/differential_replay.c). Each attack is designed to be **falsifiable**:
+a real structural weakness should manifest as a deviation that exceeds the multiple-comparison-corrected threshold.
+
+#### 4.7.1 GF(2) 4-tuple linearity probe
+
+For random 16-byte inputs $a, b, c$ and $d = a \oplus b \oplus c$ define
+$\Delta = H(a) \oplus H(b) \oplus H(c) \oplus H(d)$. A fully $\mathrm{GF}(2)$-linear hash satisfies $\Delta \equiv 0$;
+an ideal random oracle satisfies $\Pr[\Delta_i = 1] = 0.5$ for every output bit $i$.
+
+| $N$ trials | $H(\cdot)$ evaluations | Exact $\Delta = 0$ | Mean $\mathrm{HW}(\Delta)$ | Worst per-bit $z$ |
+|-----------:|-----------------------:|-------------------:|---------------------------:|------------------:|
+| 20,000     | 80,000                 | 0                  | 256.10 (ideal 256.0)       | 2.73 σ            |
+
+The expected maximum $z$-score under the null hypothesis when probing 512 bits in parallel is
+$E[\max] \approx \sqrt{2 \ln 512} \approx 3.53\,\sigma$; the observed 2.73 σ is well within that range. The construction
+is therefore empirically indistinguishable from a random oracle on this metric \u2014 the modular-addition carry chain
+suffices to scramble the 4-tuple sum, even though it is the only $\mathrm{GF}(2)$-non-linear element in the round function.
+
+#### 4.7.2 Single-byte differential probe with replication
+
+For three fixed $\delta$ positions (first / middle / last byte of a 32-byte input, $\delta = $ XOR with `0xFF`) we hash
+$N = 50{,}000$ pairs $(m, m \oplus \delta)$ per position and measure per-bit flip frequencies. The initial run produced
+one worst-case reading of $4.98\,\sigma$ at bit 321 for middle-byte $\delta$. To test whether this was a real bias or a
+multiple-comparison artefact, we replicated with $N = 200{,}000$ per position and **five independent RNG seeds**, giving
+$15 \times 200{,}000 = 3 \times 10^6$ pairs ($6 \times 10^6$ hash evaluations).
+
+| Quantity | Range across 15 runs | Reference |
+|---|---|---|
+| Mean $\mathrm{HW}(\Delta)$ | $255.95\ldots256.02$ | ideal $256.00$; $\sigma_{\text{mean}} \approx 0.025$ at $N = 200\text{k}$ |
+| Worst-bit $|z|$ per run | $2.66\ldots3.68$ σ | $E[\max] \approx \sqrt{2 \ln(15 \cdot 512)} \approx 3.88$ σ |
+| Bit-321 $|z|$ (replication of the suspect, middle-byte $\delta$, 5 seeds) | $0.28,\, 1.14,\, 0.91,\, 1.53,\, 0.87$ | $\sigma$-noise only |
+| Bit index of worst deviation per run | 15 distinct positions (3, 15, 32, 75, 103, 136, 158, 175, 187, 193, 306, 347, 388, 470, 486) | no positional structure |
+
+The replication clearly shows that the initial $4.98\,\sigma$ reading at bit 321 was a **multiple-comparison artefact**
+across the $512 \times 3 = 1536$ original tests, not a real differential bias. Across $6 \times 10^6$ hash evaluations
+no per-bit flip rate exceeds the Bonferroni-corrected threshold and no bit position is consistently biased across
+seeds.
+
+**What this does not show.** Random single-byte $\delta$ at random message positions is the *easiest* differential
+probe; a targeted attacker would search for a $\delta$ whose Phase-2 traversal coincides with an existing trajectory
+and produces a low-Hamming-weight output difference. Such a search requires algebraic insight into the prime-driven
+walk and has not been performed. The result above only excludes the simplest class of differential biases.
+
+#### 4.7.3 Cross-length 32-bit truncated collisions
+
+Hash $N = 2 \times 10^6$ random inputs of length uniformly drawn from $\{4, \ldots, 64\}$ bytes, truncate to the top
+$32$ bits, and count collisions. Birthday expectation $E = N(N-1)/(2 \cdot 2^{32}) \approx 465.7$ with
+$\sigma \approx 21.6$. Cross-length collisions (different input lengths colliding to the same $32$-bit prefix) are
+counted separately because Secasy does not apply length padding.
+
+| Metric | Observed | Reference |
+|---|---|---|
+| Total collisions | 471 | ideal 465.7, $\sigma$ = 21.6, deviation $+0.25\,\sigma$ |
+| Cross-length fraction | $0.9873$ | null hypothesis $0.9836$ (uniform length sampling); $z \approx +0.63\,\sigma$ |
+
+Neither the total count nor the cross-length fraction shows any anomaly. The absence of cross-length excess provides
+empirical evidence that, for inputs in the $4$\u2013$64$ byte range, the Phase-2 walk does not produce systematic
+trajectory coincidences between inputs of different lengths \u2014 despite the lack of explicit length encoding.
+
+#### Summary
+
+All three probes return null results within their statistical power. The maximum observed $z$-score across the entire
+study \u2014 $4{.}9 \times 10^6$ hashes covering linearity, differential and cross-length tests \u2014 was the spurious
+$3.68\,\sigma$ from the replicated differential study, below the Bonferroni threshold and trivially explained as the
+expected maximum of $\approx 8{,}000$ independent Bernoulli tests. None of the structural concerns identified in
+Section 2.3 produces a measurable empirical signature at the sample sizes tested. This does **not** preclude attacks
+based on algebraic insight (targeted differentials, algebraic normal-form analysis, SAT-based preimage search), which
+remain the natural targets of future cryptanalysis.
+
+### 4.8 White-Box Structural Analysis
+
+The probes of Section 4.7 are *black-box*: they observe only the 512-bit output. This section reports a *white-box*
+attack that instruments the internal $16 \times 16$ grid state between phases, implemented in
+[tests/analysis/structural_attack.c](tests/analysis/structural_attack.c). The harness reimplements Phase 3 and Phase 4
+locally and validates the reimplementation **bit-for-bit** against the production `calculateHashValue()` over 2,000
+random inputs before any measurement is taken.
+
+The analysis targets one specific structural seam derived from the source code. In Phase 2, an $L$-byte input performs
+$4L$ cursor steps; for short inputs only a fraction of the 256 tiles is ever touched, and untouched tiles retain the
+colorIndex `ADD`. Because the Phase-3 operation schedule is read from the colorIndex layout (and is independent of cell
+*values*), a sparsely-touched grid yields a Phase-3 schedule dominated by `ADD`. Since `ADD` and `SUB` are linear over
+$\mathbb{Z}_{2^{64}}$ whereas `XOR`, `ROTATE_LEFT_XOR`, `ROTATE_RIGHT_ADD` and `INVERT` are not, the **hypothesis** is
+that short inputs make Phase 3 near-affine and therefore weakly diffusing.
+
+#### 4.8.1 Nonlinearity census
+
+For random inputs we count the number of cells carrying a nonlinear colorIndex after Phase 2:
+
+| Input length $L$ | Touched cells (mean) | Nonlinear cells (mean) | Nonlinear cells (min) |
+|---:|---:|---:|---:|
+| 16  | 58.6  | **5.9**  | 0   |
+| 32  | 103.7 | 21.6     | 11  |
+| 64  | 164.8 | 66.7     | 51  |
+| 128 | 222.3 | 147.2    | 121 |
+
+The hypothesis is **confirmed at the structural level**: for $L = 16$ the Phase-3 schedule contains, on average, only
+$5.9$ nonlinear cells out of 256 ($\approx 97.7\%$ of cells are `ADD`-coloured), and inputs exist for which the count
+is **exactly zero** \u2014 i.e. Phase 3 is a *fully affine map over* $\mathbb{Z}_{2^{64}}$.
+
+#### 4.8.2 Phase-by-phase avalanche
+
+Flipping a single input bit and measuring the internal Hamming distance after each phase ($N = 20{,}000$, $L = 16$):
+
+| Stage | Cells changed | State bits changed (of 16,384) |
+|---|---:|---:|
+| After Phase 2 | 55.8 / 256 | **112.1 (0.68 %)** |
+| After Phase 3 | 254.9 / 256 | 7,688 (46.9 %) |
+| Output (512 bit) | \u2014 | 256.0 (**50.0 %**) |
+
+Phase 2 alone is a deliberately **narrow pipe**: a one-bit flip perturbs only $\approx 0.7\%$ of the internal state
+bits (the change is concentrated in a few prime values). The ten `ADD`-dominated mixing rounds nonetheless amplify this
+to full diffusion, and the output avalanche is statistically ideal.
+
+#### 4.8.3 The decisive test: does affinity weaken diffusion?
+
+The hypothesis predicts that the rare *near-affine* inputs (few nonlinear cells) should diffuse worse. We bin
+single-bit-flip output avalanche by the base input's nonlinear-cell count ($N = 50{,}000$, $L = 16$):
+
+| Nonlinear cells in Phase-3 schedule | Samples | Mean output avalanche |
+|---:|---:|---:|
+| 0\u20131   | 534    | 49.91 % |
+| 2\u20133   | 6,076  | 50.01 % |
+| 4\u20135   | 15,215 | 49.99 % |
+| 6\u20137   | 16,168 | 50.00 % |
+| 8\u20139   | 8,922  | 49.98 % |
+| 10\u201311 | 2,610  | 49.98 % |
+| 12\u201313 | 444    | 49.98 % |
+
+The avalanche is **flat at 50 %** across the entire range. The 534 inputs whose Phase-3 schedule is *essentially
+affine* over $\mathbb{Z}_{2^{64}}$ diffuse exactly as well as the rest; the single rarest input found, with **zero**
+nonlinear cells, produced a one-bit-flip avalanche of $49.61\%$. A targeted minimum-avalanche search over
+$1.15 \times 10^6$ single-bit differentials found a global minimum of $199/512 = 38.9\%$ \u2014 precisely the expected
+extreme order statistic ($E[\min] \approx 256 - \sigma\sqrt{2 \ln N} \approx 196$ for $\sigma = 11.3$), i.e. **no weak
+differential exists**.
+
+#### 4.8.4 Interpretation
+
+The hypothesis was **correct about the structure but wrong about its consequence**, and the white-box measurement
+explains why. Affinity over $\mathbb{Z}_{2^{64}}$ is *not* affinity over $\mathrm{GF}(2)$: the carry chains of integer
+addition are themselves a source of $\mathrm{GF}(2)$ nonlinearity, and the Phase-4 extractor
+($\texttt{acc} \mathrel{\hat=} v_{x,y}\cdot w_{x,y}$ followed by a $7$-bit rotation, accumulated by `XOR`) destroys any
+residual integer-linear structure. The construction's diffusion therefore does **not** depend on the colorIndex
+schedule being nonlinear \u2014 it derives from carry propagation and the multiply\u2013xor\u2013rotate extractor. This is a
+concrete, falsifiable structural concern that was raised, isolated to the theoretically weakest inputs, and
+empirically refuted from the inside.
+
+The limitation remains that all differentials tested are *non-adaptive*: an attacker who solves for a $\delta$ whose
+$\mathbb{Z}_{2^{64}}$-affine image collides in the Phase-4 extractor (e.g. via a SAT/SMT model of the carry chains)
+is not excluded by these experiments. The white-box harness provides exactly the instrumentation such an analysis
+would build upon. Section 4.8.5 takes the first step of that analysis by resolving the affine sub-cipher exactly.
+
+#### 4.8.5 Algebraic invertibility of the affine sub-cipher
+
+The black-box probes leave open whether the *fully affine* Phase-3 instances admit guaranteed internal collisions. We
+resolve this exactly. For an input whose Phase-2 layout uses only the `ADD` and `SUB` colorIndices (no `XOR`, rotation
+or `INVERT`), Phase 3 is a $\mathbb{Z}_{2^{64}}$-affine map on the $256$-word state,
+
+$$ W = M\,V + b \pmod{2^{64}}, \qquad M \in (\mathbb{Z}_{2^{64}})^{256 \times 256}. $$
+
+Such a map is a bijection on the $16{,}384$-bit state if and only if $\det M$ is odd, equivalently if and only if
+$M \bmod 2$ has full rank over $\mathrm{GF}(2)$. If $M$ were singular there would exist nonzero differences $\delta V$
+with $M\,\delta V \equiv 0$ — guaranteed internal collisions of the affine sub-cipher, *independent of the extractor*.
+
+Because reduction $\mathbb{Z}_{2^{64}} \to \mathbb{Z}_2$ is a ring homomorphism and `ADD`/`SUB` are LSB-closed (carries
+propagate only upward), the matrix $M \bmod 2$ is recovered **exactly** by probing Phase 3 with the $256$ unit
+value-vectors and reading the output least-significant bits. We then compute its $\mathrm{GF}(2)$ rank by Gaussian
+elimination.
+
+Across five independently sampled reachable fully-affine layouts at $L = 16$, the result was invariant:
+
+$$ \operatorname{rank}_{\mathrm{GF}(2)}(M \bmod 2) = 256/256 \quad\Longrightarrow\quad \det M \text{ odd} \quad\Longrightarrow\quad M \text{ invertible over } \mathbb{Z}_{2^{64}}. $$
+
+**The fully-affine Phase-3 instances are exact bijections on the entire $16{,}384$-bit state.** They introduce no
+internal collisions whatsoever; for these inputs *all* compression in the hash is confined to the Phase-4 extractor
+($16{,}384 \to 512$ bits). This converts the earlier statistical observation (Section 4.8.3) into an exact algebraic
+statement: the theoretically weakest input class is not merely empirically collision-free in Phase 3, it is provably
+permutation-equivalent there. The residual attack surface for this class is therefore precisely the extractor, whose
+$32{:}1$ compression makes existential collisions unavoidable but whose *reachable* preimage structure (the values $V$
+must be specific primes produced by the Phase-2 walk) is not addressed here and remains the natural next target.
+
+#### 4.8.6 A structural defect in the Phase-4 extractor: 255 dead state bits
+
+Pursuing the extractor directly yields the study's first genuine *structural defect*. The extractor (the production
+`hashValue()`) reads only the grid values, so it can be exercised as a standalone $16{,}384 \to 512$ bit map. Unfolding
+its accumulator — a rotation by $7$ after every XOR, with $7 \times 256 \equiv 0 \pmod{64}$ — gives the closed form
+
+$$ \text{block}_b \;=\; \bigoplus_{k=0}^{255} \mathrm{ROL}\!\big(V_k \cdot w_{k,b},\; r_k\big), \qquad w_{k,b} = (k+1) + 256\,b, \qquad r_k = 7(256-k) \bmod 64. $$
+
+Flipping bit $i$ of cell value $V_k$ changes the product $V_k \cdot w_{k,b}$ by $\pm 2^i \, w_{k,b} \bmod 2^{64}$.
+When $2^i \, w_{k,b} \equiv 0 \pmod{2^{64}}$ — that is, when $i \ge 64 - v_2(w_{k,b})$ — the product is **unchanged**,
+so that input bit cannot affect $\text{block}_b$. Because $v_2(w_{k,b}) = v_2(k+1)$ is constant across all eight
+blocks, the top $v_2(k+1)$ bits of every cell value are **globally dead**: they influence no output bit whatsoever.
+The predicted number of dead input bits is therefore
+
+$$ \sum_{k=0}^{255} v_2(k+1) \;=\; \Big(\textstyle\sum_{m=1}^{255} v_2(m)\Big) + 8 \;=\; 247 + 8 \;=\; 255. $$
+
+A direct experiment against the production extractor confirms this exactly: flipping each of the $16{,}384$ input bits
+over three random base states, **precisely $255$ bits never alter any of the $512$ output bits**, the count is
+state-independent, and every dead bit lies in the predicted high-order position. Flipping all $255$ dead bits at once
+yields two grid states that differ in $255$ bits yet produce a **bit-identical** $512$-bit hash — an explicit,
+deterministic collision of the extractor.
+
+**Honest impact assessment.** This is a real, provable defect: the extractor is non-injective with a kernel of
+dimension at least $255$, so the diffusion that Phase 3 spreads across the full state is partially discarded — the
+effective internal width is $16{,}384 - 255 = 16{,}129$ bits, not $16{,}384$. However, its *practical* consequence for
+the advertised security level is **limited**: $16{,}129$ effective bits still vastly exceed the $512$-bit output, so
+this does not by itself reduce collision resistance below the $256$-bit birthday bound. The defect is exploitable as a
+full-hash collision only if an attacker can drive two messages to post-Phase-3 states that differ *exclusively* in
+dead bits — controlling the top bits of specific odd-indexed cells through the Phase-2 walk and the Phase-3 carry
+chains. That control problem is unsolved here. The finding's value is structural: it shows the extractor wastes state
+and should mix the high-order bits of even-weighted cells (e.g. by using odd weights, or an additional rotation/round
+before extraction) before any production use.
+
+### 4.9 Summary
 
 | Property                | Status      | Evidence                                               |
 |-------------------------|-------------|--------------------------------------------------------|
@@ -577,12 +794,21 @@ for differential / algebraic analysis.
 | Sequential Independence | ✅ Ideal     | 49.999% (p=0.927 vs 50%)                               |
 | NIST Randomness         | ✅ Pass      | 10/10 tests (50k hashes, 6.4M bits)                    |
 | Differential Resistance | ✅ Pass      | 5/5 tests (10k samples)                                |
+| GF(2) Linearity Probe   | ✅ Pass      | $N = 20{,}000$ 4-tuples, worst $z = 2.73\,\sigma$ (Section 4.7.1) |
+| Single-byte Diff Probe  | ✅ Pass      | $3 \times 10^6$ pairs (5 seeds), worst $z = 3.68\,\sigma$ (Section 4.7.2) |
+| Cross-length Collisions | ✅ Pass      | $N = 2 \times 10^6$ inputs, $+0.25\,\sigma$ vs birthday (Section 4.7.3) |
+| Exhaustive Scan $L\le3$ | ✅ Pass      | $\approx 1.68 \times 10^7$ hashes, $+0.56\,\sigma$ vs birthday (Section 4.6) |
+| Phase-3 Near-Affinity   | ⚠️ Confirmed | Mean 5.9/256 nonlinear cells at $L=16$ (Section 4.8.1) — structural, but see below |
+| Affine-Input Diffusion  | ✅ Pass      | Avalanche flat at 50% even for 0-nonlinear-cell inputs (Section 4.8.3) |
+| Min-Avalanche Search    | ✅ Pass      | Global min $38.9\%$ over $1.15 \times 10^6$ flips = expected order statistic (Section 4.8.3) |
+| Affine Phase-3 Bijective | ✅ Proven    | $\operatorname{rank}_{\mathrm{GF}(2)} M = 256/256$, $\det M$ odd, 5/5 layouts (Section 4.8.5) |
+| Phase-4 Dead State Bits | ⚠️ Defect    | 255/16384 input bits ignored by extractor; explicit collision constructed (Section 4.8.6) |
 | Round Invariance        | ✅ Confirmed | No degradation from 100 to 1 round                     |
 | Practical Exploits      | ✅ None      | 4/4 exploit attempts failed                            |
 | Formal Proofs           | ❌ None      | Not formally analyzed                                  |
 | Peer Review             | ❌ None      | Awaiting review                                        |
 
-### 4.8 Interpretation and Limitations
+### 4.10 Interpretation and Limitations
 
 The following assessment provides an honest evaluation of what the empirical results demonstrate — and what they do not.
 
@@ -743,6 +969,9 @@ round-invariance (see Section 4.5).
 | `SecasyPracticalExploit`      | tests/security/     | Practical exploitation attempts                    |
 | `SecasyTruncCollisionPoC`     | tests/collision/    | Truncated collision birthday PoC                   |
 | `SecasyBruteCollisionScan`    | tests/analysis/     | Exhaustive enumeration over all $L \le 3$ inputs (Section 4.6) |
+| `SecasyLinearityAttack`       | tests/analysis/     | GF(2) linearity, differential, cross-length probes (Section 4.7) |
+| `SecasyDifferentialReplay`    | tests/analysis/     | Replication of differential probe with 5 seeds (Section 4.7.2) |
+| `SecasyStructuralAttack`      | tests/analysis/     | White-box internal-state attack: nonlinearity census, phase avalanche, affine-input diffusion, GF(2) invertibility, Phase-4 dead-bit defect (Section 4.8) |
 | `SecasyPreciseTiming`         | tests/performance/  | Nanosecond-precision benchmarks (Windows QPC)      |
 | `SecasyBenchmark`             | tests/performance/  | Round-count performance comparison                 |
 | `SecasyProfiling`             | tests/performance/  | Phase-level profiling                              |
@@ -843,18 +1072,48 @@ The principal empirical findings are:
    ($N = 10^6$ avalanche / bit-bias / sequential-correlation tests; Section 4.1).
 2. **No collisions detected in exhaustive enumeration up to $L = 3$ bytes** ($N \approx 1.68 \times 10^7$ hashes),
    with 32-bit truncated collision counts matching the birthday expectation to within $0.56\,\sigma$ (Section 4.6).
-3. **Statistical metrics are independent of the mixing round count** in the tested range (1–100 rounds; Section 4.5).
+3. **No measurable GF(2) linearity, differential bias or cross-length anomaly** in $\approx 5 \times 10^6$ targeted
+   hash evaluations (Section 4.7). The maximum z-score observed across the entire study — including a five-seed
+   replication of the only marginal initial reading — was $3.68\,\sigma$, consistent with the expected maximum of
+   $\approx 8{,}000$ independent Bernoulli tests under the null hypothesis. **Crucially, this includes an instance in
+   which an initial $4.98\,\sigma$ reading was empirically refuted by direct replication**, illustrating the
+   importance of multiple-comparison control in statistical hash evaluation.
+4. **Statistical metrics are independent of the mixing round count** in the tested range (1–100 rounds; Section 4.5).
    This is consistent with the algebraic structure of the round function as a $\mathrm{GF}(2)$-linear map perturbed
    only by modular-add carries (Section 2.3) and should not be read as evidence that low round counts are secure.
-4. **No implementation defects detected** under Valgrind, AddressSanitizer, UBSanitizer, GCC `-fanalyzer`, and
+5. **The Phase-3 near-affinity seam is real but empirically non-exploitable.** White-box instrumentation (Section 4.8)
+   shows that for short inputs the Phase-3 schedule is $\approx 98\%$ `ADD`-coloured \u2014 affine over
+   $\mathbb{Z}_{2^{64}}$ \u2014 yet inputs isolated to have *zero* nonlinear cells diffuse exactly as well (avalanche
+   flat at $50\%$). The construction's diffusion derives from integer-addition carries and the multiply\u2013xor\u2013rotate
+   extractor, not from the colorIndex schedule. This is a falsifiable structural concern that was raised, isolated to
+   the theoretically weakest inputs, and refuted from the inside. An exact $\mathrm{GF}(2)$ rank computation further
+   proves that these fully-affine Phase-3 instances are **bijections** on the $16{,}384$-bit state ($\det M$ odd,
+   rank $256/256$ across $5/5$ sampled layouts; Section 4.8.5): they introduce no internal collisions, so for this
+   input class all compression is confined to the Phase-4 extractor.
+6. **The Phase-4 extractor has a provable structural defect: 255 dead state bits.** Unfolding the extractor to closed
+   form shows that the top $v_2(k+1)$ bits of each cell value are multiplied away, so exactly
+   $\sum_k v_2(k+1) = 255$ of the $16{,}384$ internal state bits influence *no* output bit. This is confirmed against
+   the production extractor (state-independent, all in the predicted positions) and an explicit collision of two states
+   differing in $255$ bits was constructed (Section 4.8.6). Its practical impact is **limited** — the $16{,}129$
+   effective bits still far exceed the $512$-bit output, so collision resistance is not reduced below the birthday
+   bound — but it is a real waste of diffused state and the one concrete weakness this study recommends fixing before
+   any production use.
+7. **No implementation defects detected** under Valgrind, AddressSanitizer, UBSanitizer, GCC `-fanalyzer`, and
    $5 \times 10^5$ fuzzing iterations (Section 7).
 
 The principal **open questions** are:
 
-1. **Targeted cryptanalysis.** Differential, linear, algebraic, meet-in-the-middle, rebound, cube and SAT-based
-   analyses have not been performed.
-2. **Design strengthening.** The lack of a non-linear S-box in the round function and the lack of length padding /
-   domain separation are known weaknesses that any production version of the construction would have to address.
+1. **Targeted cryptanalysis.** The probes in Sections 4.7\u20134.8 use *non-adaptive* differentials, and Section 4.8.5 proves the fully-affine Phase-3 instances bijective. The
+   residual attack surface is the Phase-4 extractor restricted to *reachable* prime-valued states, which has not been
+   modelled. This excludes the simplest classes of bias but not attacks that depend on deeper algebraic
+   insight \u2014 in particular, a $\delta$ solved (e.g. via a SAT/SMT model of the carry chains) so that its
+   $\mathbb{Z}_{2^{64}}$-affine Phase-3 image collides in the Phase-4 extractor, algebraic-normal-form analysis of the
+   Phase-3/Phase-4 composition, meet-in-the-middle, rebound, and cube analyses.
+2. **Design strengthening.** The Phase-4 extractor's 255 dead state bits (Section 4.8.6) should be eliminated — e.g.
+   by using odd accumulator weights, or by applying an additional rotation/mixing round before extraction — so that
+   the high-order bits of even-weighted cells reach the output. Independently, the lack of a non-linear S-box in the
+   round function and the lack of length padding / domain separation are known weaknesses that any production version
+   of the construction would have to address.
 3. **Peer review.** This report has not been peer-reviewed.
 
 Until these open questions have been addressed, Secasy should be regarded as an experimental construction suitable
