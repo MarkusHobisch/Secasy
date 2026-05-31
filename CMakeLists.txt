@@ -81,6 +81,8 @@ add_secasy_test(SecasyLinearityAttack         tests/analysis/linearity_attack.c)
 add_secasy_test(SecasyDifferentialReplay      tests/analysis/differential_replay.c)
 # ── White-box structural attack (internal-state instrumentation) ──
 add_secasy_test(SecasyStructuralAttack        tests/analysis/structural_attack.c)
+# ── Algebraic analysis (degree growth / cube / linear, reduced model) ─
+add_secasy_test(SecasyAlgebraicAnalysis       tests/analysis/algebraic_analysis.c)
 # Collect all test target names for bulk property assignment
 set(ALL_TEST_TARGETS
     SecasyComprehensiveSecurity SecasyDeepSecurity SecasyExtendedSecurity
@@ -91,7 +93,7 @@ set(ALL_TEST_TARGETS
     SecasyFuzzTest SecasyTestVectors SecasyVerifyVectors SecasyColorIsolation
     SecasyFieldSizeSweep SecasyDebugCollision SecasyTraceCollision
     SecasyCellDivergence SecasyBruteCollisionScan SecasyLinearityAttack SecasyDifferentialReplay
-    SecasyStructuralAttack)
+    SecasyStructuralAttack SecasyAlgebraicAnalysis)
 
 # ── Per-target properties (applied in bulk) ───────────────────────────
 set(WARN_FLAGS -Wall -Wextra -Wundef -Wshadow -Wpointer-arith

@@ -227,8 +227,9 @@ static void run_phase4(const uint64_t V[FIELD_SIZE][FIELD_SIZE], uint64_t out[HA
         {
             for (uint32_t y = 0; y < FIELD_SIZE; y++)
             {
-                uint64_t weight = (uint64_t)(x * FIELD_SIZE + y + 1)
-                                + (uint64_t)b * GRID_CELLS;
+                uint64_t pos = (uint64_t)(x * FIELD_SIZE + y + 1)
+                             + (uint64_t)b * GRID_CELLS;
+                uint64_t weight = 2u * pos + 1u; /* odd => unit, no dead bits */
                 acc ^= V[x][y] * weight;
                 acc = (acc << EXTRACT_ROTATE) | (acc >> (64 - EXTRACT_ROTATE));
             }
@@ -693,7 +694,8 @@ static void measure_phase4_deadbits(void)
         unsigned minv = 64;
         for (int b = 0; b < (int)HASH_WORDS; b++)
         {
-            uint64_t w = (uint64_t)(k + 1) + (uint64_t)b * GRID_CELLS;
+            uint64_t pos = (uint64_t)(k + 1) + (uint64_t)b * GRID_CELLS;
+            uint64_t w = 2u * pos + 1u; /* production weight: always odd */
             unsigned v = val2_u64(w);
             if (v < minv) minv = v;
         }

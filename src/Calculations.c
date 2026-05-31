@@ -20,8 +20,18 @@ uint64_t hashValue(unsigned long blockIndex)
             /* Position as unique index, offset by blockIndex */
             uint64_t pos = (uint64_t)(x * FIELD_SIZE + y + 1) + (uint64_t)blockIndex * FIELD_SIZE * FIELD_SIZE;
 
+            /*
+             * Force the weight odd. Odd numbers are units in Z/2^64, so
+             * value -> value * weight is a bijection and no high-order bit of
+             * any cell can be annihilated by the multiplication. Using the
+             * even index pos directly would silently discard the top
+             * v2(pos) bits of each cell (255 dead state bits in total);
+             * 2*pos+1 keeps every weight distinct and invertible.
+             */
+            uint64_t weight = 2u * pos + 1u;
+
             /* XOR with position-weighted value */
-            accumulation ^= field[x][y].value * pos;
+            accumulation ^= field[x][y].value * weight;
 
             /* Simple 7-bit rotation */
             accumulation = (accumulation << 7) | (accumulation >> 57);

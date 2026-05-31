@@ -118,47 +118,47 @@ static int run_tests(void)
 
     /* ── 512-bit vectors ─────────────────────────────────────────── */
     printf("--- 512-bit ---\n");
-    TEST("\"\" (empty)", EMPTY, 0, 512, "170cc4dcf0d6f18211e1b34dab26e019c2bd077cb542f53d717544b3b8151f622489f9c95b5ac055c7b13991597469ad62c84674564a659cf6e2298a794cb8a5");
-    TEST_STR("\"a\"", "a", 512, "3a29643d127dc5db52e87165c6a6354f18e21f7af3ca01df6fa3e7a75aebae6d55b4836e98fdec67436705447af36e098df252cf471f4d21acfd939cd200a1fd");
-    TEST_STR("\"z\"", "z", 512, "9be4960d677a2db545422ba467ba6368d96d1cd7707a2fa5c9298f28707b341bce96fe38559af0ac7e6eb37edca080667e2ad87aa5f44d76f6d76333889b5f6c");
-    TEST_STR("\"0\"", "0", 512, "4bc2e5fd617e6e0ddd65c39f3a8175786d8b2734fbf841f50e04217e34b20fe5f8f3bae55f8236192a0e649f9cf75555f07f0b0b0429458e48ec33c5a1b8f1a5");
-    TEST_STR("\"abc\"", "abc", 512, "0daae080dab87f0b766d974697bb5f1151c56afacb903c131e0445ecef9ee0b0bbf7987798aad36e7134185c37603600ee60f8451c28ba0789be55d09e40a317");
-    TEST_STR("\"secasy\"", "secasy", 512, "ea791c8897d5abffaa2f570f12b34db890d4fb75559cc233079973c8274ce864450cc6116877186e7382824df50129f79dc1d379843e77995b3e23db67dc88ce");
-    TEST_STR("\"1234567890\"", "1234567890", 512, "2d6ff2cfacadb4a42d0ce9dddcd8d714a05cefcb09d54225a9bc1c8931ee9512fb161dd6b314ab6af1672e4d3d9fc5c70bd869be03850682a0a3ec5e44afd5f6");
+    TEST("\"\" (empty)", EMPTY, 0, 512, "b7f8505682b46bb6f46b3c43f5e8007c31b7d5dae7564298c3e777ff6daa72f9c470ddc2392ece703cafdbbb1f5750c31d91b88f79d4bada4242d9eaeeac6bfe");
+    TEST_STR("\"a\"", "a", 512, "291abc5b712cc388b5a1ea370365e216c6fbf9a6b07a37bc5cea23be0bfa26904ed1b454b764322fa241263da401375bed7f3722aa8ce2fa16e7dd1d6fe887cb");
+    TEST_STR("\"z\"", "z", 512, "f3c68bf71e6584e3a6759768bcd38d81d40cab1f17cde779cb9cf82d17712003e550fa98205141060e5d6e4e4748e7b48ecb3f24e68d04eb626a9f8663df8039");
+    TEST_STR("\"0\"", "0", 512, "cde76b0a6492506e6fc13da5d2d77f2b4ccb186598f7ff8cd2da97f218528c3cfe4bc89e120b7fdff3580f1b2e9b05ce83fc46de4dd2d3722624c5765bb45cc8");
+    TEST_STR("\"abc\"", "abc", 512, "d1197317b6f4c6adc516b29549dcb9d274abdb64022dba8a003e3a5dd998986c2f29c20fca7b57d01e5852bdbd264ad9ec46f85f346cb93e6ab49209736472d8");
+    TEST_STR("\"secasy\"", "secasy", 512, "44cf221ec8fde8d06849176fdbe4709ce36c992019a690b5e356879b786cc3f2b9f63c883e89989e48666bbdacb739756e3d65d0b4acea70a703c575e7fe1a5a");
+    TEST_STR("\"1234567890\"", "1234567890", 512, "d235c8a13224ae64207796ffbb5f28bc92eacd8caadfb8f8527565166764de9d498ff04f78f7ed20ae1fb4b4eb454110a956da4fc24861796dd3b24b937d8edc");
     TEST_STR("pangram (dog)", "The quick brown fox jumps over the lazy dog", 512,
-             "7fa315ffc925efc53357165eb79151fbc823985da4bce8a70692ef885f0fc486ea459f74ef3a333b8c7dea3d2f3c9a6f0ea3d036418e2cc61624c17c47779bb3");
+             "73aed62572b95b33b1762710af4646e6aaf945bb1a835dbb19b5cb2603c49798b782a5571eb17d0b66fc3b418eeb3d0bbb589d68ca2b2b01dfc560664b648123");
     TEST_STR("pangram (cog)", "The quick brown fox jumps over the lazy cog", 512,
-             "fa64f95e00bd8d57a4708a8cafccacc70a4eb53f2a3f54a9fee955a8057d3cee734cfb672a407d18021933f2ab30a634c1d08e2044c9d31cc67376c4fdd3a707");
-    TEST("0x00", BYTE00, 1, 512, "7934c6203539b4a56ed85db787b694d87daab5011975984b405ef3e21ab4f84bf922d9c8b80ea3a7ada32629b27f8485fa2fd504ebdf24741cba942b4f83a1b8");
-    TEST("0x01", BYTE01, 1, 512, "88c0b9c2ca25b6529866ad1c7986278058d3291a6c16d94660bdc78ea74fa9fbdc9e2319e964e35713b3a3700cb2ae61b6a5d237a838729f02a89e97dfa967a2");
-    TEST("0x80", BYTE80, 1, 512, "dc509a98affade882bb4eaa992b45cea638bde98e501a160bc2378a8875b4cfe24b43ddd94c0f98c9fafb44c79423477fc788cb9a4e4cf93290f0eccf2f6a666");
-    TEST("0xFF", BYTEFF, 1, 512, "d64809ba27354d28625c661f266678c2dc41b3d6760b7bd24cf959de641827390a90276ecf16e93985240a5b4e301a05f6ec3c1ebddde24fff2855f1148b09ea");
-    TEST("0x00 x8", ZEROS8, 8, 512, "923012917656c8e282cd3882d27c0c11cb838ed96a5ca68281b9e1f5f111211eb5a7f5c25b12846db3b0d0f416a07c7ba2bd035d78357b7912e0beac3001d4b6");
-    TEST("0x00 x16", ZEROS16, 16, 512, "3ca9788634bb23e263ecc1fdf96018e22d47c28828120cda502ea565698102f9d2fcf0f479b7b4ba4e5121dce4a63f8bbe54f6771669499fc103424903a0cbd1");
-    TEST("0x00 x32", ZEROS32, 32, 512, "1602a34e3618147423f428efe9a1d65a594aadcab6127792454677caa983611cc7b3c2cac9563df0f6681ddf4f9b8df7d4c35e4f184e7e71b8a18d013a1573d4");
-    TEST("0x00 x64", ZEROS64, 64, 512, "b40271aaf0d6b5ba942ed60aecd321da93a58024b59249bb70de600b2b3fb425fea4b76970cd2c550685cf2f55d1d989aef90fd65c18adabf38ad22eff554a36");
-    TEST("0xFF x8", ONES8, 8, 512, "3b266c7b69db521bf15dd55b98114e54d8b6ec0ddf0dd6dc4fb5071fbf3ee92cf6dfd0bee334929a7d4151801a57f49f04e19b9b30cae47e35aa5daa0b7d90ad");
-    TEST_STR("\"Markus\"", "Markus", 512, "fe638bdac5e04f1bc59f1b92b2d166e7019c9e3602bb4a4874dd1d8d9e2ecf9519a7d4f172427b8d763193ebce54af48d2b6bb86a68fa45916b39a738d78c610");
-    TEST_STR("\"Anna\"", "Anna", 512, "fa8c9eeda7c7dc8d8baf9685d7607f435d96434105e88b4030366cea3fbbacdd994fb75bf221a74687744ccfb13c4482bb8a75d1b53883e9a7e0bdf836381e9a");
-    TEST_STR("\"markus\"", "markus", 512, "3bf4c43d76d8414df6bb8ed325583533874d588c40a589a8f0765abad8c04e3e2dc8fe3facb40980cd38639a0efaf67b43964675043eb7834c42337a272d60b6");
-    TEST_STR("\"maRkus\"", "maRkus", 512, "2070f917fcc83908c4eaf6044d5f537f8fc6f2f10c149b3f97c2eff71297ce546fb3ffbfb55f4bb85efa0182252cbae7acfc9c786d694d7f9603a2ee0d6a92f3");
-    TEST_STR("\"Hanna\"", "Hanna", 512, "9572554815e9adba188a0058b700e113b59dd8283b4f4c00c1054eb167affd9f1a0ffa298add933e905e85b72e16a875c7be228aa8fee38d9687962e8b1f6eb6");
-    TEST_STR("\"Antonette\"", "Antonette", 512, "2e85188b06c593828b3bccd647f7bc8c598f98390987a01c69cbba3708a776bff7f456708ef584efce737695aef2e450ab13e1592dc235ca299495994a4efcbc");
+             "b49d9d9ac37b75b6e7a43e8f455c57edd2361749e41edb6c7823ebd0d2eaced8e84b634b9c6240fd54451818f74da471c5b80638d9a243d1ebbfe2cd40ad56e3");
+    TEST("0x00", BYTE00, 1, 512, "f7298e77c73b8ae638e86b1f8e6c761f6076b0a8d056a9a56a482644e00c97be149f38085369487e1c6a3165c06553260368ca2060a6aebeaeb54ed0446d904f");
+    TEST("0x01", BYTE01, 1, 512, "4d1e47018e6b172210b0c342b0ac5610927064762034eb79771cf509b2b686336364728331af379528c58db8055d03938e2b3f4e13204b39825954047c052414");
+    TEST("0x80", BYTE80, 1, 512, "923dfc8031b6d2ef6b48d44a49d78f6521fdb2bf1dd229ea74c0eaf43aa05a1fb060eb61a2e4256cf6a376b2ef912eb283afb68fb228daa156997639ff92856a");
+    TEST("0xFF", BYTEFF, 1, 512, "86e121ab1950265f39b0d32f9ca872b6adb42131efde18770c442e3222ce110342504c159a01e5e0871765b028e48e910a8252dd59e6f78351f046e657da075f");
+    TEST("0x00 x8", ZEROS8, 8, 512, "39cd2afff4c7cff4fd8c281a57c3ff330af4b0084249084d680c46d656ea49fea96bb058e022b6ddc6998790782b08cb3ebbb40167202b2ca1996a0f2f371133");
+    TEST("0x00 x16", ZEROS16, 16, 512, "aac4bf3fb25ffc63025def038f4b385c3d6568ce5222259fe64d8c0d178299efa36fe2fe35de2be93f18edb9039979973adbef8ca06613a12d696b8458e4f96e");
+    TEST("0x00 x32", ZEROS32, 32, 512, "579a76b2b0d4d715303ce08fbea37e8be05bbe45228f1e9ecd55a92c09851297aef64ace0248a961b603a3889de9cea375f57c29b01c0072a0efb143e4ae97a8");
+    TEST("0x00 x64", ZEROS64, 64, 512, "74cfef3d8c78dff43c65d959d191881e5a1adbee92e6a01d73d830dcd36ab9f9117a2450740f286407a4b3bb6c02357d9ebd5480683990e8b675b3b71df7fbc6");
+    TEST("0xFF x8", ONES8, 8, 512, "127c338fdfe68e2bf7e29a3ddd94e28781dc0d7345025e6187ba7432ae1a57102c56a3763faa77662da4340d7d6568de5f8824af034c853d3fbf191af2f24fe1");
+    TEST_STR("\"Markus\"", "Markus", 512, "1b18d19d83393932d0ec6a496d297dd4d1fa53bb4cee8fe516e1956fb8ca7a9935ef0c957518ead12a17415394b4ac59aec39ae2e4d68210472a3081970465f9");
+    TEST_STR("\"Anna\"", "Anna", 512, "bd3b6c745f38b580c83e60137a8b60f756b7ae02714bcfe358a77474830bbae24f4c48b58ae0b4b27b85ea99329333c720d0f9aaad32ecafc57711e995cb185d");
+    TEST_STR("\"markus\"", "markus", 512, "56e0618e6712a1b3aa79c6e3f45ef25b90a5e0732ff523aebfed0d14198b029021b30d83817b6b2e43ef60155a49bad7fad5c549aadaeaf57a7c94a38cfc789f");
+    TEST_STR("\"maRkus\"", "maRkus", 512, "60776a80a7451b8b79094ca13795bcdf6aaaacc337cd5b051f2bef52d18b615f0b6e4955d1f0d18e9cdc319d7a68f5a6597e897ccac5a4ac9ba546d71a46afab");
+    TEST_STR("\"Hanna\"", "Hanna", 512, "c1d70e05bba8ffcc03e1666ffbb573fe2b918bd8cc338399b4f50693028367198745d1e7a1a3208357d8fbd09230a5f83e408b9032e4bb41c44011935b24dfc0");
+    TEST_STR("\"Antonette\"", "Antonette", 512, "f2e7b839bbca42dfd31fbd3ad803dfd0d5b73d4c21db7a30ea1f7196705095229b337ecb311570145a1377259d47b742987105518213642984f66beb6493adb6");
 
     /* ── 64-bit vectors ──────────────────────────────────────────── */
     printf("\n--- 64-bit ---\n");
-    TEST("\"\" (empty)", EMPTY, 0, 64, "170cc4dcf0d6f182");
-    TEST_STR("\"a\"", "a", 64, "3a29643d127dc5db");
-    TEST_STR("\"abc\"", "abc", 64, "0daae080dab87f0b");
-    TEST_STR("\"secasy\"", "secasy", 64, "ea791c8897d5abff");
-    TEST_STR("pangram (dog)", "The quick brown fox jumps over the lazy dog", 64, "7fa315ffc925efc5");
-    TEST_STR("pangram (cog)", "The quick brown fox jumps over the lazy cog", 64, "fa64f95e00bd8d57");
-    TEST_STR("\"Markus\"", "Markus", 64, "fe638bdac5e04f1b");
-    TEST_STR("\"Anna\"", "Anna", 64, "fa8c9eeda7c7dc8d");
-    TEST_STR("\"markus\"", "markus", 64, "3bf4c43d76d8414d");
-    TEST_STR("\"maRkus\"", "maRkus", 64, "2070f917fcc83908");
-    TEST_STR("\"Hanna\"", "Hanna", 64, "9572554815e9adba");
-    TEST_STR("\"Antonette\"", "Antonette", 64, "2e85188b06c59382");
+    TEST("\"\" (empty)", EMPTY, 0, 64, "b7f8505682b46bb6");
+    TEST_STR("\"a\"", "a", 64, "291abc5b712cc388");
+    TEST_STR("\"abc\"", "abc", 64, "d1197317b6f4c6ad");
+    TEST_STR("\"secasy\"", "secasy", 64, "44cf221ec8fde8d0");
+    TEST_STR("pangram (dog)", "The quick brown fox jumps over the lazy dog", 64, "73aed62572b95b33");
+    TEST_STR("pangram (cog)", "The quick brown fox jumps over the lazy cog", 64, "b49d9d9ac37b75b6");
+    TEST_STR("\"Markus\"", "Markus", 64, "1b18d19d83393932");
+    TEST_STR("\"Anna\"", "Anna", 64, "bd3b6c745f38b580");
+    TEST_STR("\"markus\"", "markus", 64, "56e0618e6712a1b3");
+    TEST_STR("\"maRkus\"", "maRkus", 64, "60776a80a7451b8b");
+    TEST_STR("\"Hanna\"", "Hanna", 64, "c1d70e05bba8ffcc");
+    TEST_STR("\"Antonette\"", "Antonette", 64, "f2e7b839bbca42df");
 
     /* ── Summary ─────────────────────────────────────────────────── */
     printf("\n================================\n");

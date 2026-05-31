@@ -442,7 +442,7 @@ $$\text{block}_b = \bigoplus_{i=0}^{255} \text{ROL}_7\!\left(\text{acc} \oplus (
 
 Dabei ist:
 
-- $w_{i,b} = i + 1 + b \cdot 256$ — ein **positionsgebundenes Gewicht**, versetzt durch den Blockindex $b$
+- $w_{i,b} = 2\,(i + 1 + b \cdot 256) + 1$ — ein **ungerades** positionsgebundenes Gewicht, versetzt durch den Blockindex $b$
 - $b \in \{0, 1, \ldots, \lceil \text{hashBits}/64 \rceil - 1\}$ — der Blockindex
 - $\text{ROL}_7$ — Links-Rotation um 7 Bit nach jedem Schritt
 - $\oplus$ — XOR-Akkumulation
@@ -450,6 +450,14 @@ Dabei ist:
 Der Blockindex-Versatz stellt sicher, dass jeder extrahierte Block einen
 eigenen Satz von Positionsgewichten verwendet — jeder 64-Bit-Block ist
 somit eine unterschiedliche Linearkombination der Gitterzellen.
+
+Dass jedes Gewicht **ungerade** ist, ist entscheidend: Eine ungerade Zahl ist
+eine Einheit in $\mathbb{Z}/2^{64}$, sodass die Multiplikation mit $w_{i,b}$
+bijektiv ist und kein höherwertiges Bit eines Zellwerts vernichtet werden kann.
+Ein früherer Entwurf nutzte das gerade Gewicht $i + 1 + b \cdot 256$, das die
+obersten $v_2(i+1)$ Bits jeder Zelle stillschweigend verwarf und 255 der
+16.384 internen Zustandsbits ohne Einfluss auf die Ausgabe ließ; das ungerade
+Gewicht beseitigt diese toten Bits und hält zugleich alle Gewichte verschieden.
 
 Das Positionsgewicht ist entscheidend: Hätten zwei verschiedene Zellen
 denselben Wert und wären ihre Positionen getauscht, würde die Multiplikation

@@ -428,7 +428,7 @@ $$\text{block}_b = \bigoplus_{i=0}^{255} \text{ROL}_7\!\left(\text{acc} \oplus (
 
 Where:
 
-- $w_{i,b} = i + 1 + b \cdot 256$ — a **position-bound weight** offset by the block index $b$
+- $w_{i,b} = 2\,(i + 1 + b \cdot 256) + 1$ — an **odd** position-bound weight offset by the block index $b$
 - $b \in \{0, 1, \ldots, \lceil \text{hashBits}/64 \rceil - 1\}$ — the block index
 - $\text{ROL}_7$ — left-rotate by 7 bits after each step
 - $\oplus$ — XOR accumulation
@@ -436,6 +436,14 @@ Where:
 The block-index offset ensures that each extracted block uses a distinct
 set of position weights, so every 64-bit block is a different linear
 combination of the grid cells.
+
+Forcing every weight **odd** is essential: an odd integer is a unit in
+$\mathbb{Z}/2^{64}$, so multiplication by $w_{i,b}$ is a bijection and no
+high-order bit of any cell value can be annihilated. An earlier design used
+the even weight $i + 1 + b \cdot 256$, which silently discarded the top
+$v_2(i+1)$ bits of each cell and left 255 of the 16,384 internal state bits
+without influence on the output; the odd weight eliminates these dead bits
+while keeping every weight distinct.
 
 The position weight is decisive: if two different cells had the same value
 but their positions were swapped, multiplication by $w_{i,b}$ would still produce

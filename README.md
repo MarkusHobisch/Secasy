@@ -14,7 +14,7 @@ with $N = 10^6$ samples at the default configuration (10 rounds, 512-bit output)
 $50.0007\,\%$ (95 % CI: $[49.9963\,\%, 50.0051\,\%]$) and a maximum per-bit bias of $0.149\,\%$, both within the
 expected statistical noise floor for the chosen sample size. An exhaustive enumeration of all $1$-, $2$- and $3$-byte
 inputs (total $N = 16{,}843{,}008$ hashes) produced zero exact 64-bit collisions and a 32-bit truncated collision
-count of $32{,}869$ — within $+0.56\,\sigma$ of the ideal birthday expectation of $32{,}768$.
+count of $32{,}638$ — within $-0.72\,\sigma$ of the ideal birthday expectation of $32{,}768$.
 
 A systematic round-reduction study (1–100 rounds, hash sizes 64–512 bit) shows that the statistical metrics are
 **indistinguishable across round counts**. We interpret this finding as a structural property of the mixing phase
@@ -208,14 +208,16 @@ The accumulator for block $k$ is computed as
 
 $$h_k \;=\; \operatorname{ROL}_{64}\!\Big(\!\ldots \operatorname{ROL}_{64}\!\big(h_k \oplus v_{x,y} \cdot p_{x,y,k},\; 7\big)\!\ldots\!\Big)$$
 
-where $v_{x,y}$ is the final value of cell $(x,y)$ and $p_{x,y,k} = (x \cdot 16 + y + 1) + k \cdot 256$ is a
-position-and-block-dependent weight. Iteration is in row-major order over all 256 cells; the rotation is applied after
-each XOR step.
+where $v_{x,y}$ is the final value of cell $(x,y)$ and
+$p_{x,y,k} = 2\big((x \cdot 16 + y + 1) + k \cdot 256\big) + 1$ is an odd position-and-block-dependent weight. Forcing
+the weight odd makes it a unit in $\mathbb{Z}/2^{64}$, so multiplication by $p_{x,y,k}$ is a bijection and annihilates
+no high-order cell bit (Section 4.8.6). Iteration is in row-major order over all 256 cells; the rotation is applied
+after each XOR step.
 
 **On the structure of the extractor (honest characterisation).** The accumulator is, ignoring the integer
 multiplication $v_{x,y} \cdot p_{x,y,k}$, a fixed linear function of the cell values over $\mathrm{GF}(2)$. The
-multiplication by the small constant $p_{x,y,k}$ contributes only weak non-linearity via carry propagation. The
-position weights are distinct constants and serve to break the symmetry between permutations of cell values; they
+multiplication by the small odd constant $p_{x,y,k}$ contributes only weak non-linearity via carry propagation. The
+position weights are distinct odd constants and serve to break the symmetry between permutations of cell values; they
 are **not** a cryptographic permutation in the sense of [3] or [4]. Strengthening the extractor with a genuinely
 non-linear finalisation (for example an additional permutation round or an S-box layer) is identified as future work
 in Section 8.
@@ -251,8 +253,8 @@ cmake --build . --target Secasy
 cmake --build build --clean-first
 ```
 
-The `--clean-first` flag deletes all old build artifacts before compiling, ensuring a complete rebuild. Use this when
-header files have changed or when experiencing issues with cached object files.
+The `--clean-first` flag deletes old build artifacts before compiling. Use it when header files have changed or when
+cached object files cause issues.
 
 Produces executables including `Secasy`, `SecasyAvalanche`, `SecasyCollision`, `SecasyStatRigor`, and various analysis
 tools.
@@ -301,8 +303,8 @@ Exactly one input source (`-f`, `-s`, or `-x`) must be specified. They cannot be
 Sample output (512-bit hash of the string `"a"`):
 
 ```
-3a29643d127dc5db52e87165c6a6354f18e21f7af3ca01df6fa3e7a75aebae6d
-55b4836e98fdec67436705447af36e098df252cf471f4d21acfd939cd200a1fd
+291abc5b712cc388b5a1ea370365e216c6fbf9a6b07a37bc5cea23be0bfa2690
+4ed1b454b764322fa241263da401375bed7f3722aa8ce2fa16e7dd1d6fe887cb
 ```
 
 See [TEST_VECTORS.md](TEST_VECTORS.md) for the full set of reference hashes.
@@ -425,9 +427,9 @@ Five differential tests evaluate resistance against structured inputs (N=10,000)
 
 | Test                           | Result                                  |
 |--------------------------------|-----------------------------------------|
-| Length extension resistance    | PASS (0% suspicious patterns, N=10,000) |
-| Bit independence (correlation) | PASS (max                               |r|=0.036, threshold 0.15) |
-| Near-collision detection       | PASS (min Hamming = 32%)                |
+| Length extension resistance    | PASS (0% suspicious patterns, N=10,000)  |
+| Bit independence (correlation) | PASS (max abs r = 0.036, threshold 0.15) |
+| Near-collision detection       | PASS (min Hamming = 32%)                 |
 | Structured input patterns      | PASS                                    |
 | Zero sensitivity               | PASS (49.5% mean distance)              |
 
@@ -540,11 +542,11 @@ default hash was retained, and collisions were counted at three truncation width
 | Length | $N$        | 64-bit collisions | $E_{64}$  | 48-bit collisions | $E_{48}$ | 32-bit collisions | $E_{32}$  |
 |--------|-----------:|------------------:|----------:|------------------:|---------:|------------------:|----------:|
 | 1 byte | 256        | 0                 | $\approx 0$ | 0               | $\approx 0$ | 0             | $0.0$     |
-| 2 byte | 65,536     | 0                 | $\approx 0$ | 0               | $\approx 0$ | 0             | $0.5$     |
-| 3 byte | 16,777,216 | 0                 | $8 \cdot 10^{-6}$ | 0         | $0.5$    | **32,869**        | $32{,}768$|
+| 2 byte | 65,536     | 0                 | $\approx 0$ | 0               | $\approx 0$ | 1             | $0.5$     |
+| 3 byte | 16,777,216 | 0                 | $8 \cdot 10^{-6}$ | 0         | $0.5$    | **32,638**        | $32{,}768$|
 
-The $32$-bit collision count for $L = 3$ deviates from the ideal birthday expectation by $+0.31\,\%$, corresponding to
-approximately $+0.56\,\sigma$ relative to the standard deviation $\sqrt{E_{32}} \approx 181$. This is statistically
+The $32$-bit collision count for $L = 3$ deviates from the ideal birthday expectation by $-0.40\,\%$, corresponding to
+approximately $-0.72\,\sigma$ relative to the standard deviation $\sqrt{E_{32}} \approx 181$. This is statistically
 unremarkable and is consistent with the behaviour of an ideal random function.
 
 #### Interpretation
@@ -751,38 +753,103 @@ permutation-equivalent there. The residual attack surface for this class is ther
 $32{:}1$ compression makes existential collisions unavoidable but whose *reachable* preimage structure (the values $V$
 must be specific primes produced by the Phase-2 walk) is not addressed here and remains the natural next target.
 
-#### 4.8.6 A structural defect in the Phase-4 extractor: 255 dead state bits
+#### 4.8.6 A structural defect in the Phase-4 extractor (dead state bits) — identified and fixed
 
-Pursuing the extractor directly yields the study's first genuine *structural defect*. The extractor (the production
-`hashValue()`) reads only the grid values, so it can be exercised as a standalone $16{,}384 \to 512$ bit map. Unfolding
-its accumulator — a rotation by $7$ after every XOR, with $7 \times 256 \equiv 0 \pmod{64}$ — gives the closed form
+Pursuing the extractor directly yielded the study's first genuine *structural defect*, which has since been
+**corrected**. The extractor (the production `hashValue()`) reads only the grid values, so it can be exercised as a
+standalone $16{,}384 \to 512$ bit map. Unfolding its accumulator — a rotation by $7$ after every XOR, with
+$7 \times 256 \equiv 0 \pmod{64}$ — gives the closed form
 
-$$ \text{block}_b \;=\; \bigoplus_{k=0}^{255} \mathrm{ROL}\!\big(V_k \cdot w_{k,b},\; r_k\big), \qquad w_{k,b} = (k+1) + 256\,b, \qquad r_k = 7(256-k) \bmod 64. $$
+$$ \text{block}_b \;=\; \bigoplus_{k=0}^{255} \mathrm{ROL}\!\big(V_k \cdot w_{k,b},\; r_k\big), \qquad r_k = 7(256-k) \bmod 64. $$
 
 Flipping bit $i$ of cell value $V_k$ changes the product $V_k \cdot w_{k,b}$ by $\pm 2^i \, w_{k,b} \bmod 2^{64}$.
 When $2^i \, w_{k,b} \equiv 0 \pmod{2^{64}}$ — that is, when $i \ge 64 - v_2(w_{k,b})$ — the product is **unchanged**,
-so that input bit cannot affect $\text{block}_b$. Because $v_2(w_{k,b}) = v_2(k+1)$ is constant across all eight
-blocks, the top $v_2(k+1)$ bits of every cell value are **globally dead**: they influence no output bit whatsoever.
-The predicted number of dead input bits is therefore
+so that input bit cannot affect $\text{block}_b$.
 
-$$ \sum_{k=0}^{255} v_2(k+1) \;=\; \Big(\textstyle\sum_{m=1}^{255} v_2(m)\Big) + 8 \;=\; 247 + 8 \;=\; 255. $$
+**The original defect.** The first design used the weight $w_{k,b} = (k+1) + 256\,b$. Because
+$v_2(w_{k,b}) = v_2(k+1)$ is constant across all eight blocks, the top $v_2(k+1)$ bits of every cell value were
+**globally dead**: they influenced no output bit whatsoever. The predicted number of dead input bits was
 
-A direct experiment against the production extractor confirms this exactly: flipping each of the $16{,}384$ input bits
-over three random base states, **precisely $255$ bits never alter any of the $512$ output bits**, the count is
-state-independent, and every dead bit lies in the predicted high-order position. Flipping all $255$ dead bits at once
-yields two grid states that differ in $255$ bits yet produce a **bit-identical** $512$-bit hash — an explicit,
-deterministic collision of the extractor.
+$$ \sum_{k=0}^{255} v_2(k+1) \;=\; \Big(\textstyle\sum_{m=1}^{255} v_2(m)\Big) + 8 \;=\; 247 + 8 \;=\; 255, $$
 
-**Honest impact assessment.** This is a real, provable defect: the extractor is non-injective with a kernel of
-dimension at least $255$, so the diffusion that Phase 3 spreads across the full state is partially discarded — the
-effective internal width is $16{,}384 - 255 = 16{,}129$ bits, not $16{,}384$. However, its *practical* consequence for
-the advertised security level is **limited**: $16{,}129$ effective bits still vastly exceed the $512$-bit output, so
-this does not by itself reduce collision resistance below the $256$-bit birthday bound. The defect is exploitable as a
-full-hash collision only if an attacker can drive two messages to post-Phase-3 states that differ *exclusively* in
-dead bits — controlling the top bits of specific odd-indexed cells through the Phase-2 walk and the Phase-3 carry
-chains. That control problem is unsolved here. The finding's value is structural: it shows the extractor wastes state
-and should mix the high-order bits of even-weighted cells (e.g. by using odd weights, or an additional rotation/round
-before extraction) before any production use.
+and a direct experiment against the extractor confirmed this exactly: flipping each of the $16{,}384$ input bits over
+three random base states, precisely $255$ bits never altered any of the $512$ output bits, the count was
+state-independent, and every dead bit lay in the predicted high-order position — an explicit, deterministic collision
+of the extractor.
+
+**The fix.** The extractor now multiplies each cell by the **odd** weight $w_{k,b} = 2\big((k+1) + 256\,b\big) + 1$.
+In $\mathbb{Z}/2^{64}\mathbb{Z}$ every odd number is a unit (invertible), so $V_k \mapsto V_k \cdot w_{k,b}$ is a
+bijection: no bit of $V_k$ can be annihilated, $v_2(w_{k,b}) = 0$ for all $k,b$, and the predicted dead-bit count drops
+to $0$. The same exhaustive experiment now confirms **0 of $16{,}384$ state bits are dead** (state-independent over
+three random bases), and the explicit dead-bit collision no longer exists. The change is a one-line, reversible edit
+that preserves the extractor's structure and cost; it alters every hash output, so the reference test vectors
+([TEST_VECTORS.md](TEST_VECTORS.md)) were regenerated accordingly.
+
+**Honest impact assessment.** The original defect was real and provable — a non-injective extractor with a kernel of
+dimension at least $255$ — though its *practical* consequence was limited, since $16{,}384 - 255 = 16{,}129$ effective
+bits still vastly exceeded the $512$-bit output and did not by itself reduce collision resistance below the $256$-bit
+birthday bound. With the odd-weight fix the extractor is injective on each cell's contribution, the full $16{,}384$-bit
+internal width is preserved, and no state bits are wasted.
+
+#### 4.8.7 Algebraic analysis on a round-reduced, scaled-down model (degree, cube, linear)
+
+The avalanche and rank arguments above concern diffusion and invertibility, not *algebraic* structure. Three further
+questions are standard prerequisites for any cryptanalytic publication [4], [14], [16]: (F1) how fast does the GF(2)
+polynomial *degree* of the output grow with the round count; (F2) do low-degree *cube* subpolynomials exist, and from
+which round do they disappear [16]; and (F3) is there a *linear approximation* of the output with non-negligible bias
+[14]. For the full $16{,}384$-bit state these require operations over an intractably large Boolean space, so — exactly as
+the literature does for SHA-3 / Keccak and similar primitives — they are studied here on a **deliberately scaled-down,
+round-reduced model** that preserves the six Secasy column operations (ADD, SUB, XOR, ROTATE\_LEFT\_XOR,
+ROTATE\_RIGHT\_ADD, INVERT) and the modular-addition carry chains that are the construction's only nonlinearity source,
+but runs on $G$ cells of $W$ bits ($n = G \cdot W$ input bits) instead of $256$ cells of $64$ bits. This makes
+exhaustive evaluation over all $2^{n}$ inputs feasible. The model is realised in
+[tests/analysis/algebraic_analysis.c](tests/analysis/algebraic_analysis.c): for each round count $r$ it builds the
+full truth table of every output bit and applies a Moebius (ANF) transform for the exact algebraic degree (F1), a
+cube-sum followed by an ANF degree test of the superpoly (F2), and a fast Walsh–Hadamard transform for the best linear
+approximation (F3). Results for $G = 4$, $W = 5$ ($n = 20$, $2^{20}$ inputs enumerated) are:
+
+| $r$ | min deg | mean deg | max deg | max cube dim with linear superpoly | best $\lvert\text{corr}\rvert$ | bias |
+|----:|--------:|---------:|--------:|:----------------------------------:|--------------------------:|-----------:|
+| 1   | 1       | 3.15     | 7       | 4                                  | $1.000$  | $0.5$      |
+| 2   | 1       | 3.45     | 7       | 3                                  | $1.000$  | $0.5$      |
+| 3   | 1       | 4.85     | 12      | 4                                  | $1.000$  | $0.5$      |
+| 4   | 1       | 6.35     | 14      | 4                                  | $1.000$  | $0.5$      |
+| 5   | 1       | 7.70     | 16      | 4                                  | $1.000$  | $0.5$      |
+| 6   | 5       | 11.80    | 19      | 3                                  | $0.156$  | $0.078$    |
+| 7   | 5       | 13.55    | 19      | 4                                  | $0.094$  | $0.047$    |
+| 8   | 10      | 15.80    | 19      | 3                                  | $0.057$  | $0.028$    |
+| 9   | 10      | 16.25    | 19      | 3                                  | $0.031$  | $0.016$    |
+| 10  | 10      | 17.55    | 19      | 4                                  | $0.031$  | $0.016$    |
+
+The saturated degree for $n = 20$ is $n - 1 = 19$ and the random-function noise floor for the linear bias is
+$2^{-n/2}/2 \approx 4.9 \times 10^{-4}$.
+
+**Interpretation (honest).** The picture is mixed and worth stating plainly.
+
+- **F1 (degree).** The *maximum* output degree grows fast — roughly doubling per round ($7 \to 12 \to 14 \to 16$) and
+  reaching the saturating value $n-1 = 19$ by round 6, which is the desirable exponential behaviour. However, the
+  *minimum* degree across output bits lags badly: even at the full 10 rounds some output bits of the reduced model are
+  still only degree $10$, and the mean ($17.55$) has not reached saturation. Not every output coordinate mixes equally.
+- **F2 (cube).** Low-degree cubes do **not** vanish: cubes of dimension $\le 4$ with a *linear* (degree-1) superpoly are
+  found at **every** round count tested, including $r = 10$. In a model this small this is the single clearest algebraic
+  warning sign — a full cube attack would target exactly such persistent low-degree superpolys.
+- **F3 (linear).** Rounds $1$–$5$ admit a *perfect* linear approximation (correlation $1.0$): for short, ADD/SUB-dominated
+  schedules the early mixer is affine over GF(2), consistent with the Phase-3 near-affinity of Section 4.8.1. The bias
+  then falls steeply to $\approx 0.016$ at $r = 10$ — but that is still roughly $30\text{–}60\times$ above this model's
+  noise floor, so a measurable linear correlation survives all 10 rounds in the toy.
+
+**Caveats and what this does and does not show.** These are empirical statements about a $20$-bit, $4$-cell model, **not**
+proofs about the full construction, and two scaling artefacts must be acknowledged. First, the $4$-cell ring mixes only
+nearest neighbours per round, so full inter-cell diffusion needs on the order of $G$ rounds *before* algebraic growth can
+even begin; the real $256$-cell grid has very different diffusion geometry, so the persistence of low-degree cubes and
+the slow minimum-degree growth seen here are partly topological artefacts of the tiny ring and should not be read
+directly as full-construction weaknesses. Second, the reduced cell width ($W = 5$) shortens the carry chains that supply
+nonlinearity. The honest takeaways are therefore directional: (i) the maximum-degree growth is genuinely exponential,
+which is encouraging; but (ii) the model exhibits uneven mixing — laggard low-degree output bits, persistent low-degree
+cubes, and a non-vanishing linear bias — that a proper cryptanalysis must rule out on the full primitive before any
+security claim. Establishing F1–F3 on the full $16{,}384$-bit state, or on larger reduced models via SAT/SMT tools such
+as CryptoMiniSAT and an ANF/Gröbner framework (e.g. SageMath), is left as explicit future work and is the natural place
+for a co-author with symmetric-cryptanalysis expertise.
 
 ### 4.9 Summary
 
@@ -797,12 +864,13 @@ before extraction) before any production use.
 | GF(2) Linearity Probe   | ✅ Pass      | $N = 20{,}000$ 4-tuples, worst $z = 2.73\,\sigma$ (Section 4.7.1) |
 | Single-byte Diff Probe  | ✅ Pass      | $3 \times 10^6$ pairs (5 seeds), worst $z = 3.68\,\sigma$ (Section 4.7.2) |
 | Cross-length Collisions | ✅ Pass      | $N = 2 \times 10^6$ inputs, $+0.25\,\sigma$ vs birthday (Section 4.7.3) |
-| Exhaustive Scan $L\le3$ | ✅ Pass      | $\approx 1.68 \times 10^7$ hashes, $+0.56\,\sigma$ vs birthday (Section 4.6) |
+| Exhaustive Scan $L\le3$ | ✅ Pass      | $\approx 1.68 \times 10^7$ hashes, $-0.72\,\sigma$ vs birthday (Section 4.6) |
 | Phase-3 Near-Affinity   | ⚠️ Confirmed | Mean 5.9/256 nonlinear cells at $L=16$ (Section 4.8.1) — structural, but see below |
 | Affine-Input Diffusion  | ✅ Pass      | Avalanche flat at 50% even for 0-nonlinear-cell inputs (Section 4.8.3) |
 | Min-Avalanche Search    | ✅ Pass      | Global min $38.9\%$ over $1.15 \times 10^6$ flips = expected order statistic (Section 4.8.3) |
 | Affine Phase-3 Bijective | ✅ Proven    | $\operatorname{rank}_{\mathrm{GF}(2)} M = 256/256$, $\det M$ odd, 5/5 layouts (Section 4.8.5) |
-| Phase-4 Dead State Bits | ⚠️ Defect    | 255/16384 input bits ignored by extractor; explicit collision constructed (Section 4.8.6) |
+| Phase-4 Dead State Bits | ✅ Fixed     | Original design ignored 255/16384 input bits; odd-weight extractor now leaves 0 dead bits, full width preserved (Section 4.8.6) |
+| Algebraic Degree Growth | ⚠️ Mixed     | Reduced model: max degree exponential, but laggard min degree, persistent low-deg cubes, surviving linear bias (Section 4.8.7) |
 | Round Invariance        | ✅ Confirmed | No degradation from 100 to 1 round                     |
 | Practical Exploits      | ✅ None      | 4/4 exploit attempts failed                            |
 | Formal Proofs           | ❌ None      | Not formally analyzed                                  |
@@ -833,8 +901,8 @@ cryptographic security at low round counts** — it merely says that statistical
 apart.
 
 **Empirical short-input collision behaviour.** Exhaustive enumeration of all inputs up to length $L = 3$
-(Section 4.6) produced zero exact 64-bit collisions and a 32-bit truncated collision count of $32{,}869$ versus the
-ideal birthday expectation $32{,}768$, a deviation of $+0.56\,\sigma$. Within the range of inputs accessible to full
+(Section 4.6) produced zero exact 64-bit collisions and a 32-bit truncated collision count of $32{,}638$ versus the
+ideal birthday expectation $32{,}768$, a deviation of $-0.72\,\sigma$. Within the range of inputs accessible to full
 enumeration, the construction is empirically indistinguishable from an ideal random function on this metric.
 
 #### What the results do not prove
@@ -870,10 +938,10 @@ this test. True collision resistance requires algebraic analysis or infeasibly l
 
 | Technique          | What it targets                                | Status     |
 |--------------------|------------------------------------------------|------------|
-| Algebraic attacks  | Polynomial representation of the hash function | Not tested |
+| Algebraic attacks  | Polynomial representation of the hash function | Partial — reduced model only (Section 4.8.7) |
 | Meet-in-the-middle | Splitting the computation into two halves      | Not tested |
 | Rebound attacks    | Weaknesses in the diffusion layer              | Not tested |
-| Cube attacks       | Low-degree approximations of the output        | Not tested |
+| Cube attacks       | Low-degree approximations of the output        | Partial — reduced model only (Section 4.8.7) |
 | SAT-solver attacks | Constraint-based preimage search               | Not tested |
 
 #### Honest assessment
@@ -972,6 +1040,7 @@ round-invariance (see Section 4.5).
 | `SecasyLinearityAttack`       | tests/analysis/     | GF(2) linearity, differential, cross-length probes (Section 4.7) |
 | `SecasyDifferentialReplay`    | tests/analysis/     | Replication of differential probe with 5 seeds (Section 4.7.2) |
 | `SecasyStructuralAttack`      | tests/analysis/     | White-box internal-state attack: nonlinearity census, phase avalanche, affine-input diffusion, GF(2) invertibility, Phase-4 dead-bit defect (Section 4.8) |
+| `SecasyAlgebraicAnalysis`     | tests/analysis/     | Reduced-model algebraic analysis: degree growth (ANF), cube/superpoly, Walsh linear approximation (Section 4.8.7) |
 | `SecasyPreciseTiming`         | tests/performance/  | Nanosecond-precision benchmarks (Windows QPC)      |
 | `SecasyBenchmark`             | tests/performance/  | Round-count performance comparison                 |
 | `SecasyProfiling`             | tests/performance/  | Phase-level profiling                              |
@@ -1071,7 +1140,7 @@ The principal empirical findings are:
 1. **Statistical fingerprint within the noise floor of an ideal random function** on the metrics tested
    ($N = 10^6$ avalanche / bit-bias / sequential-correlation tests; Section 4.1).
 2. **No collisions detected in exhaustive enumeration up to $L = 3$ bytes** ($N \approx 1.68 \times 10^7$ hashes),
-   with 32-bit truncated collision counts matching the birthday expectation to within $0.56\,\sigma$ (Section 4.6).
+   with 32-bit truncated collision counts matching the birthday expectation to within $0.72\,\sigma$ (Section 4.6).
 3. **No measurable GF(2) linearity, differential bias or cross-length anomaly** in $\approx 5 \times 10^6$ targeted
    hash evaluations (Section 4.7). The maximum z-score observed across the entire study — including a five-seed
    replication of the only marginal initial reading — was $3.68\,\sigma$, consistent with the expected maximum of
@@ -1090,30 +1159,38 @@ The principal empirical findings are:
    proves that these fully-affine Phase-3 instances are **bijections** on the $16{,}384$-bit state ($\det M$ odd,
    rank $256/256$ across $5/5$ sampled layouts; Section 4.8.5): they introduce no internal collisions, so for this
    input class all compression is confined to the Phase-4 extractor.
-6. **The Phase-4 extractor has a provable structural defect: 255 dead state bits.** Unfolding the extractor to closed
-   form shows that the top $v_2(k+1)$ bits of each cell value are multiplied away, so exactly
-   $\sum_k v_2(k+1) = 255$ of the $16{,}384$ internal state bits influence *no* output bit. This is confirmed against
-   the production extractor (state-independent, all in the predicted positions) and an explicit collision of two states
-   differing in $255$ bits was constructed (Section 4.8.6). Its practical impact is **limited** — the $16{,}129$
-   effective bits still far exceed the $512$-bit output, so collision resistance is not reduced below the birthday
-   bound — but it is a real waste of diffused state and the one concrete weakness this study recommends fixing before
-   any production use.
-7. **No implementation defects detected** under Valgrind, AddressSanitizer, UBSanitizer, GCC `-fanalyzer`, and
+6. **The Phase-4 extractor had a provable structural defect (255 dead state bits), now fixed.** Unfolding the
+   extractor to closed form showed that, under the original additive weight $w_{k,b}=(k+1)+256b$, the top $v_2(k+1)$
+   bits of each cell value were multiplied away, so exactly $\sum_k v_2(k+1) = 255$ of the $16{,}384$ internal state
+   bits influenced *no* output bit. This was confirmed against the extractor (state-independent, all in the predicted
+   positions) and an explicit collision of two states differing in $255$ bits was constructed. The extractor now uses
+   the **odd** weight $w_{k,b}=2((k+1)+256b)+1$, which is a unit in $\mathbb{Z}/2^{64}\mathbb{Z}$ and hence bijective:
+   the same exhaustive experiment now reports **0 dead bits**, restoring the full $16{,}384$-bit internal width
+   (Section 4.8.6). The fix is a one-line change that regenerated all reference test vectors.
+7. **Reduced-model algebraic analysis gives a mixed picture.** On an exhaustively-evaluable $20$-bit, $4$-cell
+   round-reduced model (Section 4.8.7), the *maximum* output degree grows exponentially and saturates at $n-1$ by round
+   6, but the *minimum* degree lags (still $10/19$ at $10$ rounds), low-degree cubes with linear superpolys persist at
+   every round, and a linear approximation with bias well above the model's noise floor survives all $10$ rounds. These
+   are empirical signals on a tiny model — partly attributable to its small ring topology and short carry chains — not
+   proofs about the full primitive, but they identify uneven algebraic mixing as the priority target for any rigorous
+   cryptanalysis.
+8. **No implementation defects detected** under Valgrind, AddressSanitizer, UBSanitizer, GCC `-fanalyzer`, and
    $5 \times 10^5$ fuzzing iterations (Section 7).
 
 The principal **open questions** are:
 
 1. **Targeted cryptanalysis.** The probes in Sections 4.7\u20134.8 use *non-adaptive* differentials, and Section 4.8.5 proves the fully-affine Phase-3 instances bijective. The
    residual attack surface is the Phase-4 extractor restricted to *reachable* prime-valued states, which has not been
-   modelled. This excludes the simplest classes of bias but not attacks that depend on deeper algebraic
-   insight \u2014 in particular, a $\delta$ solved (e.g. via a SAT/SMT model of the carry chains) so that its
-   $\mathbb{Z}_{2^{64}}$-affine Phase-3 image collides in the Phase-4 extractor, algebraic-normal-form analysis of the
-   Phase-3/Phase-4 composition, meet-in-the-middle, rebound, and cube analyses.
-2. **Design strengthening.** The Phase-4 extractor's 255 dead state bits (Section 4.8.6) should be eliminated — e.g.
-   by using odd accumulator weights, or by applying an additional rotation/mixing round before extraction — so that
-   the high-order bits of even-weighted cells reach the output. Independently, the lack of a non-linear S-box in the
-   round function and the lack of length padding / domain separation are known weaknesses that any production version
-   of the construction would have to address.
+   modelled. Section 4.8.7 additionally establishes degree/cube/linear behaviour only on a scaled-down reduced model,
+   leaving the full-size composition open. This excludes the simplest classes of bias but not attacks that depend on
+   deeper algebraic insight \u2014 in particular, a $\delta$ solved (e.g. via a SAT/SMT model of the carry chains) so that its
+   $\mathbb{Z}_{2^{64}}$-affine Phase-3 image collides in the Phase-4 extractor, algebraic-normal-form / cube analysis of
+   the Phase-3/Phase-4 composition (extending Section 4.8.7 with CryptoMiniSAT or a Gr\u00f6bner/SageMath framework),
+   meet-in-the-middle, rebound, and cube analyses.
+2. **Design strengthening.** The Phase-4 extractor's 255 dead state bits (Section 4.8.6) have been **eliminated** by
+   switching to odd accumulator weights, so the high-order bits of every cell now reach the output. Independently, the
+   lack of a non-linear S-box in the round function and the lack of length padding / domain separation are known
+   weaknesses that any production version of the construction would have to address.
 3. **Peer review.** This report has not been peer-reviewed.
 
 Until these open questions have been addressed, Secasy should be regarded as an experimental construction suitable
@@ -1166,6 +1243,8 @@ All five PDFs are regenerated in a single step.
 [14] M. Matsui, "Linear cryptanalysis method for DES cipher," in *Advances in Cryptology — EUROCRYPT '93*, LNCS 765, Springer, 1994, pp. 386–397.
 
 [15] A. Rukhin et al., *A Statistical Test Suite for Random and Pseudorandom Number Generators for Cryptographic Applications*, NIST Special Publication 800-22 Revision 1a, Apr. 2010.
+
+[16] I. Dinur and A. Shamir, "Cube attacks on tweakable black box polynomials," in *Advances in Cryptology — EUROCRYPT 2009*, LNCS 5479, Springer, 2009, pp. 278–299.
 
 ## Contact
 
