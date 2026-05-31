@@ -4,23 +4,32 @@
 
 ## Abstract
 
-Secasy is a cryptographic hash function that introduces a novel grid-based approach using a two-dimensional 16×16
-field (256 cells) as its core state structure. Unlike traditional hash functions based on the Merkle–Damgård
-construction, the algorithm employs spatial diffusion through directional movement across the grid, where each input
-byte influences the traversal path and cell operations.
+Secasy is an experimental cryptographic hash function based on a two-dimensional 16×16 field (256 cells, 16,384 bits
+of internal state) as its core data structure. In contrast to Merkle–Damgård constructions [1], [2], the algorithm
+combines an input-driven traversal phase with a per-cell mixing phase, with the intention of distributing input
+information spatially across the grid before extracting a hashed output of configurable length (64–512 bits).
 
-The algorithm operates as a deterministic chaotic system, where minimal input variations produce unpredictable output
-changes. Empirical evaluation with N=1,000,000 samples demonstrates statistical properties comparable to established
-hash functions, with an avalanche rate of 50.0007% (95% CI: [49.9963%, 50.0051%]) and near-ideal bit distribution (max
-bias 0.149%, within expected statistical noise).
+This document reports empirical measurements only; **no formal security proofs are claimed**. Statistical evaluation
+with $N = 10^6$ samples at the default configuration (10 rounds, 512-bit output) yields an avalanche rate of
+$50.0007\,\%$ (95 % CI: $[49.9963\,\%, 50.0051\,\%]$) and a maximum per-bit bias of $0.149\,\%$, both within the
+expected statistical noise floor for the chosen sample size. An exhaustive enumeration of all $1$-, $2$- and $3$-byte
+inputs (total $N = 16{,}843{,}008$ hashes) produced zero exact 64-bit collisions and a 32-bit truncated collision
+count of $32{,}869$ — within $+0.56\,\sigma$ of the ideal birthday expectation of $32{,}768$.
 
-A systematic round-reduction analysis across all supported hash sizes (64, 128, 256, 512 bit) reveals that the security
-properties are structurally invariant with respect to the round count. This finding indicates that the cryptographic
-strength originates from the grid architecture and extraction function, not from iterative processing — a fundamental
-difference to block cipher designs such as AES.
+A systematic round-reduction study (1–100 rounds, hash sizes 64–512 bit) shows that the statistical metrics are
+**indistinguishable across round counts**. We interpret this finding as a structural property of the mixing phase
+(Section 2.3): the per-round operation set is, with the exception of carry propagation in modular addition,
+$\mathrm{GF}(2)$-linear; additional rounds therefore do not introduce new algebraic complexity. The empirical security
+thus rests primarily on the input-integration phase (Section 2.2) and on the final extraction function (Section 2.4),
+not on iteration count. This is explicitly **different in character** from designs such as AES [3] or Keccak [4],
+where the round count is a primary security parameter.
 
-**Keywords:** Hash function, grid-based cryptography, spatial diffusion, avalanche effect, collision resistance,
-round-invariant security
+This construction has not received peer review, and the standard professional cryptanalytic techniques (differential,
+algebraic, meet-in-the-middle, rebound, cube, SAT-based) have not yet been applied. The contribution of this report is
+therefore methodological and empirical, not a claim of cryptographic security.
+
+**Keywords:** Cryptographic hash function, grid-based state, spatial diffusion, avalanche effect, empirical
+evaluation, brute-force collision enumeration.
 
 ## 1. Introduction
 
@@ -43,14 +52,19 @@ Input → [Block1] →         ┌───────────────�
                                Hash
 ```
 
-This approach offers several theoretical advantages over sequential constructions:
+The hypothesised properties of this approach, to be tested empirically below, are:
 
-- **Multi-dimensional diffusion**: Changes propagate across four directions simultaneously, rather than linearly through
-  a block chain
-- **Non-linear path dependence**: Each input byte determines a prime-driven jump trajectory through the grid, breaking
-  commutativity between different byte orderings
-- **Structure-based security**: Cryptographic properties arise from the grid architecture and extraction function, not
-  from iteration count (see Section 2 and 4.5)
+- **Spatial rather than chain-sequential diffusion.** Changes introduced into a single cell propagate to its grid
+  neighbours during the mixing phase, in addition to the path-based propagation introduced by the traversal phase.
+- **Path dependence of input integration.** Each input byte determines a sequence of four direction-dependent jumps
+  and per-cell updates, so that different byte orderings traverse different cells and write different cell values.
+- **Large internal state relative to output.** The internal state of $256 \times 64 = 16{,}384$ bits is large compared
+  to the $\le 512$-bit output, providing structural resistance to length-extension by construction (Section 4.4),
+  analogous in spirit to the wide-pipe property of the Keccak sponge [4].
+
+Whether these structural choices translate into cryptographic security in the formal sense is **not** established by
+the present document. Sections 4 and 4.7 discuss the gap between empirical pseudorandomness and provable security in
+detail.
 
 ## 2. Algorithm Design
 
@@ -145,41 +159,66 @@ Even at the two **shared** cells — (0,0) and (14,3) — the direction-dependen
 different primes. The remaining visited cells don't overlap at all. This demonstrates how SAV and
 direction-dependent prime advancement together prevent collisions between structurally similar inputs.
 
-### 2.3 Phase 3 — Processing Rounds (diffusion)
+### 2.3 Phase 3 — Processing Rounds (mixing)
 
-The processing phase iterates over the entire grid r times (default: r = 10). In each round, every cell is updated using
-a neighbor-coupled operation determined by the cell's color index (which was set during Phase 2):
+The processing phase iterates over the entire grid $r$ times (default: $r = 10$). In each round, every cell is updated
+using an operation determined by the cell's color index — which was *set during Phase 2* and is **not changed** by
+Phase 3. The six operations defined in [Defines.h](include/Defines.h) and implemented in
+[ProcessingPhase.c](src/ProcessingPhase.c) are:
 
-| Color Index | Operation                 | Neighbor | Edge Behavior          |
-|-------------|---------------------------|----------|------------------------|
-| 0 (ADD)     | Add neighbor value        | above    | Top row: add 1         |
-| 1 (SUB)     | Subtract neighbor value   | below    | Bottom row: subtract 1 |
-| 2 (XOR)     | XOR with neighbor value   | left     | Left edge: XOR with 1  |
-| 3 (AND)     | Bitwise AND with neighbor | right    | Right edge: unchanged  |
-| 4 (OR)      | Bitwise OR with neighbor  | left     | Left edge: OR with 1   |
-| 5 (INVERT)  | Bitwise NOT               | —        | —                      |
+| Color Index | Symbol | Operation                          | Neighbour     | Edge handling (no neighbour) |
+|-------------|--------|------------------------------------|---------------|------------------------------|
+| 0           | ADD    | `c += n`                           | $(x,\,y-1)$   | Top row: `c += 1`            |
+| 1           | SUB    | `c -= n`                           | $(x,\,y+1)$   | Bottom row: `c -= 1`         |
+| 2           | XOR    | `c ^= n`                           | $(x-1,\,y)$   | Left edge: `c ^= 1`          |
+| 3           | RLX    | `c = ROL64(c, 13) ^ n`             | $(x+1,\,y)$   | Right edge: `c = ROL64(c,13) ^ 1` |
+| 4           | RRA    | `c = ROR64(c, 7) + n`              | $(x-1,\,y)$   | Left edge: `c = ROR64(c,7) + 1`   |
+| 5           | INVERT | `c = ~c`                           | —             | —                            |
 
-The cell traversal order uses a position offset derived from the final cursor position after Phase 2, providing
-additional mixing. Negative intermediate values (from SUB and INVERT) are intentionally allowed and not clamped.
+Here $c$ denotes the current cell value and $n$ the neighbour's value. The cell traversal order is offset by the
+final cursor position after Phase 2, so that different inputs visit cells in different orders during the first round.
+Intermediate wrap-around (from SUB) and bit inversion (from INVERT) are intentionally allowed and not clamped, because
+the extraction phase (Section 2.4) treats cell values as raw 64-bit words.
 
-**Minimum round enforcement:** The effective round count is the maximum of the configured rounds and the number of
-64-bit blocks needed for the output hash (e.g. 8 for a 512-bit hash). This ensures enough rounds to collect all required
-hash blocks (see Phase 4).
+**Minimum round enforcement.** The effective round count is the maximum of the configured rounds $r$ and the number
+of 64-bit blocks $b$ required for the requested output size ($b = \lceil \text{hashBits} / 64 \rceil$). For the
+512-bit default this gives $b = 8$, so $r$ is internally raised to at least 8.
 
-**Role of rounds:** Since every round applies the same operations with the same color indices, additional rounds beyond
-the minimum do not introduce new structural complexity. Empirical analysis (Section 4.5) confirms that all security
-metrics are statistically invariant across all tested round counts (1–100).
+**On the algebraic nature of the round operation (honest characterisation).** Of the six operations, four (XOR, RLX,
+INVERT, and the rotation parts of RLX and RRA) are linear over $\mathrm{GF}(2)$, and the remaining two (ADD, SUB,
+as well as the addition part of RRA) are linear over $\mathbb{Z}/2^{64}\mathbb{Z}$. The only source of
+$\mathrm{GF}(2)$-non-linearity is the carry propagation in modular addition, which is the same single source of
+non-linearity that characterises the ARX family of designs [5]. The round function does **not** include an S-box or
+any other strongly non-linear substitution. Consequently, for two inputs that produce identical Phase-2 cursor
+trajectories and identical color-index assignments, the action of Phase 3 on the differential between their grid
+states is dominated by linear behaviour, with only the modular-add carries contributing non-linear deviation. This
+property motivates the round-invariance reported in Section 4.5 and is discussed further in Section 4.7.
 
 ### 2.4 Phase 4 — Hash Extraction
 
-After each processing round, a 64-bit hash block is extracted from the grid state. The extraction function iterates over
-all 256 cells in row-major order and accumulates their values using XOR. Each cell value is multiplied by a unique
-position weight (ranging from 1 to 256) before XOR, and the accumulator is left-rotated by 7 bits after each step. The
-position weighting ensures that permutations of identical cell values produce different hash outputs.
+The extraction phase is implemented in [Calculations.c](src/Calculations.c) and proceeds in two stages:
 
-For hash outputs larger than 64 bits, multiple blocks are collected — one per processing round — and concatenated. For
-example, a 512-bit hash requires 8 blocks from 8 separate rounds, with the grid state evolving between each extraction.
-The final output is truncated to the exact requested bit length.
+1. **Mixing.** Phase 3 first executes all $r$ rounds of the per-cell mixing described in Section 2.3 on the grid state
+   left by Phase 2. No output is produced during these rounds.
+2. **Block extraction.** After the mixing has completed, $b = \lceil \text{hashBits} / 64 \rceil$ 64-bit blocks are
+   extracted from the *final* grid state by varying a block index $k = 0, 1, \ldots, b-1$ in the accumulator. The
+   resulting blocks are concatenated and the output is truncated to the exact requested bit length.
+
+The accumulator for block $k$ is computed as
+
+$$h_k \;=\; \operatorname{ROL}_{64}\!\Big(\!\ldots \operatorname{ROL}_{64}\!\big(h_k \oplus v_{x,y} \cdot p_{x,y,k},\; 7\big)\!\ldots\!\Big)$$
+
+where $v_{x,y}$ is the final value of cell $(x,y)$ and $p_{x,y,k} = (x \cdot 16 + y + 1) + k \cdot 256$ is a
+position-and-block-dependent weight. Iteration is in row-major order over all 256 cells; the rotation is applied after
+each XOR step.
+
+**On the structure of the extractor (honest characterisation).** The accumulator is, ignoring the integer
+multiplication $v_{x,y} \cdot p_{x,y,k}$, a fixed linear function of the cell values over $\mathrm{GF}(2)$. The
+multiplication by the small constant $p_{x,y,k}$ contributes only weak non-linearity via carry propagation. The
+position weights are distinct constants and serve to break the symmetry between permutations of cell values; they
+are **not** a cryptographic permutation in the sense of [3] or [4]. Strengthening the extractor with a genuinely
+non-linear finalisation (for example an additional permutation round or an S-box layer) is identified as future work
+in Section 8.
 
 ### 2.5 Parameters
 
@@ -323,17 +362,33 @@ resistance — it can only confirm the absence of trivially weak collisions.
 
 Consecutive counter inputs (0, 1, 2, ...) produce statistically independent hash outputs.
 
-#### Comparative Analysis
+#### Comparative Observations
 
-| Algorithm  | Hash Bits | Bit Distribution | Avalanche Effect | Deviation from Ideal |
-|------------|-----------|------------------|------------------|----------------------|
-| BLAKE2b    | 256       | 50.01%           | 50.0%            | 0.03%                |
-| scrypt     | 256       | 51.07%           | 50.0%            | 0.04%                |
-| MD5        | 128       | 50.91%           | 50.0%            | 0.04%                |
-| SHA512     | 512       | 50.18%           | 49.9%            | 0.06%                |
-| SHA3-256   | 256       | 50.28%           | 49.9%            | 0.06%                |
-| **Secasy** | **512**   | **50.0007%**     | **50.0007%**     | **0.0007%**          |
-| SHA256     | 256       | 49.87%           | 50.2%            | 0.21%                |
+The following table compares the empirical avalanche and bit-distribution values measured for Secasy at $N = 10^6$
+with published or self-measured values for several established hash functions. The deviations listed are absolute
+differences from the ideal $50\,\%$.
+
+| Algorithm  | Hash bits | Bit distribution | Avalanche rate | Abs. deviation from 50 % |
+|------------|-----------|------------------|----------------|--------------------------|
+| BLAKE2b [9]| 256       | $50.01\,\%$      | $50.0\,\%$     | $0.03\,\%$               |
+| MD5 [10]   | 128       | $50.91\,\%$      | $50.0\,\%$     | $0.04\,\%$               |
+| SHA-512 [11]| 512      | $50.18\,\%$      | $49.9\,\%$     | $0.06\,\%$               |
+| SHA3-256 [4]| 256      | $50.28\,\%$      | $49.9\,\%$     | $0.06\,\%$               |
+| Secasy     | 512       | $50.0007\,\%$    | $50.0007\,\%$  | $0.0007\,\%$             |
+| SHA-256 [11]| 256      | $49.87\,\%$      | $50.2\,\%$     | $0.21\,\%$               |
+
+**Caveats on interpretation.** This table is descriptive, not comparative in the cryptographic sense:
+
+1. Sample sizes differ between rows. Smaller deviations at larger $N$ are expected even for identically-distributed
+   functions and do **not** imply that one function is closer to an ideal random oracle than another.
+2. Statistical proximity to $50\,\%$ on these metrics is a necessary, **not** a sufficient, condition for
+   cryptographic security. A linear function over $\mathrm{GF}(2)$ chosen with care will reproduce these numbers
+   while admitting trivial cryptanalytic attacks.
+3. The established functions in this table have undergone decades of peer review and targeted cryptanalysis. Secasy
+   has not.
+
+The table is therefore included only to demonstrate that the empirical behaviour of the construction is *not
+off-scale* relative to standard hash functions on these specific metrics.
 
 ### 4.2 NIST-Inspired Randomness Tests
 
@@ -378,9 +433,15 @@ Five differential tests evaluate resistance against structured inputs (N=10,000)
 
 ### 4.5 Round-Reduction Analysis
 
-A systematic analysis was conducted to determine the effect of reducing the processing round count. Tests were performed
-across all four supported hash sizes (64, 128, 256, 512 bit) using the `SecasyRoundReduction` test suite with increased
-sample sizes (5,000–10,000 per metric).
+A systematic study was conducted to measure the effect of reducing the mixing round count. Tests were performed across
+all four supported hash sizes (64, 128, 256, 512 bit) using the `SecasyRoundReduction` test suite with sample sizes of
+$5{,}000$–$10{,}000$ per metric.
+
+**Hypothesis being tested.** Under the structural characterisation given in Section 2.3, the per-round operation is
+$\mathrm{GF}(2)$-linear except for the carry chain of modular addition. We therefore expect statistical properties
+based on bit-level uniformity (avalanche, bit bias, sequential correlation) to converge after very few rounds and to
+remain essentially constant thereafter — because additional rounds compose linear maps with linear maps, plus a small
+non-linear contribution that is rapidly saturated.
 
 #### Results (64-bit hash, N=5,000–10,000 per metric)
 
@@ -393,9 +454,16 @@ sample sizes (5,000–10,000 per metric).
 | 5      | 49.95%    | 1.15%        | 0          | 50.16%           | 28.1%       |
 | 1      | 49.86%    | 1.23%        | 0          | 50.16%           | 23.4%       |
 
-**No degradation threshold was reached at any round count.** All metrics remain statistically indistinguishable across
-all tested values. Even at 1 round (internally elevated to `blocksNeeded` for the given hash size), security properties
-are preserved.
+**No degradation threshold was reached for any of the *statistical* metrics tested.** All values remain within the
+statistical noise of the ideal expectations across the full range of round counts, including the minimum (1 round,
+internally raised to $\lceil \text{hashBits}/64 \rceil$ to satisfy the block requirement).
+
+This observation is consistent with — but does not prove — the hypothesis stated above. Crucially, statistical
+randomness tests of the kind summarised here are insensitive to algebraic relations. A linear map over
+$\mathrm{GF}(2)$ chosen at random will pass all of the metrics in this table with overwhelming probability, while
+being trivially insecure in the cryptographic sense. The round-reduction result therefore should be read as evidence
+that **iterating the present round function does not detectably improve the empirical statistical profile**, not as
+evidence that one round is cryptographically sufficient.
 
 This result was confirmed with high statistical power using the `SecasyStatRigor` test (N=1,000,000, SE=0.002%):
 
@@ -409,15 +477,28 @@ This result was confirmed with high statistical power using the `SecasyStatRigor
 
 #### Interpretation
 
-In conventional block cipher designs (e.g., AES), each round applies a **structurally different** transformation using
-round-specific subkeys. The round count is a critical security parameter: fewer rounds yield algebraically simpler — and
-thus attackable — relationships between input and output.
+In conventional designs such as AES [3] or Keccak [4], each round applies a structurally rich transformation that
+includes both a non-linear substitution layer (S-box / $\chi$) and round-specific constants. The round count is a
+primary security parameter, and the security argument relies on the wide-trail strategy in which differential and
+linear approximations have provably bounded probability after a sufficient number of rounds [3, §9].
 
-Secasy's processing phase applies **the same operation** in every round (see Section 2.3). After the input has been
-consumed during Phase 2, additional rounds operate on an already-diffused grid without introducing new structural
-complexity. The collision resistance and avalanche properties originate from the input integration phase (Section 2.2)
-and the extraction function (Section 2.4), both of which are independent of the round count. This explains the
-empirically observed round-invariance.
+Secasy's mixing phase, by contrast, applies the **same** per-cell operation (selected by the static color index set
+in Phase 2) in every round and contains no S-box layer. Under this design, additional rounds beyond the first compose
+linear maps with linear maps, with the carry-bit non-linearity contributing only a bounded amount of additional
+diffusion per round; the empirical observation that statistical metrics saturate immediately is therefore consistent
+with the algebraic structure.
+
+**This is an honest acknowledgement, not a security claim.** The construction is, from an algebraic standpoint,
+essentially a single-round-equivalent design preceded by an input-driven traversal. The empirical security of the
+construction therefore depends primarily on:
+
+1. the input-integration phase (Section 2.2), whose collision resistance for short inputs is examined empirically in
+   Section 4.6 below;
+2. the extraction function (Section 2.4), which currently provides only weak non-linearity through integer
+   multiplication by small position weights.
+
+This structural fact identifies the natural target of any future cryptanalytic effort and the natural location of any
+future design strengthening.
 
 #### Performance Impact
 
@@ -431,10 +512,62 @@ Precise measurements using `QueryPerformanceCounter` (100 ns resolution) on a 51
 | **10**  | **~11 µs** | **6,134×**         |
 | 1       | ~7 µs      | 10,776×            |
 
-Reducing the default from 100,000 to 10 rounds yields a **~6,000× speedup** with no measurable impact on any security
-metric.
+Reducing the default from 100,000 to 10 rounds yields a $\sim 6{,}000\times$ speed-up with no measurable impact on the
+statistical metrics listed above. As discussed in Section 4.5, this should not be interpreted as a security argument
+in favour of low round counts; it is rather a consequence of the round function's algebraic structure (Section 2.3).
 
-### 4.6 Summary
+### 4.6 Exhaustive Short-Input Collision Enumeration
+
+To test the working hypothesis that the input-integration phase (Section 2.2) is the primary source of empirical
+collision resistance, an exhaustive enumeration of all inputs of length $1$, $2$ and $3$ bytes was performed using
+[brute_collision_scan.c](tests/analysis/brute_collision_scan.c). For each input the first 64-bit block of the 512-bit
+default hash was retained, and collisions were counted at three truncation widths: 64, 48 and 32 bits.
+
+#### Methodology
+
+- **Inputs.** All byte sequences of lengths $L \in \{1, 2, 3\}$, i.e. $N_1 = 256$, $N_2 = 65{,}536$ and
+  $N_3 = 16{,}777{,}216$, total $N = 16{,}843{,}008$ hashes.
+- **Configuration.** Default parameters: $r = 10$ rounds, 512-bit output, prime table of $1.6 \times 10^7$ entries.
+- **Detection.** For each truncation width $w \in \{32, 48, 64\}$ bits, the truncated hashes were inserted into a
+  separate chained hash table; an existing key in the corresponding bucket was counted as a collision.
+- **Reference.** The ideal-hash birthday expectation for $N$ inputs into a $w$-bit output is
+  $E = N(N-1) / (2 \cdot 2^w)$.
+- **Hardware / runtime.** Single-threaded execution on Windows / MinGW-w64 GCC 15; the $L = 3$ enumeration completed
+  in $122$ seconds wall-clock time.
+
+#### Results
+
+| Length | $N$        | 64-bit collisions | $E_{64}$  | 48-bit collisions | $E_{48}$ | 32-bit collisions | $E_{32}$  |
+|--------|-----------:|------------------:|----------:|------------------:|---------:|------------------:|----------:|
+| 1 byte | 256        | 0                 | $\approx 0$ | 0               | $\approx 0$ | 0             | $0.0$     |
+| 2 byte | 65,536     | 0                 | $\approx 0$ | 0               | $\approx 0$ | 0             | $0.5$     |
+| 3 byte | 16,777,216 | 0                 | $8 \cdot 10^{-6}$ | 0         | $0.5$    | **32,869**        | $32{,}768$|
+
+The $32$-bit collision count for $L = 3$ deviates from the ideal birthday expectation by $+0.31\,\%$, corresponding to
+approximately $+0.56\,\sigma$ relative to the standard deviation $\sqrt{E_{32}} \approx 181$. This is statistically
+unremarkable and is consistent with the behaviour of an ideal random function.
+
+#### Interpretation
+
+For inputs of length up to three bytes, the construction shows **no measurable deviation from ideal collision
+behaviour** at any of the three truncation widths considered. In particular, no structural collision class was
+observable at the 32-bit truncation, where any non-trivial structural weakness in the input-integration phase would be
+expected to manifest first (since $N_3$ comfortably exceeds the 32-bit birthday bound).
+
+**What this result does *not* establish.** Exhaustive enumeration up to $L = 3$ does not cover
+
+- gradient or differential attacks based on constructed input differences with low non-trivial probability — the most
+  successful technique against modern hash functions, beginning with the differential analysis of MD4/MD5 and SHA-1
+  by Wang et al. [6]–[8];
+- longer-input collision classes that exploit grid wrap-around or path coincidences arising only after sufficiently
+  many traversal steps;
+- pre-image or second-pre-image resistance.
+
+The result is reported here as one piece of *empirical* evidence that, within the range of short inputs accessible to
+full enumeration on commodity hardware, the construction behaves as a random oracle would. It is **not** a substitute
+for differential / algebraic analysis.
+
+### 4.7 Summary
 
 | Property                | Status      | Evidence                                               |
 |-------------------------|-------------|--------------------------------------------------------|
@@ -449,7 +582,7 @@ metric.
 | Formal Proofs           | ❌ None      | Not formally analyzed                                  |
 | Peer Review             | ❌ None      | Awaiting review                                        |
 
-### 4.7 Interpretation and Limitations
+### 4.8 Interpretation and Limitations
 
 The following assessment provides an honest evaluation of what the empirical results demonstrate — and what they do not.
 
@@ -464,13 +597,36 @@ statistical power to detect a deviation of 0.004% from the ideal 50% avalanche r
 well within the noise floor. For comparison, SHA-256 shows 0.21% deviation in equivalent tests, roughly 300× larger than
 Secasy's.
 
-**Round-invariance is a structural property.** Three independent test suites (`SecasyRoundReduction`,
-`SecasyDeepSecurity`, `SecasyComprehensiveSecurity`) using different metrics, sample sizes, and round counts
-consistently show identical security behavior. The weak-key entropy values in the deep security test are equal to three
-decimal places at 8, 10, 15, 20, and 50 rounds. This is not a statistical artifact — it is a property of the algorithm's
-design.
+**Round-count-independence of statistical metrics.** Three independent test suites (`SecasyRoundReduction`,
+`SecasyDeepSecurity`, `SecasyComprehensiveSecurity`) using different metrics, sample sizes and round counts
+consistently produce the same values for the statistical metrics. The weak-key entropy values in the deep security
+test are equal to three decimal places at $8, 10, 15, 20$ and $50$ rounds. This is consistent with the algebraic
+characterisation of the round function given in Sections 2.3 and 4.5: iterating a mostly-linear map does not change
+the statistical fingerprint of the output beyond the first few rounds. **It is not, by itself, evidence of
+cryptographic security at low round counts** — it merely says that statistical tests cannot tell the round counts
+apart.
+
+**Empirical short-input collision behaviour.** Exhaustive enumeration of all inputs up to length $L = 3$
+(Section 4.6) produced zero exact 64-bit collisions and a 32-bit truncated collision count of $32{,}869$ versus the
+ideal birthday expectation $32{,}768$, a deviation of $+0.56\,\sigma$. Within the range of inputs accessible to full
+enumeration, the construction is empirically indistinguishable from an ideal random function on this metric.
 
 #### What the results do not prove
+
+**Algebraic structure remains a known weakness.** As discussed in Section 2.3, the round function is $\mathrm{GF}(2)$-
+linear except for the carry propagation in modular addition, and contains no S-box. The extraction function
+(Section 2.4) is similarly weakly non-linear. Statistical tests are insensitive to this kind of structure; targeted
+differential or algebraic analysis is the appropriate tool and has not yet been performed.
+
+**Absence of length padding and domain separation.** The current construction does not include a Merkle–Damgård-style
+length encoding or sponge-style domain-separation bits. Two inputs of different lengths whose Phase-2 trajectories
+happen to coincide cannot be ruled out a priori by the present analysis. The empirical absence of such coincidences
+in Section 4.6 (up to $L = 3$, no cross-length 64-bit collisions) is suggestive but not conclusive for longer inputs.
+
+**The 1-round-equivalent caveat.** Because Phase 3 is essentially algebraically constant across rounds, the security
+of the construction reduces — in the algebraic sense — to the security of (a) the Phase-2 input integration and (b)
+the Phase-4 extractor. Any cryptanalytic attack that linearises through Phase 3 effectively faces a single-round
+construction. This is the most important open question raised by the present analysis.
 
 **No formal cryptographic security guarantee.** All tests are statistical black-box tests. They confirm that the output
 *appears* random, but this is a necessary — not sufficient — condition for cryptographic security. Examples from
@@ -504,10 +660,11 @@ this test. True collision resistance requires algebraic analysis or infeasibly l
 | Is it production-ready?                   | **No**                             | No peer review, no formal proofs                   |
 | Is this a credible research contribution? | **Yes**                            | Empirical evaluation exceeds many published papers |
 
-In summary: Secasy passes every empirical test that can be performed without deep cryptanalysis — and passes them with
-results closer to the theoretical ideal than SHA-256, BLAKE2b, and SHA-512. This is a **necessary** but not **sufficient
-** condition for cryptographic security. The next step is independent analysis of the grid structure's algebraic
-properties, particularly the extraction function that empirical evidence identifies as the primary security anchor.
+In summary: within the bounds of what black-box empirical evaluation can establish, the present construction behaves
+in the way an ideal random function would, on the statistical metrics tested. This is a *necessary but not sufficient*
+condition for cryptographic security in the formal sense. The natural next steps are (i) targeted differential
+analysis of the Phase-2 input integration, (ii) algebraic analysis of the Phase-3 round function and the Phase-4
+extractor under the linearisation discussed in Sections 2.3 and 2.4, and (iii) independent peer review.
 
 ## 5. Test Suites
 
@@ -585,6 +742,7 @@ round-invariance (see Section 4.5).
 | `SecasyComprehensiveSecurity` | tests/security/     | 10-test combined security battery                  |
 | `SecasyPracticalExploit`      | tests/security/     | Practical exploitation attempts                    |
 | `SecasyTruncCollisionPoC`     | tests/collision/    | Truncated collision birthday PoC                   |
+| `SecasyBruteCollisionScan`    | tests/analysis/     | Exhaustive enumeration over all $L \le 3$ inputs (Section 4.6) |
 | `SecasyPreciseTiming`         | tests/performance/  | Nanosecond-precision benchmarks (Windows QPC)      |
 | `SecasyBenchmark`             | tests/performance/  | Round-count performance comparison                 |
 | `SecasyProfiling`             | tests/performance/  | Phase-level profiling                              |
@@ -674,29 +832,33 @@ round counts.
 
 ## 8. Conclusion
 
-Secasy demonstrates that grid-based hash function design is a viable alternative to traditional Merkle–Damgård
-constructions. The key findings from empirical evaluation are:
+This report has presented Secasy, a grid-based experimental hash construction, and the empirical evaluation that has
+been carried out on it so far. The contribution is intentionally limited in scope: it provides a description of the
+algorithm precise enough to be reproduced from the source code, an empirical statistical evaluation, and an exhaustive
+short-input collision enumeration. **No formal security argument is claimed.**
 
-1. **Statistical quality** comparable to or exceeding SHA-256, BLAKE2b, and SHA-512 in avalanche and bit distribution
-   metrics (N=1,000,000 samples, deviation from ideal: 0.0007% vs SHA-256's 0.21%)
-2. **Round-invariance:** Security metrics remain statistically indistinguishable across all round counts tested (1–100),
-   confirmed by three independent test suites with different methodologies. This identifies the grid architecture and
-   extraction function — not iterative processing — as the source of cryptographic properties
-3. **Performance:** At the default of 10 rounds, Secasy processes approximately 80,000 512-bit hashes per second — a ~
-   6,000× improvement over the previous 100,000-round default with no measurable security degradation
-4. **Memory safety:** Zero memory leaks, zero undefined behavior, zero buffer overflows — verified by Valgrind,
-   AddressSanitizer, UBSanitizer, and 500,000-iteration fuzz testing
-5. **No practical vulnerabilities** detected across 30+ empirical tests (2.5M+ hashes) including differential, preimage,
-   birthday, and exploit-oriented analysis
+The principal empirical findings are:
 
-**Important limitations:** These results are empirical, not formal. Statistical tests confirm that the output *appears*
-indistinguishable from random — a necessary but not sufficient condition for cryptographic security. Professional
-cryptanalytic techniques (algebraic, meet-in-the-middle, rebound, cube, and SAT-solver attacks) have not been applied.
-See Section 4.7 for a detailed assessment of what the empirical evidence does and does not demonstrate.
+1. **Statistical fingerprint within the noise floor of an ideal random function** on the metrics tested
+   ($N = 10^6$ avalanche / bit-bias / sequential-correlation tests; Section 4.1).
+2. **No collisions detected in exhaustive enumeration up to $L = 3$ bytes** ($N \approx 1.68 \times 10^7$ hashes),
+   with 32-bit truncated collision counts matching the birthday expectation to within $0.56\,\sigma$ (Section 4.6).
+3. **Statistical metrics are independent of the mixing round count** in the tested range (1–100 rounds; Section 4.5).
+   This is consistent with the algebraic structure of the round function as a $\mathrm{GF}(2)$-linear map perturbed
+   only by modular-add carries (Section 2.3) and should not be read as evidence that low round counts are secure.
+4. **No implementation defects detected** under Valgrind, AddressSanitizer, UBSanitizer, GCC `-fanalyzer`, and
+   $5 \times 10^5$ fuzzing iterations (Section 7).
 
-**Open questions:** Formal collision and preimage resistance proofs remain outstanding. The round-invariance property,
-while empirically robust, requires theoretical explanation through analysis of the extraction function's algebraic
-mixing properties. Peer review and independent cryptanalysis are essential before any production use.
+The principal **open questions** are:
+
+1. **Targeted cryptanalysis.** Differential, linear, algebraic, meet-in-the-middle, rebound, cube and SAT-based
+   analyses have not been performed.
+2. **Design strengthening.** The lack of a non-linear S-box in the round function and the lack of length padding /
+   domain separation are known weaknesses that any production version of the construction would have to address.
+3. **Peer review.** This report has not been peer-reviewed.
+
+Until these open questions have been addressed, Secasy should be regarded as an experimental construction suitable
+for further study, not as a hash function suitable for security-critical deployment.
 
 ## 9. Documentation
 
@@ -716,10 +878,35 @@ All five PDFs are regenerated in a single step.
 
 ## 10. References
 
-1. Merkle, R. (1989). "A Certified Digital Signature." CRYPTO '89.
-2. Damgård, I. (1989). "A Design Principle for Hash Functions." CRYPTO '89.
-3. Bertoni, G. et al. (2011). "The Keccak SHA-3 submission." NIST.
-4. Aumasson, J.P. et al. (2013). "BLAKE2: Simpler, Smaller, Fast." ACNS.
+[1] R. C. Merkle, "A certified digital signature," in *Advances in Cryptology — CRYPTO '89*, LNCS 435, Springer, 1990, pp. 218–238.
+
+[2] I. Damgård, "A design principle for hash functions," in *Advances in Cryptology — CRYPTO '89*, LNCS 435, Springer, 1990, pp. 416–427.
+
+[3] J. Daemen and V. Rijmen, *The Design of Rijndael: AES — The Advanced Encryption Standard.* Berlin, Germany: Springer, 2002.
+
+[4] G. Bertoni, J. Daemen, M. Peeters, and G. Van Assche, "The Keccak reference, Version 3.0," Jan. 2011. [Online]. Available: https://keccak.team/files/Keccak-reference-3.0.pdf
+
+[5] J.-P. Aumasson, *Serious Cryptography: A Practical Introduction to Modern Encryption*, 1st ed. San Francisco, CA, USA: No Starch Press, 2017, ch. 6.
+
+[6] X. Wang, X. Lai, D. Feng, H. Chen, and X. Yu, "Cryptanalysis of the hash functions MD4 and RIPEMD," in *Advances in Cryptology — EUROCRYPT 2005*, LNCS 3494, Springer, 2005, pp. 1–18.
+
+[7] X. Wang and H. Yu, "How to break MD5 and other hash functions," in *Advances in Cryptology — EUROCRYPT 2005*, LNCS 3494, Springer, 2005, pp. 19–35.
+
+[8] X. Wang, Y. L. Yin, and H. Yu, "Finding collisions in the full SHA-1," in *Advances in Cryptology — CRYPTO 2005*, LNCS 3621, Springer, 2005, pp. 17–36.
+
+[9] J.-P. Aumasson, S. Neves, Z. Wilcox-O'Hearn, and C. Winnerlein, "BLAKE2: Simpler, smaller, fast as MD5," in *Applied Cryptography and Network Security (ACNS)*, LNCS 7954, Springer, 2013, pp. 119–135.
+
+[10] R. L. Rivest, "The MD5 message-digest algorithm," Internet Engineering Task Force, RFC 1321, Apr. 1992.
+
+[11] National Institute of Standards and Technology, *Secure Hash Standard (SHS)*, FIPS PUB 180-4, Aug. 2015.
+
+[12] National Institute of Standards and Technology, *SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions*, FIPS PUB 202, Aug. 2015.
+
+[13] E. Biham and A. Shamir, "Differential cryptanalysis of DES-like cryptosystems," *Journal of Cryptology*, vol. 4, no. 1, pp. 3–72, 1991.
+
+[14] M. Matsui, "Linear cryptanalysis method for DES cipher," in *Advances in Cryptology — EUROCRYPT '93*, LNCS 765, Springer, 1994, pp. 386–397.
+
+[15] A. Rukhin et al., *A Statistical Test Suite for Random and Pseudorandom Number Generators for Cryptographic Applications*, NIST Special Publication 800-22 Revision 1a, Apr. 2010.
 
 ## Contact
 

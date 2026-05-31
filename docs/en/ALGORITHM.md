@@ -392,33 +392,28 @@ Mixing and extraction are **strictly separated**: all $r$ rounds of
 cell-level diffusion complete first, then — from the final grid state —
 the required number of 64-bit blocks is extracted in Phase 4.
 
-Empirically, all security metrics (avalanche effect, bit bias, collision
-resistance, sequential correlation, byte-position uniformity) are stable from
-as few as 1 round across all supported hash sizes (see Round Reduction
-Analysis). This is because collision resistance and the avalanche effect
-originate primarily in Phase 2; the processing rounds amplify diffusion but
-are not its source.
+Empirically, all statistical metrics tested (avalanche effect, bit bias, collision resistance, sequential
+correlation, byte-position uniformity) are essentially flat as the round count $r$ is reduced from $100$ down to the
+minimum permitted by $\lceil \text{hashBits}/64 \rceil$. We interpret this as a consequence of the algebraic
+structure of the round operation, **not** as evidence of cryptographic sufficiency at low $r$. The six per-cell
+operations (ADD, SUB, XOR, RLX, RRA, INVERT) are $\mathrm{GF}(2)$-linear except for the carry chain of modular
+addition; iterating a mostly-linear map does not change the statistical fingerprint of the output beyond the first
+few rounds, while leaving algebraic relations intact. Statistical tests of the kind summarised in the round-reduction
+study are insensitive to such relations.
 
-The production default of `DEFAULT_NUMBER_OF_ROUNDS = 10` reflects a
-conservative engineering choice: while a single round is empirically
-sufficient, 10 rounds are chosen as a defence-in-depth margin against
-algebraic attacks on the initialisation phase that the statistical tests above
-cannot detect. The overhead is modest — empirically less than 10 % throughput
-reduction compared to a single round.
+The production default of `DEFAULT_NUMBER_OF_ROUNDS = 10` is therefore a conservative engineering choice. It is
+**not** justified by an argument that fewer rounds are cryptographically secure — such an argument would require
+targeted differential / algebraic analysis (Section 10) that has not yet been performed — but by the observation
+that raising the round count does not detectably degrade the statistical profile while keeping the per-hash cost low.
 
-> **Structural contrast to SHA/sponge constructions:** In classical hash
-> functions such as SHA-2 or Keccak, security is analysed primarily through
-> the round function — fewer rounds directly imply weaker security. In Secasy,
-> the primary security core lies in the **initialisation phase (Phase 2)**:
-> the prime-driven cursor walk distributes and non-linearly mixes input data
-> across all 256 cells before Phase 3 begins at all. Phase 3 therefore acts as
-> **defense-in-depth** — an additional hardening layer, not the foundation of
-> collision resistance.
-
-> *"We propose a hash construction whose security relies on state-dependent,
-> prime-driven initialisation rather than on an iterated round function, and
-> empirically demonstrate that security metrics saturate within a single
-> processing round."*
+> **Structural contrast to AES / Keccak.** In SHA-2 [@nist_fips180_4] and Keccak [@nist_fips202], each round applies
+> a structurally rich transformation with non-linear S-box layer ($\chi$ in Keccak) and round-specific constants; the
+> wide-trail security argument [@daemen2002_aes, ch. 9] relies critically on iterating this structure. Secasy's
+> Phase 3 currently applies the **same** per-cell operation (fixed by the color index set in Phase 2) in every round
+> and contains no S-box layer. Algebraically, the construction therefore behaves — with respect to attacks that
+> linearise through Phase 3 — essentially as a single-round design preceded by the Phase-2 input integration and
+> followed by the Phase-4 extractor. This is an honest characterisation of the present design; addressing it (for
+> example by introducing a per-round S-box or round constants) is identified as future work.
 
 ---
 
@@ -561,14 +556,14 @@ says nothing about algebraic attackability.
 
 ### 9.3 Structural Difference from AES-Based Constructions
 
-In AES-GCM [@nist_fips197] and similar constructions, each round is structurally distinct
-(round keys). Security is directly tied to round count — fewer rounds mean
-algebraically simpler, attackable transformations.
+In AES-GCM [@nist_fips197] and similar constructions, each round is structurally distinct (via round keys) and contains
+a non-linear S-box layer. Security is analysed via the wide-trail strategy and depends directly on round count.
 
-In Secasy, security is tied to **Phase 2** (input integration) and the
-**extraction function**, not to the round count of the processing phase.
-Empirically confirmed: all security metrics remain stable from 1 to 100,000
-rounds.
+Secasy's Phase 3 applies the same operation per cell in every round and has no S-box. The empirical observation that
+statistical metrics do not change with round count (Section 6 above; see also ROUND_REDUCTION_ANALYSIS.md) is
+consistent with this algebraic structure and **should not be read as a claim that Secasy is round-independent in the
+cryptographic sense**. What it does say is that statistical tests cannot tell the round counts apart — which is
+expected behaviour for iteration of a mostly-linear map and does not preclude differential or algebraic attacks.
 
 ---
 
@@ -593,44 +588,47 @@ be cryptographically worthless.
 
 ### Identified Open Questions
 
-1. **Formal security proof:** No proof of the pseudo-random permutation (PRP)
-   property or collision resistance. A formal proof would require modelling
-   the state transitions as an ergodic Markov chain and bounding the mixing time.
+1. **Formal security proof.** No proof of collision resistance, preimage resistance, or PRP behaviour exists. A formal
+   argument would require, among other things, modelling the Phase-2 transitions as a Markov chain over the joint
+   `(value, primeIndex, colorIndex)` state space and bounding the mixing time, and analysing the algebraic degree of
+   the composition Phase 2 ∘ Phase 3 ∘ Phase 4 as a polynomial over $\mathrm{GF}(2)$.
 
-2. **~~AND/OR absorption states~~ (resolved):** The original design used
-   bitwise AND and OR in Phase 3. AND pulls bits toward 0, OR toward
-   $2^{64}-1$ — both are absorptive fixpoints that destroy entropy over
-   repeated rounds. Empirical analysis confirmed the problem: after 10
-   processing rounds, only 110 of 256 grid cells retained distinct values
-   (see Appendix D). In version 2025-06, AND/OR were replaced with
-   rotation-based ARX operations (RLX, RRA), which are bijective and
-   preserve full entropy. Post-migration, 256/256 cells are distinct
-   after processing. This open question is considered resolved.
+2. **Algebraic structure of the round function.** As discussed in Section 6 and in Section 2.3 of
+   [README.md](../../README.md), the Phase 3 round operation is $\mathrm{GF}(2)$-linear except for the carry chain of
+   modular addition and contains no S-box. With respect to attacks that linearise through Phase 3, the construction
+   behaves essentially as a single-round design. Targeted differential and algebraic analysis of the Phase-2 input
+   integration and the Phase-4 extractor under this linearisation is the most important open cryptanalytic task.
 
-3. **Side-channel vulnerability:** The current implementation is not
-   constant-time. The `switch(colorIndex)` and prime-table indexed memory
-   accesses produce data-dependent timing and cache patterns. For pure hashing
-   applications (without secret input) this is acceptable. As an HMAC primitive
-   or key-derivation function, a constant-time variant would be required
-   [@kocher1996_timing]. In such deployment scenarios, resistance against
-   **Fault Injection Analysis (FIA)** should also be evaluated: the nonlinear
-   coupling of the 256 grid cells (ARX mixing, varying neighbour operations)
-   structurally impedes algebraic modelling of fault propagation — however,
-   the current implementation provides no formal FIA guarantee.
+3. **Length padding and domain separation.** Secasy does not currently apply a length encoding or domain-separation
+   bits. The empirical absence of cross-length collisions in the exhaustive $L \le 3$ enumeration
+   (Section 4.6 of [README.md](../../README.md)) is suggestive but not conclusive for longer inputs.
 
-4. **Peer review:** The algorithm has not yet been analysed by independent
-   cryptographers. All security claims should therefore be regarded as
-   preliminary.
+4. **~~AND/OR absorption states~~ (resolved).** The original design used bitwise AND and OR in Phase 3. AND pulls bits
+   toward $0$ and OR toward $2^{64}-1$ — both are absorbing fixed points that destroy entropy over repeated rounds.
+   Empirical analysis confirmed the problem: after $10$ processing rounds, only $110$ of $256$ grid cells retained
+   distinct values (see Appendix D). In version 2025-06 these were replaced with the rotation-based ARX operations
+   RLX and RRA, which are bijective and preserve the full $2^{64}$-valued domain. Post-migration, $256/256$ cells are
+   distinct after processing. This open question is closed.
+
+5. **Side-channel and fault-injection resistance.** The current implementation is not constant-time. The
+   `switch(colorIndex)` and prime-table indexed accesses produce data-dependent timing and cache patterns. For pure
+   hashing without secret input this is acceptable; for HMAC, key derivation, or any deployment exposing a secret to
+   the hash, a constant-time variant would be required [@kocher1996_timing], and fault-injection resistance would have
+   to be evaluated separately.
+
+6. **Peer review.** The algorithm has not been analysed by independent cryptographers. All security-relevant statements
+   in the present document should be regarded as preliminary.
 
 ### Honest Assessment
 
-| Question                                  | Confidence      | Basis                                              |
-|-------------------------------------------|-----------------|----------------------------------------------------|
-| Does the output look random?              | **Very high**   | N=1M, power >99.9 %                                |
-| Is the function cryptographically secure? | **Unknown**     | Needs formal analysis                              |
-| Are there obvious design flaws?           | **Probably no** | 30+ tests, 2.5M+ hashes, 0 anomalies               |
-| Production-ready?                         | **No**          | No peer review, no formal proofs                   |
-| Interesting research contribution?        | **Yes**         | Novel construction principle, extensive evaluation |
+| Question                                  | Confidence    | Basis                                              |
+|-------------------------------------------|---------------|----------------------------------------------------|
+| Does the output look random?              | **Very high** | $N = 10^6$, statistical power $> 99.9\,\%$         |
+| No exact collisions for inputs $L \le 3$? | **High**      | Exhaustive enumeration, $N \approx 1.68 \times 10^7$ |
+| Is the function cryptographically secure? | **Unknown**   | Requires targeted differential / algebraic analysis |
+| Are there obvious design defects?         | **Unknown**   | No defect detected, but Phase 3 linearity is an open structural concern |
+| Production-ready?                         | **No**        | No peer review, no formal proofs                   |
+| Interesting research contribution?        | **Yes**       | Novel construction principle, extensive empirical evaluation |
 
 ---
 

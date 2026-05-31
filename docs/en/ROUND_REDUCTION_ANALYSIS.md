@@ -298,10 +298,12 @@ quality. This is not inherently a weakness, but it means:
 
 ### Observation D: No Evidence of Absorbing-State Accumulation
 
-The AND and OR operations (2 of the 6 operations) are inherently biasing: AND pulls bits toward 0, OR pulls bits toward
-1. With enough iterations, this could create "absorbing states" where field cells converge to 0x0 or 0xFFFFFFFFFFFFFFFF.
-However, **no evidence of this was observed** even at 100,000 rounds — the metrics remain stable. This suggests the XOR,
-ADD, SUB, and INVERT operations effectively counteract the absorbing tendency.
+A previous version of Phase 3 used bitwise AND and OR, which are non-bijective on $\{0,\ldots,2^{64}-1\}$ and pull
+bits toward $0$ or $1$ respectively. In the current design (since version 2025-06; see Appendix D of ALGORITHM.md)
+these have been replaced by the bijective rotation-based operations RLX (`ROL64(c,13) ^ n`) and RRA
+(`ROR64(c,7) + n`), so the six operations are now ADD, SUB, XOR, RLX, RRA, INVERT — all of which preserve the
+$2^{64}$-valued domain. No absorbing-state accumulation was observed even at $100{,}000$ rounds, which is the
+expected behaviour for a round function composed entirely of bijective per-cell maps.
 
 ---
 
@@ -338,13 +340,22 @@ rather than iteration count:
 
 ## Conclusion
 
-Secasy demonstrates consistent security metrics across all four tested hash sizes (64, 128, 256, 512 bits) and all round
-counts from 100,000 down to the respective minimums. **No structural weakness was identified** in the tested metrics,
-though byte uniformity testing is inconclusive due to sample size limitations.
+Across all four tested hash sizes (64, 128, 256, 512 bits) and round counts from 100,000 down to the respective
+minimums, the statistical metrics (avalanche, bit bias, sequential correlation, min-Hamming, byte uniformity at the
+tested sample sizes) are indistinguishable. **No structural weakness was identified by these tests.** Byte-position
+uniformity at hash size 512 remains inconclusive due to the per-bucket sample-size limitation discussed in Section 6.
 
-The single confirmed finding is that **the algorithm achieves full statistical quality at its minimum round count**,
-with the 100,000-round default serving as an extreme safety margin. The grid-based architecture provides inherent
-diffusion that is fundamentally independent of iteration count — a distinctive property among hash function designs.
+The principal interpretive caveat is the one already raised in [README.md](../../README.md) (Sections 2.3 and 4.5):
+the per-round operation is $\mathrm{GF}(2)$-linear except for the carry chain of modular addition and contains no
+S-box layer. Statistical metrics of the kind reported here are not sensitive to such algebraic structure, so the
+observation that they are flat across round counts is consistent with — but does **not** prove — that low round
+counts are cryptographically safe. The result should be read as “iterating the present round function does not
+detectably improve the empirical statistical profile,” not as “one round is sufficient for cryptographic
+security.”
+
+Whether the $100{,}000$-round historical default offered any additional cryptographic margin beyond what the
+statistical tests can detect remains an open question; the present analysis only establishes that the statistical
+tests cannot tell the round counts apart.
 
 ---
 

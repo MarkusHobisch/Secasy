@@ -73,6 +73,8 @@ add_secasy_test(SecasyDebugCollision         tests/analysis/debug_collision.c)
 add_secasy_test(SecasyTraceCollision         tests/analysis/trace_collision.c)
 # ── Cell divergence growth analysis ─────────────────────────────────
 add_secasy_test(SecasyCellDivergence          tests/analysis/cell_divergence.c)
+# ── Brute-force collision scan (1/2/3 byte) ─────────────────────────
+add_secasy_test(SecasyBruteCollisionScan      tests/analysis/brute_collision_scan.c)
 # Collect all test target names for bulk property assignment
 set(ALL_TEST_TARGETS
     SecasyComprehensiveSecurity SecasyDeepSecurity SecasyExtendedSecurity
@@ -82,7 +84,7 @@ set(ALL_TEST_TARGETS
     SecasyBenchmark SecasyPreciseTiming SecasyProfiling SecasyHashrate SecasyRoundReduction
     SecasyFuzzTest SecasyTestVectors SecasyVerifyVectors SecasyColorIsolation
     SecasyFieldSizeSweep SecasyDebugCollision SecasyTraceCollision
-    SecasyCellDivergence)
+    SecasyCellDivergence SecasyBruteCollisionScan)
 
 # ── Per-target properties (applied in bulk) ───────────────────────────
 set(WARN_FLAGS -Wall -Wextra -Wundef -Wshadow -Wpointer-arith
