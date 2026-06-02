@@ -243,16 +243,75 @@ collisions for longer inputs, which would require differential or meet-in-the-mi
 
 ## 10. Formal Security (Open Questions)
 
-A formal proof of pseudorandom permutation (PRP) properties would require:
+The analyses in this document are **empirical**: they establish behaviour over finite, sampled, or exhaustively
+enumerated input domains. This section delineates precisely (i) what the empirical evidence does and does not establish,
+(ii) the limitations that are intrinsic to the empirical method and therefore cannot be closed by any amount of
+additional testing, and (iii) the concrete formal results that would close those gaps. It is intended as an explicit
+hand-off to a cryptanalyst or formal-methods reviewer.
 
-- Showing that the state transition forms an **ergodic Markov chain** over the state
-  space $\{0, \ldots, 2^{64}-1\}^{256}$
-- Bounding the **mixing time** (e.g., via coupling method) to confirm convergence within the default 10 rounds
-- Bounding the **mixing per round** of the ARX operations (RLX, RRA) — a formal coupling argument or chi-squared
-  convergence bound for the 16×16-cell state graph would quantify how many rounds guarantee near-uniform diffusion
-- Proving that the wide-pipe extraction (Section 6) preserves uniformity
+### 10.1 Boundary between tested and untested
 
-These are identified as future work suitable for a dedicated formal analysis.
+The following table separates claims supported by direct measurement from claims that remain conjectural. The middle
+column states the *empirical scope* — the exact domain over which evidence exists — to make the boundary unambiguous.
+
+| Property | Empirical scope (what was actually checked) | Formal status |
+|----------|----------------------------------------------|---------------|
+| Phase-2 internal injectivity | Exhaustive over all $L \le 3$ inputs ($1.68 \times 10^7$); zero collisions (§9b) | **Conjectured** for $L > 3$; no proof |
+| Phase-3 bijectivity | $\mathrm{GF}(2)$ rank $256/256$ on the visited-cell map, incl. the fully-affine worst case (§ structural analysis) | **Proven** for the measured instances; not yet proven for *all* colour layouts in closed form |
+| Digest collision rate | Exhaustive $L \le 3$; matches birthday expectation to within $1\sigma$ (§9a) | **Conjectured** to hold at full $2^{256}$ scale; untested there |
+| Avalanche / first-order diffusion | $\sim 10^5$–$10^6$ random single-bit flips; mean $\approx 50\%$, min $\approx 39.6\%$ (M2–M4) | **No bound**: worst case over *all* inputs unknown |
+| Differential resistance | Random/internally-guided search over $> 10^6$ pairs; no high-probability characteristic found | **No bound**: existence of a hand-constructed trail not excluded |
+| Statistical randomness | NIST-style battery on $10^5$–$10^6$ digests; all tests pass at $\alpha = 0.01$ | Distinguisher-freedom **not** implied by test passage |
+
+### 10.2 Intrinsic limitations of the empirical method
+
+The following gaps **cannot** be closed by more testing, larger samples, or longer runs — they are categorical, not
+quantitative. They are listed so a reviewer need not re-derive them.
+
+1. **The sampled domain is negligible.** All exhaustive results are confined to $L \le 3$ (i.e. $\le 2^{24}$ inputs)
+   against a message space of unbounded size. Birthday-bound collision search at the full 512-bit width
+   ($\approx 2^{256}$ work) is computationally unreachable, so the random-oracle hypothesis is tested only far below the
+   security parameter.
+2. **A single adversarial trail beats any sample.** Differential and linear cryptanalysis succeed by exhibiting *one*
+   characteristic of anomalously high probability [@biham1991_differential; @matsui1994_linear]. Such a trail can be
+   constructed analytically (as in the SHA-1 break [@wang2005_sha1]) in a region that random or heuristically-guided
+   sampling will, with overwhelming probability, never visit. Absence of a trail in $> 10^6$ samples is evidence, not
+   proof, of its non-existence.
+3. **Statistical-test passage is necessary, not sufficient.** Passing NIST SP 800-22 [@bassham2010_sp800_22] excludes
+   gross non-randomness but says nothing about algebraic or structural distinguishers operating below the tests'
+   resolution.
+4. **Worst-case diffusion is unquantified.** Measured avalanche reports the *average* (and a sampled minimum) behaviour;
+   it provides no proven *lower bound* over all inputs, which is what a security argument requires.
+
+### 10.3 Next logical steps (formal work items)
+
+The following are the concrete results a formal analysis would need to establish, ordered roughly from most tractable to
+most demanding. Each is phrased as a target statement so it can be picked up directly.
+
+1. **Phase-3 bijectivity in closed form.** Prove that the Phase-3 round map is a bijection on the $16{,}384$-bit state
+   for *every* admissible colour-index layout — not only the measured instances — e.g. by showing each colour operation
+   is invertible and their per-round composition has odd determinant over $\mathrm{GF}(2)$. This upgrades the §9b/M6
+   measurement to a theorem.
+2. **Per-round differential branch number.** Derive an upper bound $p_{\max}$ on the probability of any non-trivial
+   single-round differential characteristic of the ARX operations (`ROTATE_LEFT_XOR`, `ROTATE_RIGHT_ADD`) over the
+   16×16 cell graph. The maximum-probability $r$-round trail is then bounded by $p_{\max}^{\,r}$; showing
+   $p_{\max}^{10} \ll 2^{-512}$ would rule out the differential attack that the empirical search could only probe.
+3. **Linear-approximation bound.** The dual of (2): bound the maximum absolute correlation of any single-round linear
+   approximation and apply the piling-up lemma [@matsui1994_linear] across the 10 rounds.
+4. **Mixing-time / diffusion lower bound.** Model the state transition as a Markov chain over
+   $\{0,\dots,2^{64}-1\}^{256}$ and bound its mixing time (e.g. via a coupling argument or a spectral-gap / chi-squared
+   convergence bound on the 16×16 state graph) to prove that 10 rounds suffice for near-uniform diffusion — converting
+   the measured $\approx 50\%$ avalanche into a proven worst-case lower bound.
+5. **Extraction-stage uniformity.** Prove that the wide-pipe Phase-4 extractor (§6) maps the near-uniform internal state
+   to a near-uniform 512-bit digest without introducing exploitable bias, and characterise its collision kernel beyond
+   the empirical "0 dead bits" finding (M7).
+6. **Meet-in-the-middle / preimage resistance.** Assess whether the known-schedule structure admits a
+   meet-in-the-middle preimage strategy [@aoki2009_mitm] faster than $2^{512}$, given that the round schedule is derived
+   from (and therefore known with) the message.
+
+Establishing (1)–(5) would constitute a pseudorandom-permutation argument for the core; (6) addresses one-wayness. Until
+then, all security claims in this document remain **empirical conjectures**, and the construction must be treated as
+unproven.
 
 ---
 

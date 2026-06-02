@@ -1064,6 +1064,30 @@ gemessen, bei denen Phase-3-Operationen minimalen Einfluss haben (siehe
 Rundenreduktionsanalyse in Abschnitt 6). Aktualisierte Isolationsmessungen
 für die RLX- und RRA-Modi einzeln sind geplant.
 
+---
+
+\newpage
+
+## Anhang E — Gitterzustands-Landschaft: Hashing von ALGORITHM.md
+
+Das folgende 3D-Streudiagramm zeigt den Secasy-Gitterzustand nach dem Hashen
+genau dieses Dokuments (`ALGORITHM.md`, $\approx 40$ KB). Jeder Punkt
+repräsentiert eine der 256 Zellen; die vertikale Achse kodiert den
+`uint64_t`-Wert der Zelle und die Farbe zeigt die zugewiesene Operation
+(ADD, SUB, XOR, RLX, RRA, INVERT).
+
+![Gitterzustands-Landschaft nach dem Hashen von ALGORITHM.md. Alle 256 Zellen
+nehmen unterschiedliche, gestreute Höhen über den gesamten 64-Bit-Bereich ein,
+ohne sichtbare räumliche Clusterbildung — im Einklang mit den in Anhang B
+berichteten Diffusionsergebnissen.](../en/img/grid_landscape_algorithm_md.png)
+
+Das Fehlen von Clusterbildung oder Periodizität im Endzustand ist das
+räumliche Gegenstück zur statistischen Aussage, dass $\sigma \leq 2{,}2\,\%$
+für das $16 \times 16$-Gitter gilt (Anhang B). Es zeigt außerdem, dass die
+ARX-Operationen (Anhang D) eine visuell nicht unterscheidbare Diffusion für
+realistische, strukturierte Eingaben wie ein formatiertes Textdokument
+erzeugen.
+
 \newpage
 
 ## 11. Literatur
