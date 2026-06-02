@@ -109,7 +109,7 @@ stores three independent values:
 | `colorIndex` | `uint8_t` (0–5)              | Determines which of the 6 operations is applied to this cell in Phase 3 |
 
 Additionally there is a **prime number table** (`primes.h`) containing the
-first 16,000,000 primes (~355 KB). This table is compiled from the header
+first 88,801 primes (~355 KB). This table is compiled from the header
 during build and serves as a deterministic source of jump distances.
 
 The **cursor** is a two-dimensional position $(x, y)$ in the range

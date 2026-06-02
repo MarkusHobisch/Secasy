@@ -108,7 +108,7 @@ speichert drei unabhängige Werte:
 | `colorIndex` | `uint8_t`  | Bestimmt, welche der 6 Operationen in Phase 3 auf diese Zelle angewendet wird |
 
 Zusätzlich gibt es eine **Primzahltabelle** (`primes.h`) mit den ersten
-16.000.000 Primzahlen (~355 KB). Diese Tabelle wird bei der Initialisierung
+88.801 Primzahlen (~355 KB). Diese Tabelle wird bei der Initialisierung
 aus dem Header kompiliert und dient als deterministischer Zufallsgenerator
 für Sprungweiten.
 

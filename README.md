@@ -508,11 +508,11 @@ Precise measurements using `QueryPerformanceCounter` (100 ns resolution) on a 51
 
 | Rounds  | Per Hash   | Speedup vs 100,000 |
 |---------|------------|--------------------|
-| 100,000 | ~69 ms     | 1×                 |
-| 1,000   | ~700 µs    | 98×                |
-| 100     | ~75 µs     | 916×               |
-| **10**  | **~11 µs** | **6,134×**         |
-| 1       | ~7 µs      | 10,776×            |
+| 100,000 | ~59 ms     | 1×                 |
+| 10,000  | ~5.8 ms    | 10×                |
+| 1,000   | ~606 µs    | 98×                |
+| 100     | ~65 µs     | 908×               |
+| **10**  | **~9.7 µs** | **6,128×**        |
 
 Reducing the default from 100,000 to 10 rounds yields a $\sim 6{,}000\times$ speed-up with no measurable impact on the
 statistical metrics listed above. As discussed in Section 4.5, this should not be interpreted as a security argument
@@ -529,7 +529,7 @@ default hash was retained, and collisions were counted at three truncation width
 
 - **Inputs.** All byte sequences of lengths $L \in \{1, 2, 3\}$, i.e. $N_1 = 256$, $N_2 = 65{,}536$ and
   $N_3 = 16{,}777{,}216$, total $N = 16{,}843{,}008$ hashes.
-- **Configuration.** Default parameters: $r = 10$ rounds, 512-bit output, prime table of $1.6 \times 10^7$ entries.
+- **Configuration.** Default parameters: $r = 10$ rounds, 512-bit output, prime table of $88{,}801$ entries.
 - **Detection.** For each truncation width $w \in \{32, 48, 64\}$ bits, the truncated hashes were inserted into a
   separate chained hash table; an existing key in the corresponding bucket was counted as a collision.
 - **Reference.** The ideal-hash birthday expectation for $N$ inputs into a $w$-bit output is
@@ -869,7 +869,7 @@ for a co-author with symmetric-cryptanalysis expertise.
 | Affine-Input Diffusion  | ✅ Pass      | Avalanche flat at 50% even for 0-nonlinear-cell inputs (Section 4.8.3) |
 | Min-Avalanche Search    | ✅ Pass      | Global min $38.9\%$ over $1.15 \times 10^6$ flips = expected order statistic (Section 4.8.3) |
 | Affine Phase-3 Bijective | ✅ Proven    | $\operatorname{rank}_{\mathrm{GF}(2)} M = 256/256$, $\det M$ odd, 5/5 layouts (Section 4.8.5) |
-| Phase-4 Dead State Bits | ✅ Fixed     | Original design ignored 255/16384 input bits; odd-weight extractor now leaves 0 dead bits, full width preserved (Section 4.8.6) |
+| Phase-4 Dead State Bits | ✅ Fixed     | Original design ignored 255/16384 internal state bits; odd-weight extractor now leaves 0 dead bits, full width preserved (Section 4.8.6) |
 | Algebraic Degree Growth | ⚠️ Mixed     | Reduced model: max degree exponential, but laggard min degree, persistent low-deg cubes, surviving linear bias (Section 4.8.7) |
 | Round Invariance        | ✅ Confirmed | No degradation from 100 to 1 round                     |
 | Practical Exploits      | ✅ None      | 4/4 exploit attempts failed                            |
@@ -1063,9 +1063,9 @@ All 16 test suites were executed at the production configuration (10 rounds, 512
 | **Statistical**     | SecasyStatisticalRandomness | **10/10 PASS**                                                  |
 |                     | SecasyStatRigor (N=1M)      | **5/5 PASS** — avalanche 50.006%, bias 0.148%, 0 collisions     |
 |                     | SecasyHashPattern           | **4/5 PASS** — byte-uniformity Chi² artifact (see note)         |
-| **Performance**     | SecasyBenchmark             | 10 rounds = 8 µs/hash, **~6,500× speedup** vs 100k rounds       |
-|                     | SecasyPreciseTiming         | **8.57 µs/hash** at 10 rounds                                   |
-|                     | SecasyProfiling             | **81,469 hashes/sec** (64B input, 512-bit output)               |
+| **Performance**     | SecasyBenchmark             | 10 rounds = 9 µs/hash, **~6,289× speedup** vs 100k rounds       |
+|                     | SecasyPreciseTiming         | **9.68 µs/hash** at 10 rounds                                   |
+|                     | SecasyProfiling             | **~62,000 hashes/sec** (64B input, 512-bit output)             |
 | **Round Reduction** | SecasyRoundReduction        | **All metrics stable** from 100 down to 1 round                 |
 | **Fuzzing**         | SecasyFuzzTest              | **PASS** — 500k iterations, 0 crashes, all hash sizes           |
 
@@ -1089,12 +1089,14 @@ Key results at default parameters (r=10, 512-bit hash, 64B input):
 
 | Phase                   | Time (µs) | Share    |
 |-------------------------|-----------|----------|
-| Initialization          | 0.27      | 3%       |
-| Input Integration       | 2.13      | 23%      |
-| Processing + Extraction | 6.89      | 74%      |
-| **Total**               | **9.3**   | **100%** |
+| Initialization          | 0.28      | 2%       |
+| Input Integration       | 1.82      | 16%      |
+| Processing + Extraction | 9.32      | 82%      |
+| **Total**               | **11.4**  | **100%** |
 
-Throughput: ~51,000 hashes/sec at 64B input. For large inputs (1 MB), Input Integration dominates at 99.9%.
+End-to-end throughput measured over 10,000 sequential hashes is $\approx 62{,}000$ hashes/sec ($\approx 3.8$ MB/s) at
+64-byte input; the per-phase total above is an instrumented lower bound that excludes loop and call overhead. For large
+inputs (1 MB), Input Integration dominates at 99.9%.
 
 ## 7. Code Quality and Memory Safety
 

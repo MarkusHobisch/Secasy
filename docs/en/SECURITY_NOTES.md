@@ -173,7 +173,7 @@ To probe collision behaviour beyond random sampling, an exhaustive enumeration o
 carried out (`tests/analysis/brute_collision_scan.c`). The first 64-bit block of the 512-bit default digest was
 retained for each input, and collisions were detected at three truncation widths.
 
-**Configuration:** default parameters ($r = 10$, 512-bit output, prime table $1.6 \times 10^7$); single-threaded
+**Configuration:** default parameters ($r = 10$, 512-bit output, prime table $88{,}801$ entries); single-threaded
 Windows / MinGW-w64 GCC 15; the $L = 3$ pass completes in $\approx 122$ s wall-clock.
 
 **Results.** $N_1 = 256$, $N_2 = 65{,}536$, $N_3 = 16{,}777{,}216$, total $N = 16{,}843{,}008$:
@@ -181,10 +181,11 @@ Windows / MinGW-w64 GCC 15; the $L = 3$ pass completes in $\approx 122$ s wall-c
 | Length | 64-bit collisions | 48-bit collisions | 32-bit collisions | Ideal 32-bit ($E$) |
 |--------|------------------:|------------------:|------------------:|-------------------:|
 | 1      | 0                 | 0                 | 0                 | $0.0$              |
-| 2      | 0                 | 0                 | 0                 | $0.5$              |
-| 3      | 0                 | 0                 | **32,869**        | $32{,}768$         |
+| 2      | 0                 | 0                 | 1                 | $0.5$              |
+| 3      | 0                 | 0                 | **32,638**        | $32{,}768$         |
 
-The $L = 3$ 32-bit collision count deviates from the ideal birthday expectation by $+0.56\,\sigma$, which is
+The $L = 3$ 32-bit collision count deviates from the ideal birthday expectation by $-0.72\,\sigma$ (standard
+deviation $\sqrt{E} \approx 181$), which is
 unremarkable and consistent with ideal-random behaviour. **No cross-length collisions** were observed between $L = 1$,
 $L = 2$ and $L = 3$ inputs at any truncation width.
 
