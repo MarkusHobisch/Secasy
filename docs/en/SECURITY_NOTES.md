@@ -194,6 +194,53 @@ construction is empirically indistinguishable from a random oracle on the collis
 differential, algebraic, or longer-input collision attacks, all of which require dedicated techniques
 [@biham1991_differential; @matsui1994_linear; @wang2005_sha1].
 
+## 9b. Phase-2 Internal-State Collision Enumeration
+
+The exhaustive scan of Section 9a operates on the final 512-bit digest and therefore cannot localise *where* in the
+construction a collision originates. To isolate the dominant structural collision source, a second exhaustive
+enumeration was carried out directly on the internal state after the input-absorption phase
+(`tests/analysis/phase2_collision_scan.c`).
+
+**Motivation.** The construction comprises four phases: (1) state initialisation, (2) a lossy input-driven cursor walk,
+(3) a round-based mixing permutation, and (4) digest extraction. Phase 3 was independently shown to be a bijection on
+the cell-value state (rank $256/256$ over the visited-cell transformation; see Section on structural analysis), and
+Phase 4 reads only the cell values. Consequently, any collision in the full digest must already be present as a
+collision in the *collision-relevant Phase-2 state*. Phase 2 is the natural suspect because the previous cell value
+enters the cursor update only through a reduction modulo 16 — discarding the upper 60 bits of a 64-bit word — before
+being overwritten by the next prime. This information loss admits, in principle, *neutral blocks* (an input whose
+Phase-2 state equals the canonical initial state, hence colliding with the empty input) or *path cycles* (two distinct
+inputs converging to the same internal state).
+
+**Method.** For each input, the collision-relevant Phase-2 state was fingerprinted as the concatenation of all 256 cell
+values ($256 \times 8$ bytes), all 256 colour indices ($256 \times 1$ byte) and the cursor coordinates ($2 \times 4$
+bytes), totalling $2{,}312$ bytes. The `primeIndex` field was deliberately **excluded** from the fingerprint, since it
+is not read after Phase 2; including it would only mask collisions that are real with respect to the downstream
+computation, so its exclusion yields a strictly more sensitive (conservative) test. Candidate collisions flagged by a
+128-bit fingerprint were confirmed by recomputing both full $2{,}312$-byte states and comparing them byte-for-byte,
+eliminating false positives.
+
+**Configuration.** Default parameters ($r = 10$, 512-bit output, prime table $88{,}801$ entries); single-threaded
+Windows / MinGW-w64 GCC 15; the $L = 3$ pass completes in $\approx 137$ s wall-clock.
+
+**Results.** All $N = 16{,}843{,}008$ inputs of length $L \in \{1, 2, 3\}$ were enumerated:
+
+| Length | Inputs       | Confirmed Phase-2 state collisions | Neutral-from-init |
+|--------|-------------:|-----------------------------------:|------------------:|
+| 1      | $256$        | $0$                                | $0$               |
+| 2      | $65{,}536$   | $0$                                | $0$               |
+| 3      | $16{,}777{,}216$ | $0$                            | $0$               |
+
+No internal-state collision and no neutral block were observed: the lossy input walk is **empirically injective** over
+the entire enumerated domain. This is the expected complement to the Section 9a digest-level result — had a Phase-2
+collision existed, it would necessarily have surfaced as a full-digest collision.
+
+**What this does and does not show.** The result provides empirical evidence that, despite the deliberate information
+loss in the cursor update, the prime- and colour-driven schedule restores injectivity for all short inputs, so no
+trivial neutral-block or path-collision attack exists in this range. It is **not** a proof of collision resistance: the
+enumerable domain ($L \le 3$) is negligible against the full message space, and the test does not rule out internal
+collisions for longer inputs, which would require differential or meet-in-the-middle techniques
+[@biham1991_differential; @aoki2009_mitm].
+
 ## 10. Formal Security (Open Questions)
 
 A formal proof of pseudorandom permutation (PRP) properties would require:

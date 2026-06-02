@@ -1,46 +1,32 @@
-# Legacy Analysis Utilities
+# Cryptanalysis & Diffusion Analysis Tools
 
-This folder contains standalone analysis and debugging tools developed during early
-exploration of the Secasy hash function. **These files are not built by the CMake
-build system** and are preserved for historical reference only.
+This folder contains the white-box and exhaustive analysis tools for the Secasy
+hash function. **All files here are built by the CMake build system** as dedicated
+test targets and use the current production defaults
+(`DEFAULT_NUMBER_OF_ROUNDS = 10`, `FIELD_SIZE = 16`).
+
+To build a single tool: `cmake --build build --target <TargetName>`.
+To run: `& .\build\<TargetName>.exe` (some accept flags — see the file header).
 
 ## Contents
 
-| File                       | Purpose                                       |
-|----------------------------|-----------------------------------------------|
-| `analyze_2byte.c`          | Examines hash behavior for 2-byte inputs      |
-| `analyze_collision.c`      | Early collision analysis tool                 |
-| `benchmark_speed.c`        | Simple speed benchmark                        |
-| `collision_attack.c`       | Collision search attempt                      |
-| `collision_test_fixed.c`   | Fixed-parameter collision test                |
-| `compare_fields.c`         | Compares internal field states between inputs |
-| `compare_hashes.py`        | Python script for hash output comparison      |
-| `debug_directions.c`       | Traces directional movement through the grid  |
-| `exact_trace.c`            | Full execution trace for debugging            |
-| `find_all_collisions.c`    | Exhaustive collision finder (small spaces)    |
-| `full_field_compare.c`     | Compares full 256-cell field between runs     |
-| `hash_analysis.py`         | Python analysis of hash output statistics     |
-| `preimage.c`               | Preimage resistance exploration               |
-| `sac_exploit.c`            | SAC exploitation attempt                      |
-| `show_fields.c`            | Pretty-prints the internal grid state         |
-| `simple_functional_test.c` | Basic correctness sanity check                |
-| `statistical_test.c`       | Early statistical quality test                |
-| `temp_dir.c`               | Temporary directional analysis utility        |
-| `test_1byte.c`             | Single-byte input analysis                    |
-| `test_2_3_byte.c`          | 2- and 3-byte input analysis                  |
-| `test_position_mixing.c`   | Tests position-dependent mixing quality       |
-| `test_rounds_needed.c`     | Early round-count exploration                 |
-| `trace_movements.c`        | Traces cursor movement across the grid        |
+| File                       | CMake target                | Purpose                                                                 |
+|----------------------------|-----------------------------|-------------------------------------------------------------------------|
+| `algebraic_analysis.c`     | `SecasyAlgebraicAnalysis`   | Algebraic degree growth, cube and linear-approximation probes on a scaled-down model |
+| `brute_collision_scan.c`   | `SecasyBruteCollisionScan`  | Exhaustive 1/2/3-byte digest collision scan at 32/48/64-bit truncation  |
+| `cell_divergence.c`        | `SecasyCellDivergence`      | Cell Hamming-distance growth across Phase 2 (byte-by-byte diffusion)     |
+| `color_op_isolation.c`     | `SecasyColorIsolation`      | Per-operation diffusion contribution (isolates each of the 6 colour ops) |
+| `debug_collision.c`        | `SecasyDebugCollision`      | Diagnoses zero-Hamming collisions by tracing internal grid states       |
+| `differential_replay.c`    | `SecasyDifferentialReplay`  | High-N (200k x 5 seeds) replay of the suspect output-bit bias from the linearity attack |
+| `field_size_sweep.c`       | `SecasyFieldSizeSweep`      | Avalanche and symmetry across multiple grid sizes                        |
+| `linearity_attack.c`       | `SecasyLinearityAttack`     | GF(2) linearity, differential distribution and cross-length collision search |
+| `phase2_collision_scan.c`  | `SecasyPhase2Collision`     | Exhaustive Phase-2 internal-state collision / neutral-block / path-cycle probe |
+| `structural_attack.c`      | `SecasyStructuralAttack`    | White-box phase-by-phase instrumentation (nonlinearity census, internal avalanche, min-avalanche differential, Phase-3 bijection rank, Phase-4 dead bits) |
+| `trace_collision.c`        | `SecasyTraceCollision`      | Structural enumeration of direction-collision grid positions            |
 
 ## Notes
 
-- Many of these files reference outdated parameters (e.g., `numberOfRounds = 100000`,
-  `FIELD_SIZE = 8`). They have **not** been updated to match the current production
-  defaults (`DEFAULT_NUMBER_OF_ROUNDS = 10`, `FIELD_SIZE = 16`).
-- For current security testing, use the CMake-built test targets in the sibling folders
-  (`security/`, `avalanche/`, `collision/`, etc.).
-- To compile any file manually:
-  ```bash
-  gcc -std=c11 -O2 -o tool_name tool_name.c ../../Calculations.c ../../InitializationPhase.c \
-      ../../ProcessingPhase.c ../../SieveOfEratosthenes.c ../../util.c -lm -I../..
-  ```
+- These tools complement the black-box suites in the sibling folders
+  (`security/`, `avalanche/`, `collision/`, `statistical/`, etc.).
+- CSV/log outputs are written to the build directory (the working directory when
+  run from `build/`) and are git-ignored.
