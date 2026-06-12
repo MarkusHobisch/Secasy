@@ -15,6 +15,17 @@ extern Tile field[FIELD_SIZE][FIELD_SIZE];
 extern unsigned long numberOfRounds;
 extern int hashLengthInBits;
 
+/*
+ * Round constant: the 64-bit fractional part of the golden ratio
+ * phi = (1 + sqrt(5)) / 2, a widely used "nothing-up-my-sleeve" mixing
+ * constant. Multiplying it by the round index yields a distinct value per
+ * round; adding a position term additionally breaks grid symmetry. Together
+ * this makes every round a DISTINCT mapping, which removes the self-similarity
+ * that slide and rotational/symmetry attacks exploit in iterated functions
+ * built from identical rounds.
+ */
+#define ROUND_CONSTANT 0x9E3779B97F4A7C15ULL
+
 static void processData(ColorIndex colorIndex, uint32_t posX, uint32_t posY);
 
 static void advanceGridPosition(uint32_t *posX, uint32_t *posY);
@@ -58,17 +69,26 @@ char *calculateHashValue()
 
     for (unsigned long roundCounter = 0; roundCounter < actualRounds; roundCounter++)
     {
+        /* Per-round key: distinct for every round, so no two rounds share the
+         * same mapping (defeats slide/self-similarity attacks). */
+        const uint64_t roundKey = ROUND_CONSTANT * (uint64_t)(roundCounter + 1);
+
         /* Iterate through the whole field */
         for (uint32_t i = 0; i < FIELD_SIZE; i++)
         {
             for (uint32_t j = 0; j < FIELD_SIZE; j++)
             {
-                // Intentional cross-position mixing to increase diffusion: read colorIndex from the last postion of step 1
+                // Intentional cross-position mixing to increase diffusion: read colorIndex from the last position of step 1
                 // (init phase) and apply it to the current tile (i, j).
                 uint32_t offsetX = (posX + i) & FIELD_SIZE_MASK;
                 uint32_t offsetY = (posY + j) & FIELD_SIZE_MASK;
                 Tile *tile = &field[offsetX][offsetY];
                 processData(tile->colorIndex, i, j);
+
+                /* Inject the round- and position-dependent constant. The
+                 * position term (i, j) breaks the grid symmetry that an
+                 * all-equal state would otherwise preserve across rounds. */
+                field[i][j].value += roundKey + (uint64_t)(i * FIELD_SIZE + j);
             }
         }
         advanceGridPosition(&posX, &posY);

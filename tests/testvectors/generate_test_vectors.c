@@ -65,7 +65,7 @@ int main(void)
     printf("Hash size : 512 bit\n");
     printf("Rounds    : %lu\n", numberOfRounds);
     printf("Encoding  : lowercase hexadecimal\n");
-    printf("Date      : 2026-03-15\n");
+    printf("Date      : 2026-06-12\n");
     printf("===================================================="
            "============================\n\n");
 
