@@ -177,6 +177,10 @@ if(PANDOC)
                 -o ${EN_PDFS}/ROUND_REDUCTION_ANALYSIS.pdf
                 ${PDOC_OPTS} ${CITE_OPTS} "-V" "geometry:margin=1.5cm" "-V" "fontsize=10pt" --toc
 
+        COMMAND ${PANDOC} ${CMAKE_SOURCE_DIR}/docs/en/DIFFERENTIAL_ANALYSIS_BRIEF.md
+                -o ${EN_PDFS}/DIFFERENTIAL_ANALYSIS_BRIEF.pdf
+                ${PDOC_OPTS} ${CITE_OPTS} "-V" "geometry:margin=2.5cm" "-V" "fontsize=11pt" --toc
+
         COMMAND ${PANDOC} ${CMAKE_SOURCE_DIR}/docs/de/ALGORITHM.md
                 -o ${DE_PDFS}/ALGORITHMUS.pdf
                 ${PDOC_OPTS} ${CITE_OPTS} "-V" "geometry:margin=2.5cm" "-V" "fontsize=11pt" --toc
