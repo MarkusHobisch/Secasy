@@ -23,8 +23,8 @@
 unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
 int hashLengthInBits = DEFAULT_BIT_SIZE;
 
-extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
-extern Position_t pos;
+extern Tile field[FIELD_SIZE][FIELD_SIZE];
+extern Position pos;
 
 static const char *dir_name(int d)
 {
@@ -258,13 +258,13 @@ static void categorized_collision_search(void)
                         /* Advance to the diff sub-step */
                         for (int s = 0; s < diff_sub; s++)
                         {
-                            Tile_t *tile = &field[pos.x][pos.y];
+                            Tile *tile = &field[pos.x][pos.y];
                             uint64_t op = tile->value;
                             int pi = (int)tile->primeIndex + 1;
                             if (pi >= NUMBER_OF_PRIMES)
                                 pi = 0;
                             tile->primeIndex = (uint32_t)pi;
-                            tile->colorIndex = (ColorIndex_t)(((unsigned int)tile->colorIndex + 1u) % 6u);
+                            tile->colorIndex = (ColorIndex)(((unsigned int)tile->colorIndex + 1u) % 6u);
                             tile->value = (uint64_t)storedPrimesArray[pi];
                             uint32_t mask = FIELD_SIZE - 1;
                             int d = (msg[bi] >> (s * 2)) & 3;
@@ -572,13 +572,13 @@ static void replay_cursor_path(const unsigned char *data, size_t len,
             (*path_len)++;
 
             /* Replicate writeNextNumber */
-            Tile_t *tile = &field[pos.x][pos.y];
+            Tile *tile = &field[pos.x][pos.y];
             uint64_t oldPrime = tile->value;
             int pi = (int)tile->primeIndex + 1;
             if (pi >= NUMBER_OF_PRIMES)
                 pi = 0;
             tile->primeIndex = (uint32_t)pi;
-            tile->colorIndex = (ColorIndex_t)(((unsigned int)tile->colorIndex + 1u) % 6u);
+            tile->colorIndex = (ColorIndex)(((unsigned int)tile->colorIndex + 1u) % 6u);
             tile->value = (uint64_t)storedPrimesArray[pi];
 
             uint32_t mask = FIELD_SIZE - 1;
@@ -607,12 +607,12 @@ static void replay_cursor_path(const unsigned char *data, size_t len,
     path[*path_len][0] = pos.x;
     path[*path_len][1] = pos.y;
     (*path_len)++;
-    Tile_t *last = &field[pos.x][pos.y];
+    Tile *last = &field[pos.x][pos.y];
     int pi = (int)last->primeIndex + 1;
     if (pi >= NUMBER_OF_PRIMES)
         pi = 0;
     last->primeIndex = (uint32_t)pi;
-    last->colorIndex = (ColorIndex_t)(((unsigned int)last->colorIndex + 1u) % 6u);
+    last->colorIndex = (ColorIndex)(((unsigned int)last->colorIndex + 1u) % 6u);
     last->value = (uint64_t)storedPrimesArray[pi];
 }
 

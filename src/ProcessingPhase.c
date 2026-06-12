@@ -10,12 +10,12 @@
 #include "Calculations.h"
 #include "util.h"
 
-extern Position_t pos;
-extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
+extern Position pos;
+extern Tile field[FIELD_SIZE][FIELD_SIZE];
 extern unsigned long numberOfRounds;
 extern int hashLengthInBits;
 
-static void processData(ColorIndex_t colorIndex, uint32_t posX, uint32_t posY);
+static void processData(ColorIndex colorIndex, uint32_t posX, uint32_t posY);
 
 static void advanceGridPosition(uint32_t *posX, uint32_t *posY);
 
@@ -54,8 +54,8 @@ char *calculateHashValue()
     }
     size_t writePos = 0;
 
-   /* Phase 3: Run all mixing rounds (pure diffusion, no extraction) */
-   
+    /* Phase 3: Run all mixing rounds (pure diffusion, no extraction) */
+
     for (unsigned long roundCounter = 0; roundCounter < actualRounds; roundCounter++)
     {
         /* Iterate through the whole field */
@@ -67,13 +67,12 @@ char *calculateHashValue()
                 // (init phase) and apply it to the current tile (i, j).
                 uint32_t offsetX = (posX + i) & FIELD_SIZE_MASK;
                 uint32_t offsetY = (posY + j) & FIELD_SIZE_MASK;
-                Tile_t *tile = &field[offsetX][offsetY];
+                Tile *tile = &field[offsetX][offsetY];
                 processData(tile->colorIndex, i, j);
             }
         }
         advanceGridPosition(&posX, &posY);
-    } 
-    
+    }
 
     /* Phase 4: Extract all blocks from the final grid state */
     for (size_t b = 0; b < blocksNeeded; b++)
@@ -89,9 +88,9 @@ char *calculateHashValue()
     return hashBuffer;
 }
 
-static void processData(const ColorIndex_t colorIndex, const uint32_t posX, const uint32_t posY)
+static void processData(const ColorIndex colorIndex, const uint32_t posX, const uint32_t posY)
 {
-    Tile_t *tile = &field[posX][posY];
+    Tile *tile = &field[posX][posY];
 
     switch (colorIndex)
     {

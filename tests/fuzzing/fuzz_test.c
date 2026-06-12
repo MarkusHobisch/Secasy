@@ -38,8 +38,8 @@
 unsigned long numberOfRounds;
 int hashLengthInBits;
 
-extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
-extern Position_t pos;
+extern Tile field[FIELD_SIZE][FIELD_SIZE];
+extern Position pos;
 
 /* ── Configuration ───────────────────────────── */
 #define FUZZ_ITERATIONS 500000

@@ -49,7 +49,7 @@ extern "C"
     extern FILE *g_debug_fp;
 
     /* printf wrapper that writes to both stdout and g_debug_fp. */
-    int debug_tee_printf(const char *fmt, ...);
+    int tee_printf(const char *fmt, ...);
 
 /* Logging macros — fully C11-compliant (no GNU ##__VA_ARGS__ extension). */
 #define LOG_INFO(...)                         \

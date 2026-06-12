@@ -47,8 +47,8 @@ static const int HASH_SIZES[] = {64, 128, 256, 512};
 unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
 int hashLengthInBits         = DEFAULT_BIT_SIZE;
 
-extern Tile_t    field[FIELD_SIZE][FIELD_SIZE];
-extern Position_t pos;
+extern Tile    field[FIELD_SIZE][FIELD_SIZE];
+extern Position pos;
 
 /* ── Internal helpers ──────────────────────────────────────────────── */
 

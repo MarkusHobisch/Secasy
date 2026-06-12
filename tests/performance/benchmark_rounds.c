@@ -50,8 +50,8 @@ static int hash_bytes = DEFAULT_BIT_SIZE / 8;
 unsigned long numberOfRounds;
 int hashLengthInBits = DEFAULT_BIT_SIZE;
 
-extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
-extern Position_t pos;
+extern Tile field[FIELD_SIZE][FIELD_SIZE];
+extern Position pos;
 
 /* ── Helpers ─────────────────────────────────────────────── */
 

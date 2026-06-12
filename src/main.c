@@ -54,7 +54,7 @@ int main(int argc, char **argv)
     clock_t cpuStart = clock();
     double wallStart = wall_time_seconds();
 
-    CommandLineOptions_t opts = parseCommandLineOptions(argc, argv);
+    CommandLineOptions opts = parseCommandLineOptions(argc, argv);
     numberOfRounds = opts.numberOfRounds;
     hashLengthInBits = opts.hashLengthInBits;
 

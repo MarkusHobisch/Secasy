@@ -35,7 +35,7 @@ typedef struct
 {
     uint32_t x;
     uint32_t y;
-} Position_t;
+} Position;
 
 // 64-bit bitwise rotation (portable, branchless)
 #define ROTATE_LEFT_64(v, n)  (((v) << (n)) | ((v) >> (64 - (n))))
@@ -49,16 +49,16 @@ typedef enum
     ROTATE_LEFT_XOR = 3,
     ROTATE_RIGHT_ADD = 4,
     INVERT = 5
-} ColorIndex_t;
+} ColorIndex;
 
 typedef struct
 {
     uint32_t posX;
     uint32_t posY;
     uint64_t value;
-    ColorIndex_t colorIndex;
+    ColorIndex colorIndex;
     uint32_t primeIndex;
-} Tile_t;
+} Tile;
 
 // Debug toggles — enabled at runtime with -d (debug) and -e (extended debug).
 // Can also override defaults at compile time: -DDEBUG_MODE_DEFAULT=1

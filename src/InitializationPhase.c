@@ -9,8 +9,6 @@
 #include "primes.h"
 #include "string.h"
 #include "util.h"
-/* Mirror all printf output to debug.txt when g_debug_fp is set */
-#define printf debug_tee_printf
 
 // Field size must be power of 2 for bitmask optimization
 _Static_assert((FIELD_SIZE & (FIELD_SIZE - 1)) == 0, "FIELD_SIZE must be a power of 2");
@@ -32,15 +30,15 @@ _Static_assert((FIELD_SIZE & (FIELD_SIZE - 1)) == 0, "FIELD_SIZE must be a power
 // Prevents the formation of squares. Circulating loops (left or right order) lead to identical results and must therefore be avoided
 #define SQUARE_AVOIDANCE_VALUE 1
 
-Position_t pos;
-Tile_t field[FIELD_SIZE][FIELD_SIZE];
-int lastPrime = 1;
+Position pos;
+Tile field[FIELD_SIZE][FIELD_SIZE];
 
 static int numberOfPrimes = NUMBER_OF_PRIMES;
 static int primeIndex = 0;
-static ColorIndex_t colorIndex = ADD;
+static ColorIndex colorIndex = ADD;
 static int *primeArray = storedPrimesArray;
 static int primeArrayDynamic = 0;
+static size_t byteCounter = 0;
 
 /* Path recording: store each step of the byte walk for the grid overlay */
 #define MAX_PATH_STEPS 4096
@@ -58,7 +56,7 @@ static int g_pathStepCount = 0;
 
 static void processByteDirections(int byte);
 
-static int nextPrimeNumber(Tile_t *tile, int direction);
+static int nextPrimeNumber(Tile *tile, int direction);
 
 static void processDirectionStep(int direction);
 
@@ -68,7 +66,7 @@ static void initSquareFieldWithDefaultValue(void);
 
 static FILE *readFile(const char *filename);
 
-static void updateColorAndPrimeIndexOfTile(Tile_t *tile, int direction);
+static void updateColorAndPrimeIndexOfTile(Tile *tile, int direction);
 
 static void setPrimeNumberOfLastTile(void);
 
@@ -82,11 +80,11 @@ void initFieldWithDefaultNumbers(const unsigned long maxPrimeIndex)
     // Reset global state (needed when hashing many buffers in one process, e.g. avalanche test)
     pos.x = 0;
     pos.y = 0;
-    lastPrime = FIRST_PRIME;
     primeIndex = 0;
     colorIndex = ADD;
 
     g_pathStepCount = 0;
+    byteCounter = 0;
 
     initPrimeNumbers(maxPrimeIndex);
     initSquareFieldWithDefaultValue();
@@ -123,9 +121,8 @@ void readAndProcessFile(const char *filename)
     fclose(file);
     free(buffer);
     setPrimeNumberOfLastTile();
-    lastPrime = (int)field[pos.x][pos.y].value;
     if (g_debug_mode)
-        printf("  +--------------------------------------------------------+\n\n");
+        tee_printf("  +--------------------------------------------------------+\n\n");
 }
 
 // New: process an in-memory buffer (used for avalanche tests)
@@ -143,9 +140,8 @@ void processBuffer(const unsigned char *data, size_t len)
     }
 
     setPrimeNumberOfLastTile();
-    lastPrime = (int)field[pos.x][pos.y].value;
     if (g_debug_mode)
-        printf("  +--------------------------------------------------------+\n\n");
+        tee_printf("  +--------------------------------------------------------+\n\n");
 }
 
 static void initPrimeNumbers(const unsigned long maxPrimeIndex)
@@ -191,9 +187,9 @@ static void createTile(const uint32_t posX, const uint32_t posY)
     if (posX >= FIELD_SIZE || posY >= FIELD_SIZE)
         return;
 
-    Tile_t tile;
-    tile.posX = (uint32_t)posX;
-    tile.posY = (uint32_t)posY;
+    Tile tile;
+    tile.posX = posX;
+    tile.posY = posY;
     tile.value = FIRST_PRIME;
     tile.primeIndex = 0;
     tile.colorIndex = ADD;
@@ -233,22 +229,21 @@ static void processByteDirections(int byte)
 {
     if (g_debug_mode)
     {
-        static size_t byteCounter = 0;
         if (byteCounter == 0)
         {
-            printf("\n  +--------------------------------------------------------+\n");
-            printf("  |  Init Phase  (Byte Walk)                               |\n");
-            printf("  +--------------------------------------------------------+\n");
+            tee_printf("\n  +--------------------------------------------------------+\n");
+            tee_printf("  |  Init Phase  (Byte Walk)                               |\n");
+            tee_printf("  +--------------------------------------------------------+\n");
         }
         char ch = (byte >= 0x20 && byte <= 0x7E) ? (char)byte : '.';
-        printf("  |  Byte %3zu  '%c' (0x%02X = %d%d%d%d%d%d%d%d):                      |\n",
+        tee_printf("  |  Byte %3zu  '%c' (0x%02X = %d%d%d%d%d%d%d%d):                      |\n",
                byteCounter++, ch, (unsigned char)byte,
                (byte >> 7) & 1, (byte >> 6) & 1, (byte >> 5) & 1, (byte >> 4) & 1,
                (byte >> 3) & 1, (byte >> 2) & 1, (byte >> 1) & 1, byte & 1);
-        printf("  |   From       OldPrime      NewPrime  Dir       To      |\n");
+        tee_printf("  |   From       OldPrime      NewPrime  Dir       To      |\n");
     }
 
-    processDirectionStep((byte) & DIRECTION_MASK);
+    processDirectionStep((byte)&DIRECTION_MASK);
     processDirectionStep((byte >> 2) & DIRECTION_MASK);
     processDirectionStep((byte >> 4) & DIRECTION_MASK);
     processDirectionStep((byte >> 6) & DIRECTION_MASK);
@@ -261,7 +256,7 @@ static void processByteDirections(int byte)
  */
 static void processDirectionStep(const int direction)
 {
-    Tile_t *tile = &field[pos.x][pos.y];
+    Tile *tile = &field[pos.x][pos.y];
     const uint64_t oldPrime = tile->value;
     const int nextPrime = nextPrimeNumber(tile, direction);
     tile->value = (uint64_t)nextPrime;
@@ -281,13 +276,13 @@ static void processDirectionStep(const int direction)
         pos.x = (pos.x + oldPrime + SQUARE_AVOIDANCE_VALUE) & FIELD_SIZE_MASK;
         break;
     default:
-        printf("UNKNOWN POSITION !!\n");
+        tee_printf("UNKNOWN POSITION !!\n");
         return;
     }
     if (g_debug_mode)
     {
         static const char *dirName[] = {"UP   ", "RIGHT", "LEFT ", "DOWN "};
-        printf("  |  [%2u,%2u]  %10" PRIu64 " -> %10d  %s  -> [%2u,%2u]  |\n",
+        tee_printf("  |  [%2u,%2u]  %10" PRIu64 " -> %10d  %s  -> [%2u,%2u]  |\n",
                fromX, fromY, oldPrime, nextPrime,
                direction < DIRECTIONS_PER_BYTE ? dirName[direction] : "?????",
                pos.x, pos.y);
@@ -308,23 +303,23 @@ static void processDirectionStep(const int direction)
 
 static void setPrimeNumberOfLastTile(void)
 {
-    Tile_t *tile = &field[pos.x][pos.y];
+    Tile *tile = &field[pos.x][pos.y];
     tile->value = (uint64_t)nextPrimeNumber(tile, 0);
 }
 
-static int nextPrimeNumber(Tile_t *tile, const int direction)
+static int nextPrimeNumber(Tile *tile, const int direction)
 {
     updateColorAndPrimeIndexOfTile(tile, direction);
     return primeArray[tile->primeIndex];
 }
 
-static void updateColorAndPrimeIndexOfTile(Tile_t *tile, const int direction)
+static void updateColorAndPrimeIndexOfTile(Tile *tile, const int direction)
 {
     primeIndex = (int)tile->primeIndex;
     colorIndex = tile->colorIndex;
 
     primeIndex = (primeIndex + 1 + direction) % numberOfPrimes;
-    colorIndex = (ColorIndex_t)((colorIndex + 1) % NUM_COLOR_OPERATIONS);
+    colorIndex = (ColorIndex)((colorIndex + 1) % NUM_COLOR_OPERATIONS);
 
     tile->primeIndex = (uint32_t)primeIndex;
     tile->colorIndex = colorIndex;

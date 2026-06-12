@@ -52,7 +52,7 @@ unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
 int hashLengthInBits = DEFAULT_BIT_SIZE;
 
 /* Access the grid defined in InitializationPhase.c */
-extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
+extern Tile field[FIELD_SIZE][FIELD_SIZE];
 
 /* ── Test parameters ─────────────────────────────────────────────── */
 #define N_MESSAGES 100 /* random messages per mode            */
@@ -71,7 +71,7 @@ static uint64_t rng_next(void)
 }
 
 /* ── Force every grid cell to one fixed color operation ─────────── */
-static void force_color_all(ColorIndex_t op)
+static void force_color_all(ColorIndex op)
 {
     for (int i = 0; i < FIELD_SIZE; i++)
         for (int j = 0; j < FIELD_SIZE; j++)
@@ -80,7 +80,7 @@ static void force_color_all(ColorIndex_t op)
 
 /* ── Hash data, optionally forcing a color override ─────────────── */
 static char *hash_with(const unsigned char *data, size_t len,
-                       int force, ColorIndex_t op)
+                       int force, ColorIndex op)
 {
     initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
     processBuffer(data, len);
@@ -160,7 +160,7 @@ static void print_histogram(const char *label, const long long bins[N_BINS],
 }
 
 /* ── Run one mode, fill histogram, return mean/stddev ───────────── */
-static void run_mode(const char *label, int force, ColorIndex_t op,
+static void run_mode(const char *label, int force, ColorIndex op,
                      double *out_mean, double *out_stddev,
                      double *out_min, double *out_max)
 {
@@ -267,7 +267,7 @@ int main(void)
     {
         const char *label;
         int force;
-        ColorIndex_t op;
+        ColorIndex op;
     } Mode;
 
     static const Mode modes[] = {

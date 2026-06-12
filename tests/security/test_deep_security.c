@@ -43,8 +43,8 @@
 unsigned long numberOfRounds = 10;
 int hashLengthInBits = DEFAULT_BIT_SIZE;
 
-extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
-extern Position_t pos;
+extern Tile field[FIELD_SIZE][FIELD_SIZE];
+extern Position pos;
 
 // Test 1: Linear Approximation Test
 // Check if there are linear relationships between input and output bits

@@ -44,8 +44,8 @@
 unsigned long numberOfRounds = 10;
 int hashLengthInBits = DEFAULT_BIT_SIZE;
 
-extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
-extern Position_t pos;
+extern Tile field[FIELD_SIZE][FIELD_SIZE];
+extern Position pos;
 
 #define NUM_HASHES 50000
 #define BITS_PER_HASH DEFAULT_BIT_SIZE

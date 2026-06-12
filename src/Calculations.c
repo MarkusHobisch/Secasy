@@ -2,7 +2,7 @@
 #include "Defines.h"
 #include <stdint.h>
 
-extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
+extern Tile field[FIELD_SIZE][FIELD_SIZE];
 
 uint64_t hashValue(unsigned long blockIndex)
 {

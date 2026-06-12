@@ -26,8 +26,8 @@
 unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
 int hashLengthInBits = DEFAULT_BIT_SIZE;
 
-extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
-extern Position_t pos;
+extern Tile field[FIELD_SIZE][FIELD_SIZE];
+extern Position pos;
 
 /* ── xorshift64 RNG ──────────────────────────────────────────────── */
 static uint64_t rng_state = 0;
@@ -68,7 +68,7 @@ static void print_msg(const char *label, const unsigned char *msg, int len)
 typedef struct
 {
     uint64_t values[FIELD_SIZE][FIELD_SIZE];
-    ColorIndex_t colors[FIELD_SIZE][FIELD_SIZE];
+    ColorIndex colors[FIELD_SIZE][FIELD_SIZE];
     uint32_t px, py;
 } GridSnap;
 

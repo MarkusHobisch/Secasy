@@ -55,8 +55,8 @@
 unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
 int hashLengthInBits = HASH_OUTPUT_BITS; /* n = 64 */
 
-extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
-extern Position_t pos;
+extern Tile field[FIELD_SIZE][FIELD_SIZE];
+extern Position pos;
 
 #define GRID_CELLS (FIELD_SIZE * FIELD_SIZE) /* 256 */
 

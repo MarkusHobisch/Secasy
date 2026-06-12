@@ -57,8 +57,8 @@
 unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
 int hashLengthInBits = DEFAULT_BIT_SIZE;
 
-extern Position_t pos;
-extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
+extern Position pos;
+extern Tile field[FIELD_SIZE][FIELD_SIZE];
 
 #define GRID_CELLS        (FIELD_SIZE * FIELD_SIZE) /* 256 */
 #define HASH_WORDS        8u                        /* 8 x 64 bit = 512 bit  */
@@ -74,7 +74,7 @@ extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
 typedef struct
 {
     uint64_t      value[FIELD_SIZE][FIELD_SIZE];
-    ColorIndex_t  color[FIELD_SIZE][FIELD_SIZE];
+    ColorIndex  color[FIELD_SIZE][FIELD_SIZE];
     uint32_t      primeIndex[FIELD_SIZE][FIELD_SIZE];
     uint32_t      posX;
     uint32_t      posY;
@@ -117,7 +117,7 @@ static unsigned popcount64(uint64_t x)
     return c;
 }
 
-static int color_is_nonlinear(ColorIndex_t c)
+static int color_is_nonlinear(ColorIndex c)
 {
     /* ADD and SUB are linear over Z_{2^64}; the rest are not. */
     return (c != ADD && c != SUB);
@@ -156,7 +156,7 @@ static void compute_phase2_state(const unsigned char *msg, size_t len, GridState
  * The iteration order (i outer, j inner) reproduces the production
  * read-after-write neighbour semantics exactly.
  */
-static void faithful_process_cell(ColorIndex_t c, uint32_t i, uint32_t j,
+static void faithful_process_cell(ColorIndex c, uint32_t i, uint32_t j,
                                   uint64_t V[FIELD_SIZE][FIELD_SIZE])
 {
     uint64_t *cell = &V[i][j];
@@ -567,7 +567,7 @@ static int find_affine_layout(size_t L, GridState_t *out, unsigned max_tries)
         for (uint32_t x = 0; x < FIELD_SIZE && affine; x++)
             for (uint32_t y = 0; y < FIELD_SIZE; y++)
             {
-                ColorIndex_t c = st.color[x][y];
+                ColorIndex c = st.color[x][y];
                 if (c != ADD && c != SUB) { affine = 0; break; }
             }
         if (affine) { *out = st; free(msg); return 1; }

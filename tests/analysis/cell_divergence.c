@@ -36,7 +36,7 @@ unsigned long numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
 int hashLengthInBits = DEFAULT_BIT_SIZE;
 
 /* Access the grid defined in InitializationPhase.c */
-extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
+extern Tile field[FIELD_SIZE][FIELD_SIZE];
 
 /* ── Test parameters ─────────────────────────────────────────────── */
 #define N_TRIALS 200                          /* pairs of messages to compare        */
@@ -58,7 +58,7 @@ typedef struct
 {
     uint64_t value;
     uint32_t primeIndex;
-    ColorIndex_t colorIndex;
+    ColorIndex colorIndex;
 } CellSnapshot_t;
 
 static void snapshot_grid(CellSnapshot_t snap[TOTAL_CELLS])

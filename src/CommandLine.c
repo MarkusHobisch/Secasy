@@ -18,7 +18,7 @@
 
 #define MAX_HEX_DISPLAY_BYTES 200
 
-static CommandLineOptions_t opts;
+static CommandLineOptions opts;
 
 static int parseUnsignedLong(const char *str, unsigned long *result);
 static char *dupOptarg(const char *flagName);
@@ -30,7 +30,7 @@ static void readAndStoreStringOption(void);
 static void readAndStoreHexOption(void);
 static void printHelperText(void);
 
-CommandLineOptions_t parseCommandLineOptions(int argc, char **argv)
+CommandLineOptions parseCommandLineOptions(int argc, char **argv)
 {
     opts.numberOfRounds = DEFAULT_NUMBER_OF_ROUNDS;
     opts.maximumPrimeIndex = DEFAULT_MAX_PRIME_INDEX;
@@ -104,7 +104,7 @@ CommandLineOptions_t parseCommandLineOptions(int argc, char **argv)
     return opts;
 }
 
-void printCommandLineOptions(const CommandLineOptions_t *o)
+void printCommandLineOptions(const CommandLineOptions *o)
 {
     char line[256];
 

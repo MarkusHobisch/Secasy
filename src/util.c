@@ -57,7 +57,7 @@ FILE *g_debug_fp = NULL;
 int g_debug_mode = DEBUG_MODE_DEFAULT;
 int g_debug_extended = DEBUG_LOG_EXTENDED_DEFAULT;
 
-int debug_tee_printf(const char *fmt, ...)
+int tee_printf(const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);

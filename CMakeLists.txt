@@ -21,10 +21,33 @@ set(CORE_SOURCES
 # ── Main executable ───────────────────────────────────────────────────
 add_executable(Secasy src/main.c ${CORE_SOURCES})
 
+# ── Test registration (CTest) ─────────────────────────────────────────
+enable_testing()
+
+# Default per-test wall-clock timeout (seconds). Generous, since several
+# analysis/security tests are intentionally long-running. Override per test
+# via the optional third argument to add_secasy_test().
+set(SECASY_DEFAULT_TEST_TIMEOUT 600)
+
 # ── Helper: add a test executable with standard config ────────────────
+# Usage: add_secasy_test(<target> <source> [<timeout-seconds>])
+# Builds the executable, registers it as a CTest test (run from the build
+# directory so generated CSV/output files land where the tools expect them),
+# and records the target in a global list for bulk property assignment.
 function(add_secasy_test TARGET SOURCE)
     add_executable(${TARGET} ${SOURCE} ${CORE_SOURCES})
     target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+    set(_timeout ${SECASY_DEFAULT_TEST_TIMEOUT})
+    if(ARGV2)
+        set(_timeout ${ARGV2})
+    endif()
+
+    add_test(NAME ${TARGET} COMMAND ${TARGET}
+             WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+    set_tests_properties(${TARGET} PROPERTIES TIMEOUT ${_timeout})
+
+    set_property(GLOBAL APPEND PROPERTY SECASY_TEST_TARGETS ${TARGET})
 endfunction()
 
 # ── Security tests ────────────────────────────────────────────────────
@@ -90,17 +113,8 @@ add_secasy_test(SecasyAlgebraicAttackN64      tests/analysis/algebraic_attack_n6
 # ── Message-level reachability of the extractor break (from Phase 1) ─
 add_secasy_test(SecasyMessageAttackN64        tests/analysis/message_attack_n64.c)
 # Collect all test target names for bulk property assignment
-set(ALL_TEST_TARGETS
-    SecasyComprehensiveSecurity SecasyDeepSecurity SecasyExtendedSecurity
-    SecasyPracticalExploit SecasyAvalanche SecasyCollision SecasyTruncCollisionPoC
-    SecasySingleBitCollision
-    SecasyDifferential SecasyStatisticalRandomness SecasyStatRigor SecasyHashPattern
-    SecasyBenchmark SecasyPreciseTiming SecasyProfiling SecasyHashrate SecasyRoundReduction
-    SecasyFuzzTest SecasyTestVectors SecasyVerifyVectors SecasyColorIsolation
-    SecasyFieldSizeSweep SecasyDebugCollision SecasyTraceCollision
-    SecasyCellDivergence SecasyBruteCollisionScan SecasyPhase2Collision
-    SecasyLinearityAttack SecasyDifferentialReplay
-    SecasyStructuralAttack SecasyAlgebraicAnalysis)
+# (populated automatically by add_secasy_test, so it never drifts out of sync)
+get_property(ALL_TEST_TARGETS GLOBAL PROPERTY SECASY_TEST_TARGETS)
 
 # ── Per-target properties (applied in bulk) ───────────────────────────
 set(WARN_FLAGS -Wall -Wextra -Wundef -Wshadow -Wpointer-arith

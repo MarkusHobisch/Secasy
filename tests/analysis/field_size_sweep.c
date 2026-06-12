@@ -97,7 +97,7 @@ typedef struct
  *  the core sources that are also compiled into this target.
  * ──────────────────────────────────────────────────────────────────── */
 static int g_fs = 16;
-static Tile_t g_field[MAX_FS][MAX_FS];
+static Tile g_field[MAX_FS][MAX_FS];
 static uint32_t g_px = 0, g_py = 0;
 
 /* nibble flip accumulators reset before each field-size test */
@@ -155,11 +155,11 @@ static void sweep_init(int fs)
  *  Sweep core: advance one tile's metadata and return its next prime
  *  (mirrors updateColorAndPrimeIndexOfTile + nextPrimeNumber)
  * ──────────────────────────────────────────────────────────────────── */
-static int sweep_next_prime(Tile_t *t, int direction)
+static int sweep_next_prime(Tile *t, int direction)
 {
     int pi = (int)t->primeIndex + 1 + direction;
     pi = pi % NUMBER_OF_PRIMES;
-    ColorIndex_t ci = (ColorIndex_t)(((unsigned int)t->colorIndex + 1U) % 6U);
+    ColorIndex ci = (ColorIndex)(((unsigned int)t->colorIndex + 1U) % 6U);
     t->primeIndex = (uint32_t)pi;
     t->colorIndex = ci;
     return storedPrimesArray[pi];
@@ -171,7 +171,7 @@ static int sweep_next_prime(Tile_t *t, int direction)
 static void sweep_step(int move)
 {
     uint32_t mask = (uint32_t)(g_fs - 1);
-    Tile_t *t = &g_field[g_px][g_py];
+    Tile *t = &g_field[g_px][g_py];
     uint32_t old = (uint32_t)t->value; /* lower 32 bits sufficient for mask */
     t->value = (uint64_t)sweep_next_prime(t, move);
 
@@ -219,7 +219,7 @@ static void sweep_phase2(const unsigned char *data, size_t len)
         sweep_byte(data[i] & 0xFF);
 
     /* finalise last touched tile (mirrors setPrimeNumberOfLastTile) */
-    Tile_t *t = &g_field[g_px][g_py];
+    Tile *t = &g_field[g_px][g_py];
     t->value = (uint64_t)sweep_next_prime(t, 0);
 }
 
@@ -227,10 +227,10 @@ static void sweep_phase2(const unsigned char *data, size_t len)
  *  Sweep core: Phase 3 — update one cell
  *  (mirrors processData; px/py here are loop indices, NOT cursor coords)
  * ──────────────────────────────────────────────────────────────────── */
-static void sweep_cell(ColorIndex_t ci, uint32_t px, uint32_t py)
+static void sweep_cell(ColorIndex ci, uint32_t px, uint32_t py)
 {
     int fs = g_fs;
-    Tile_t *t = &g_field[px][py];
+    Tile *t = &g_field[px][py];
 
     switch (ci)
     {
@@ -301,7 +301,7 @@ static char *sweep_hash(void)
             {
                 uint32_t ox = (px + (uint32_t)i) & (uint32_t)(fs - 1);
                 uint32_t oy = (py + (uint32_t)j) & (uint32_t)(fs - 1);
-                ColorIndex_t ci = g_field[ox][oy].colorIndex;
+                ColorIndex ci = g_field[ox][oy].colorIndex;
                 sweep_cell(ci, (uint32_t)i, (uint32_t)j);
             }
         }

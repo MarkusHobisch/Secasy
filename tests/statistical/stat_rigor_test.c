@@ -64,8 +64,8 @@
 unsigned long numberOfRounds = TEST_ROUNDS;
 int hashLengthInBits = DEFAULT_BIT_SIZE;
 
-extern Tile_t field[FIELD_SIZE][FIELD_SIZE];
-extern Position_t pos;
+extern Tile field[FIELD_SIZE][FIELD_SIZE];
+extern Position pos;
 
 static int hash_bits;
 static int hash_hex_chars;
