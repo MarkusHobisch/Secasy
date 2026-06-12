@@ -290,8 +290,8 @@ sizes:
 ### Observation C: Extraction Function Dominates Low-Round Behavior
 
 The constancy of sequential correlation across round counts suggests that at very low round counts, the **hash
-extraction function** (position-weighted XOR with 7-bit rotation over 256 cells) contributes the majority of output
-quality. This is not inherently a weakness, but it means:
+extraction function** (position-weighted multiply-add-rotate accumulation with 7-bit rotation over 256 cells)
+contributes the majority of output quality. This is not inherently a weakness, but it means:
 
 1. The extraction function is security-critical in reduced-round settings
 2. An attacker who can invert or find collisions in the extraction function may need fewer rounds to exploit

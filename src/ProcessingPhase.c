@@ -15,15 +15,6 @@ extern Tile field[FIELD_SIZE][FIELD_SIZE];
 extern unsigned long numberOfRounds;
 extern int hashLengthInBits;
 
-/*
- * Round constant: the 64-bit fractional part of the golden ratio
- * phi = (1 + sqrt(5)) / 2, a widely used "nothing-up-my-sleeve" mixing
- * constant. Multiplying it by the round index yields a distinct value per
- * round; adding a position term additionally breaks grid symmetry. Together
- * this makes every round a DISTINCT mapping, which removes the self-similarity
- * that slide and rotational/symmetry attacks exploit in iterated functions
- * built from identical rounds.
- */
 #define ROUND_CONSTANT 0x9E3779B97F4A7C15ULL
 
 static void processData(ColorIndex colorIndex, uint32_t posX, uint32_t posY);

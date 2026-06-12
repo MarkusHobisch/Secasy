@@ -428,26 +428,46 @@ Mischen und Extraktion sind **strikt getrennt**: Zuerst werden alle $r$
 Runden der Zell-Diffusion vollständig durchlaufen, danach werden in Phase 4
 aus dem **finalen** Gitterzustand die benötigten 64-Bit-Blöcke extrahiert.
 
-Empirisch wurde gezeigt, dass alle Sicherheitsmetriken bereits ab 1 Runde
-stabil sind (siehe Runden-Reduktions-Analyse). Dies liegt daran, dass
-Kollisionsresistenz und Avalanche-Effekt primär in Phase 2 entstehen — die
-Verarbeitungsrunden verstärken die Diffusion, sind aber nicht ihr Ursprung.
+Empirisch sind alle getesteten statistischen Metriken (Avalanche-Effekt,
+Bit-Bias, Kollisionsresistenz, sequenzielle Korrelation, Byte-Positions-
+Gleichverteilung) im Wesentlichen flach, wenn die Rundenzahl $r$ von $100$ bis
+auf das durch $\lceil \text{hashBits}/64 \rceil$ erlaubte Minimum reduziert
+wird. Wir interpretieren dies als Folge der algebraischen Struktur der
+Rundenoperation — **nicht** als Beleg für kryptografische Hinlänglichkeit bei
+kleinem $r$. Die sechs Pro-Zell-Operationen (ADD, SUB, XOR, RLX, RRA, INVERT)
+sind $\mathrm{GF}(2)$-linear bis auf die Übertragskette der modularen Addition;
+das Iterieren einer überwiegend linearen Abbildung ändert den statistischen
+Fingerabdruck der Ausgabe jenseits der ersten Runden nicht, während die
+algebraischen Relationen erhalten bleiben. Statistische Tests der in der
+Runden-Reduktions-Studie zusammengefassten Art sind gegenüber solchen
+Relationen unempfindlich.
 
-> **Struktureller Kontrast zu SHA/Sponge-Konstruktionen:** Bei klassischen
-> Hashfunktionen wie SHA-2 oder Keccak wird die Sicherheit maßgeblich über
-> die Rundenfunktion analysiert — weniger Runden bedeuten direkt schwächere
-> Sicherheit. Bei Secasy liegt der primäre Sicherheitskern in der
-> **Initialisierungsphase (Phase 2)**: Der primzahlgesteuerte Cursor-Walk
-> verteilt und verknüpft die Eingabedaten nichtlinear über alle 256 Zellen,
-> bevor Phase 3 überhaupt beginnt. Phase 3 ist damit **Defense-in-Depth** —
-> eine zusätzliche Härtungsschicht, nicht die Grundlage der
-> Kollisionsresistenz.
+Der Produktions-Standard `DEFAULT_NUMBER_OF_ROUNDS = 10` ist daher eine
+konservative ingenieurtechnische Wahl. Er ist **nicht** durch ein Argument
+gerechtfertigt, dass weniger Runden kryptografisch sicher wären — ein solches
+Argument würde die in Abschnitt 10 genannte gezielte differenzielle /
+algebraische Analyse erfordern, die noch nicht durchgeführt wurde — sondern
+durch die Beobachtung, dass eine höhere Rundenzahl das statistische Profil
+nicht erkennbar verschlechtert, während die Kosten pro Hash niedrig bleiben.
 
-> *„Wir schlagen eine Hash-Konstruktion vor, deren Sicherheit auf einer
-> zustandsabhängigen, primzahlgesteuerten Initialisierung beruht — statt auf
-> einer iterierten Rundenfunktion — und zeigen empirisch, dass alle
-> Sicherheitsmetriken bereits nach einer einzigen Verarbeitungsrunde
-> sättigen.“*
+> **Struktureller Kontrast zu AES / Keccak.** In SHA-2 [@nist_fips180_4] und
+> Keccak [@nist_fips202] wendet jede Runde eine strukturell reichhaltige
+> Transformation mit nichtlinearer S-Box-Schicht ($\chi$ in Keccak) und
+> rundenspezifischen Konstanten an; das Wide-Trail-Sicherheitsargument
+> [@daemen2002_aes, Kap. 9] beruht maßgeblich auf der Iteration dieser
+> Struktur. Secasys Phase 3 wendet in jeder Runde **dieselbe** Pro-Zell-
+> Operation an (festgelegt durch die in Phase 2 gesetzten Farbindizes) und
+> enthält keine S-Box-Schicht; die Pro-Runden-Konstanten-Injektion (oben)
+> unterscheidet die Runden nun und beseitigt die exakte Slide-/
+> Selbstähnlichkeitssymmetrie, fügt aber **keine** nichtlineare Schicht hinzu.
+> Algebraisch verhält sich die Konstruktion daher — bezüglich Angriffen, die
+> durch Phase 3 linearisieren — im Wesentlichen weiterhin wie ein
+> Single-Round-Design, dem die Phase-2-Eingabe-Integration vorangeht und der
+> Phase-4-Extraktor folgt. Dies ist eine ehrliche Charakterisierung des
+> aktuellen Entwurfs; die verbleibende Lücke (Einführung einer Pro-Runden-S-Box
+> oder anderweitige Erhöhung des algebraischen Grades pro Runde) ist als
+> zukünftige Arbeit ausgewiesen und Gegenstand des Differential-Analyse-Briefs
+> (`DIFFERENTIAL_ANALYSIS_BRIEF.md`).
 
 ---
 

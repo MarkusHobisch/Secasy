@@ -206,21 +206,25 @@ The extraction phase is implemented in [Calculations.c](src/Calculations.c) and 
 
 The accumulator for block $k$ is computed as
 
-$$h_k \;=\; \operatorname{ROL}_{64}\!\Big(\!\ldots \operatorname{ROL}_{64}\!\big(h_k \oplus v_{x,y} \cdot p_{x,y,k},\; 7\big)\!\ldots\!\Big)$$
+$$h_k \;=\; \operatorname{ROL}_{64}\!\Big(\!\ldots \operatorname{ROL}_{64}\!\big(h_k \boxplus v_{x,y} \cdot p_{x,y,k},\; 7\big)\!\ldots\!\Big)$$
 
-where $v_{x,y}$ is the final value of cell $(x,y)$ and
+where $\boxplus$ denotes addition modulo $2^{64}$, $v_{x,y}$ is the final value of cell $(x,y)$ and
 $p_{x,y,k} = 2\big((x \cdot 16 + y + 1) + k \cdot 256\big) + 1$ is an odd position-and-block-dependent weight. Forcing
 the weight odd makes it a unit in $\mathbb{Z}/2^{64}$, so multiplication by $p_{x,y,k}$ is a bijection and annihilates
 no high-order cell bit (Section 4.8.6). Iteration is in row-major order over all 256 cells; the rotation is applied
-after each XOR step.
+after each addition step.
 
-**On the structure of the extractor (honest characterisation).** The accumulator is, ignoring the integer
-multiplication $v_{x,y} \cdot p_{x,y,k}$, a fixed linear function of the cell values over $\mathrm{GF}(2)$. The
-multiplication by the small odd constant $p_{x,y,k}$ contributes only weak non-linearity via carry propagation. The
-position weights are distinct odd constants and serve to break the symmetry between permutations of cell values; they
-are **not** a cryptographic permutation in the sense of [3] or [4]. Strengthening the extractor with a genuinely
-non-linear finalisation (for example an additional permutation round or an S-box layer) is identified as future work
-in Section 8.
+**On the structure of the extractor (honest characterisation).** The accumulator combines cell contributions with
+modular **addition** rather than XOR. This is a deliberate design choice: an XOR accumulator would, because the
+rotation amount $7 \times 256 \equiv 0 \pmod{64}$ closes the cycle, admit the *separable* closed form
+$\text{block}_k = \bigoplus_{i} \operatorname{ROL}(v_i \cdot p_{i,k}, r_i)$ in which each block is an independent
+$\mathrm{GF}(2)$-sum of per-cell terms — a $k$-sum / generalized-birthday structure [17] that permits an $O(1)$
+collision and preimage shortcut on the extractor in isolation. Replacing XOR with addition couples the 256 terms
+through carry propagation, destroying this separability so that no per-cell term can be cancelled independently of the
+others. The accumulator is therefore **not** $\mathrm{GF}(2)$-linear. It is, however, still not a cryptographic
+permutation in the sense of [3] or [4]: the carry-based non-linearity is weak, and the position weights only break the
+symmetry between permutations of cell values. Strengthening the extractor with a genuinely non-linear finalisation
+(for example an additional permutation round or an S-box layer) is identified as future work in Section 8.
 
 ### 2.5 Parameters
 
@@ -375,7 +379,7 @@ differences from the ideal $50\,\%$.
 | BLAKE2b [9]| 256       | $50.01\,\%$      | $50.0\,\%$     | $0.03\,\%$               |
 | MD5 [10]   | 128       | $50.91\,\%$      | $50.0\,\%$     | $0.04\,\%$               |
 | SHA-512 [11]| 512      | $50.18\,\%$      | $49.9\,\%$     | $0.06\,\%$               |
-| SHA3-256 [4]| 256      | $50.28\,\%$      | $49.9\,\%$     | $0.06\,\%$               |
+| SHA3-256 [12]| 256     | $50.28\,\%$      | $49.9\,\%$     | $0.06\,\%$               |
 | Secasy     | 512       | $50.0007\,\%$    | $50.0007\,\%$  | $0.0007\,\%$             |
 | SHA-256 [11]| 256      | $49.87\,\%$      | $50.2\,\%$     | $0.21\,\%$               |
 
@@ -394,7 +398,7 @@ off-scale* relative to standard hash functions on these specific metrics.
 
 ### 4.2 NIST-Inspired Randomness Tests
 
-The `SecasyStatisticalRandomness` test suite runs 10 NIST-inspired tests on hash output:
+The `SecasyStatisticalRandomness` test suite runs 10 tests inspired by the NIST SP 800-22 battery [15] on hash output:
 
 | Test                    | Result                      |
 |-------------------------|-----------------------------|
@@ -481,8 +485,8 @@ This result was confirmed with high statistical power using the `SecasyStatRigor
 
 In conventional designs such as AES [3] or Keccak [4], each round applies a structurally rich transformation that
 includes both a non-linear substitution layer (S-box / $\chi$) and round-specific constants. The round count is a
-primary security parameter, and the security argument relies on the wide-trail strategy in which differential and
-linear approximations have provably bounded probability after a sufficient number of rounds [3, §9].
+primary security parameter, and the security argument relies on the wide-trail strategy in which differential [13] and
+linear [14] approximations have provably bounded probability after a sufficient number of rounds [3, §9].
 
 Secasy's mixing phase, by contrast, applies the **same** per-cell operation (selected by the static color index set
 in Phase 2) in every round and contains no S-box layer. Under this design, additional rounds beyond the first compose
@@ -757,7 +761,10 @@ must be specific primes produced by the Phase-2 walk) is not addressed here and 
 
 Pursuing the extractor directly yielded the study's first genuine *structural defect*, which has since been
 **corrected**. The extractor (the production `hashValue()`) reads only the grid values, so it can be exercised as a
-standalone $16{,}384 \to 512$ bit map. Unfolding its accumulator — a rotation by $7$ after every XOR, with
+standalone $16{,}384 \to 512$ bit map. The analysis in this subsection concerns the extractor's earlier
+**XOR-accumulator** form (the implementation current at the time the defect was found); the live extractor has since
+been changed to an additive accumulator (Section 2.4), which preserves the odd-weight fix below and additionally
+removes the separable structure. Unfolding the XOR accumulator — a rotation by $7$ after every XOR, with
 $7 \times 256 \equiv 0 \pmod{64}$ — gives the closed form
 
 $$ \text{block}_b \;=\; \bigoplus_{k=0}^{255} \mathrm{ROL}\!\big(V_k \cdot w_{k,b},\; r_k\big), \qquad r_k = 7(256-k) \bmod 64. $$
@@ -784,6 +791,13 @@ to $0$. The same exhaustive experiment now confirms **0 of $16{,}384$ state bits
 three random bases), and the explicit dead-bit collision no longer exists. The change is a one-line, reversible edit
 that preserves the extractor's structure and cost; it alters every hash output, so the reference test vectors
 ([TEST_VECTORS.md](TEST_VECTORS.md)) were regenerated accordingly.
+
+**A second, independent hardening.** Even with odd weights, the XOR closed form above keeps each output block a
+*separable* $\mathrm{GF}(2)$-sum of per-cell terms — a $k$-sum / generalized-birthday structure [17] that admits an
+$O(1)$ collision and preimage shortcut on the extractor viewed in isolation. The live extractor therefore also
+replaces XOR accumulation with modular **addition** (Section 2.4): carry propagation couples the 256 terms so that no
+per-cell contribution can be cancelled independently, and the separable closed form no longer holds. Both corrections
+(odd weights, additive accumulation) are reflected in the current source and test vectors.
 
 **Honest impact assessment.** The original defect was real and provable — a non-injective extractor with a kernel of
 dimension at least $255$ — though its *practical* consequence was limited, since $16{,}384 - 255 = 16{,}129$ effective
@@ -1247,6 +1261,8 @@ All five PDFs are regenerated in a single step.
 [15] A. Rukhin et al., *A Statistical Test Suite for Random and Pseudorandom Number Generators for Cryptographic Applications*, NIST Special Publication 800-22 Revision 1a, Apr. 2010.
 
 [16] I. Dinur and A. Shamir, "Cube attacks on tweakable black box polynomials," in *Advances in Cryptology — EUROCRYPT 2009*, LNCS 5479, Springer, 2009, pp. 278–299.
+
+[17] D. Wagner, "A generalized birthday problem," in *Advances in Cryptology — CRYPTO 2002*, LNCS 2442, Springer, 2002, pp. 288–304.
 
 ## Contact
 

@@ -103,8 +103,8 @@ In Merkle-Damgård constructions [@merkle1990; @damgard1990] (MD5, SHA-1, SHA-25
 compute $H(m \| padding \| m')$ without knowing $m$. This is possible because the hash output *is* the internal state.
 
 Secasy is **inherently immune** to this attack: the internal state is 256 × 64 = 16,384 bits, while the output is only
-512 bits. The hash is a lossy XOR-accumulation of the full field — the attacker cannot reconstruct the remaining 15,872
-bits of internal state from the output alone.
+512 bits. The hash is a lossy multiply–add–rotate accumulation of the full field — the attacker cannot reconstruct the
+remaining 15,872 bits of internal state from the output alone.
 
 ## 6. Wide-Pipe Advantage
 
