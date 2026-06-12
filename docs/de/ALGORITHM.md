@@ -369,6 +369,26 @@ vollständige Bitmischung innerhalb eines 64-Bit-Wortes.
 Randbehandlung: An Gitterkanten werden konstante Fallback-Werte (1 oder
 unveränderter Wert) verwendet, um undefiniertes Verhalten zu vermeiden.
 
+### Pro-Runden-Konstanten-Injektion
+
+Nachdem die Farboperation auf eine Zelle $(i, j)$ angewandt wurde, wird in
+$\mathbb{Z}/2^{64}$ eine runden- und positionsabhängige Konstante addiert:
+
+$$\text{value}_{i,j} \;\leftarrow\; \text{value}_{i,j} \;\boxplus\; \big(K \cdot (\rho + 1)\big) \;\boxplus\; (i \cdot N + j)$$
+
+Dabei ist $\rho \in \{0, \ldots, r-1\}$ der Rundenindex, $N = 16$ die
+Gitterkantenlänge und $K = \texttt{0x9E3779B97F4A7C15}$ eine feste
+Rundenkonstante — der Nachkommaanteil des Goldenen Schnitts $\phi$, skaliert
+auf 64 Bit, ein *Nothing-up-my-sleeve*-Wert. Der Faktor $(\rho + 1)$ macht den
+additiven Term **für jede Runde verschieden**, sodass keine zwei Runden
+dieselbe Abbildung anwenden; dies ist eine gezielte Gegenmaßnahme gegen Slide-
+und Selbstähnlichkeitsangriffe [@biham1991_differential]. Der Positionsterm
+$(i \cdot N + j)$ bricht die Translationssymmetrie, die ein gleichförmiger
+Gitterzustand andernfalls über die Runden hinweg beibehalten würde. Da die
+Injektion rein additiv ist, verschlechtert sie die Diffusion nicht — die
+erneute Messung von Avalanche-, SAC-, BIC- und $\chi^2$-Metriken nach ihrer
+Einführung zeigte keine statistisch signifikante Änderung.
+
 ### Warum sechs verschiedene Operationen?
 
 - **ADD / SUB:** Additive Operationen verteilen Werte global und sind
@@ -435,21 +455,35 @@ Verarbeitungsrunden verstärken die Diffusion, sind aber nicht ihr Ursprung.
 
 Nachdem **alle** Verarbeitungsrunden abgeschlossen sind, wird die benötigte
 Anzahl an 64-Bit-Blöcken aus dem **finalen** Gitterzustand extrahiert.
-Die Extraktionsfunktion iteriert alle 256 Zellen in Zeilen-Haupt-Reihenfolge
-und akkumuliert:
+Die Extraktion ist eine **Multiply–Add–Rotate (MAR)**-Akkumulation, die alle
+256 Zellen in Zeilen-Haupt-Reihenfolge iteriert. Mit $\text{acc}_0 = 0$ und
+der Zellindizierung $i = 0, \ldots, 255$ lautet die Rekursion für
+Ausgabeblock $b$:
 
-$$\text{block}_b = \bigoplus_{i=0}^{255} \text{ROL}_7\!\left(\text{acc} \oplus (w_{i,b} \cdot \text{cell}_i.\text{value})\right)$$
+$$\text{acc}_{i+1} = \text{ROL}_7\!\big(\text{acc}_i \;\boxplus\; (w_{i,b} \cdot \text{cell}_i.\text{value})\big), \qquad \text{block}_b = \text{acc}_{256}$$
 
 Dabei ist:
 
 - $w_{i,b} = 2\,(i + 1 + b \cdot 256) + 1$ — ein **ungerades** positionsgebundenes Gewicht, versetzt durch den Blockindex $b$
 - $b \in \{0, 1, \ldots, \lceil \text{hashBits}/64 \rceil - 1\}$ — der Blockindex
-- $\text{ROL}_7$ — Links-Rotation um 7 Bit nach jedem Schritt
-- $\oplus$ — XOR-Akkumulation
+- $\boxplus$ — Addition in $\mathbb{Z}/2^{64}$ (modular, mit Übertrag)
+- $\text{ROL}_7$ — Links-Rotation um 7 Bit, nach jedem Akkumulationsschritt
 
 Der Blockindex-Versatz stellt sicher, dass jeder extrahierte Block einen
 eigenen Satz von Positionsgewichten verwendet — jeder 64-Bit-Block ist
-somit eine unterschiedliche Linearkombination der Gitterzellen.
+somit eine unterschiedliche Mischung der Gitterzellen.
+
+**Warum additive Akkumulation statt XOR.** Ein früherer Entwurf kombinierte
+die gewichteten Zellen per XOR ($\text{acc} \oplus w_{i,b}\cdot\text{value}$).
+Da $\text{ROL}_7$ über XOR distribuiert, zerfiel diese geschlossene Form in ein
+XOR von 256 *unabhängigen* Pro-Zell-Bijektionen — eine Generalized-Birthday-/
+$k$-Sum-Struktur, die (bei direktem Gitterzugriff) eine $O(1)$-Kollision in der
+Kompressionsdomäne erlaubt. Der Ersatz von XOR durch modulare **Addition**
+zerstört diese Separierbarkeit: Rotation distribuiert **nicht** über Addition,
+da Überträge die Rotationsgrenze überschreiten. Die Änderung wurde verifiziert,
+indem die separierbare geschlossene Form von $100{.}000/100{.}000$ auf
+$0/100{.}000$ über zufällige Zustände fiel. (Die Nachrichten-Erreichbarkeit der
+ursprünglichen Schwäche war ohnehin durch Phase 2 blockiert; siehe Abschnitt 10.)
 
 Dass jedes Gewicht **ungerade** ist, ist entscheidend: Eine ungerade Zahl ist
 eine Einheit in $\mathbb{Z}/2^{64}$, sodass die Multiplikation mit $w_{i,b}$
@@ -499,7 +533,7 @@ Zellen durch rotationsbasierte Operationen (RLX, RRA), deren
 Übertragspropagation nichtlineare Bit-Abhängigkeiten erzeugt, und die
 datenabhängige Traversierungsreihenfolge verhindert statische algebraische
 Modellierung. In Kombination mit der verlustbehafteten
-XOR-Akkumulations-Extraktion (Abschnitt 7) ist kein algebraischer
+Multiply–Add–Rotate-Extraktion (Abschnitt 7) ist kein algebraischer
 Rückrechnungsweg von der Ausgabe zum internen Zustand bekannt.
 
 **Empirische Bestätigung:** Keine Preimages in 1.000.000 brute-force-Versuchen.
@@ -508,7 +542,7 @@ Rückrechnungsweg von der Ausgabe zum internen Zustand bekannt.
 
 **Strukturelles Argument (inhärent):** Der interne Zustand (16.384 Bit) ist
 32× größer als die Ausgabe (512 Bit). Die Ausgabe ist eine verlustbehaftete
-XOR-Akkumulation des gesamten Feldes. Ein Angreifer, der $H(m)$ kennt,
+Multiply–Add–Rotate-Akkumulation des gesamten Feldes. Ein Angreifer, der $H(m)$ kennt,
 besitzt nicht den internen Zustand — er kann die Berechnung nicht fortsetzen,
 weil ihm 15.872 Bit fehlen. Dies unterscheidet Secasy fundamental von SHA-256.
 

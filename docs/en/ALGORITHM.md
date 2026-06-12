@@ -356,6 +356,25 @@ its `colorIndex`, which was fixed during Phase 2:
 Boundary handling: at grid edges, constant fallback values (1 or unchanged
 value) are used to avoid undefined behaviour.
 
+### Per-Round Constant Injection
+
+After the color operation has been applied to a cell $(i, j)$, a round- and
+position-dependent constant is added in $\mathbb{Z}/2^{64}$:
+
+$$\text{value}_{i,j} \;\leftarrow\; \text{value}_{i,j} \;\boxplus\; \big(K \cdot (\rho + 1)\big) \;\boxplus\; (i \cdot N + j)$$
+
+where $\rho \in \{0, \ldots, r-1\}$ is the round index, $N = 16$ the grid side,
+and $K = \texttt{0x9E3779B97F4A7C15}$ a fixed round constant — the fractional
+part of the golden ratio $\phi$ scaled to 64 bits, a *nothing-up-my-sleeve*
+value. The factor $(\rho + 1)$ makes the additive term **distinct for every
+round**, so no two rounds apply the identical mapping; this is a deliberate
+countermeasure against slide and self-similarity attacks [@biham1991_differential].
+The position term $(i \cdot N + j)$ breaks the translational symmetry that an
+all-equal grid state would otherwise retain across rounds. Because the
+injection is purely additive it does not degrade diffusion — re-measuring the
+avalanche, SAC, BIC and $\chi^2$ metrics after its introduction showed no
+statistically significant change.
+
 ### Why Six Different Operations?
 
 - **ADD / SUB:** Additive operations spread values globally and are invertible
@@ -409,11 +428,14 @@ that raising the round count does not detectably degrade the statistical profile
 > **Structural contrast to AES / Keccak.** In SHA-2 [@nist_fips180_4] and Keccak [@nist_fips202], each round applies
 > a structurally rich transformation with non-linear S-box layer ($\chi$ in Keccak) and round-specific constants; the
 > wide-trail security argument [@daemen2002_aes, ch. 9] relies critically on iterating this structure. Secasy's
-> Phase 3 currently applies the **same** per-cell operation (fixed by the color index set in Phase 2) in every round
+> Phase 3 applies the **same** per-cell operation (fixed by the color index set in Phase 2) in every round
 > and contains no S-box layer. Algebraically, the construction therefore behaves — with respect to attacks that
 > linearise through Phase 3 — essentially as a single-round design preceded by the Phase-2 input integration and
 > followed by the Phase-4 extractor. This is an honest characterisation of the present design; addressing it (for
-> example by introducing a per-round S-box or round constants) is identified as future work.
+> example by introducing a per-round S-box) is identified as future work. A per-round constant has since been added
+> (Section 6, *Per-Round Constant Injection*): it distinguishes the rounds and removes the exact slide/self-similarity
+> symmetry, but it adds no non-linear layer, so the algebraic characterisation above is unchanged. The remaining gap
+> is the subject of the differential-analysis brief (`DIFFERENTIAL_ANALYSIS_BRIEF.md`).
 
 ---
 
@@ -421,21 +443,34 @@ that raising the round count does not detectably degrade the statistical profile
 
 After **all** processing rounds have completed, the required number of
 64-bit blocks is extracted from the **final** grid state.
-The extraction function iterates all 256 cells in row-major order
-and accumulates:
+The extraction is a **multiply–add–rotate (MAR)** accumulation that iterates
+all 256 cells in row-major order. Writing $\text{acc}_0 = 0$ and indexing the
+cells $i = 0, \ldots, 255$, the recurrence for output block $b$ is
 
-$$\text{block}_b = \bigoplus_{i=0}^{255} \text{ROL}_7\!\left(\text{acc} \oplus (w_{i,b} \cdot \text{cell}_i.\text{value})\right)$$
+$$\text{acc}_{i+1} = \text{ROL}_7\!\big(\text{acc}_i \;\boxplus\; (w_{i,b} \cdot \text{cell}_i.\text{value})\big), \qquad \text{block}_b = \text{acc}_{256}$$
 
 Where:
 
 - $w_{i,b} = 2\,(i + 1 + b \cdot 256) + 1$ — an **odd** position-bound weight offset by the block index $b$
 - $b \in \{0, 1, \ldots, \lceil \text{hashBits}/64 \rceil - 1\}$ — the block index
-- $\text{ROL}_7$ — left-rotate by 7 bits after each step
-- $\oplus$ — XOR accumulation
+- $\boxplus$ — addition in $\mathbb{Z}/2^{64}$ (modular, with carry)
+- $\text{ROL}_7$ — left-rotate by 7 bits, applied after each accumulation step
 
 The block-index offset ensures that each extracted block uses a distinct
-set of position weights, so every 64-bit block is a different linear
-combination of the grid cells.
+set of position weights, so every 64-bit block is a different mixture
+of the grid cells.
+
+**Why additive accumulation, not XOR.** An earlier design combined the
+weighted cells with XOR ($\text{acc} \oplus w_{i,b}\cdot\text{value}$).
+Because $\text{ROL}_7$ distributes over XOR, that closed form factored into a
+XOR of 256 *independent* per-cell bijections — a generalized-birthday / $k$-sum
+structure that admits an $O(1)$ collision in the compression domain (given
+direct grid access). Replacing XOR with modular **addition** destroys this
+separability: rotation does **not** distribute over addition, since carries
+cross the rotation boundary. The change was verified to drop the separable
+closed-form match from $100{,}000/100{,}000$ to $0/100{,}000$ over random
+states. (The message-level reachability of the original weakness was in any
+case blocked by Phase 2; see Section 10.)
 
 Forcing every weight **odd** is essential: an odd integer is a unit in
 $\mathbb{Z}/2^{64}$, so multiplication by $w_{i,b}$ is a bijection and no
@@ -483,7 +518,7 @@ is confirmed.
 bits) must be recovered. The processing phase mixes cells through
 rotation-based operations (RLX, RRA) whose carry propagation creates
 non-linear bit dependencies, and data-dependent traversal order prevents
-static algebraic modelling. Combined with the lossy XOR-accumulation
+static algebraic modelling. Combined with the lossy multiply–add–rotate
 extraction (Section 7), no algebraic back-computation path from output to
 internal state is known.
 
@@ -492,7 +527,8 @@ internal state is known.
 ### 8.3 Length Extension Resistance
 
 **Structural argument (inherent):** The internal state (16,384 bits) is 32×
-larger than the output (512 bits). The output is a lossy XOR-accumulation of
+larger than the output (512 bits). The output is a lossy multiply–add–rotate
+accumulation of
 the entire grid. An attacker who knows $H(m)$ does not possess the internal
 state — they cannot resume the computation because 15,872 bits are unknown.
 This distinguishes Secasy fundamentally from SHA-256.
