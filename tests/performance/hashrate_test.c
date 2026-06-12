@@ -10,9 +10,10 @@
  * METHOD:
  *   For each (hash_size, input_length) combination the benchmark runs
  *   hashes continuously for MEASURE_SECONDS wall-clock seconds (measured
- *   via clock() for CPU time) and counts how many complete hashes fit in
- *   that window. H/s, µs/hash and MiB/s (throughput over input bytes) are
- *   reported. Results are also written to hashrate_results.csv.
+ *   via wall_time_seconds(): QueryPerformanceCounter on Windows,
+ *   clock_gettime(CLOCK_MONOTONIC) on POSIX) and counts how many complete
+ *   hashes fit in that window. H/s, µs/hash and MiB/s (throughput over input
+ *   bytes) are reported. Results are also written to hashrate_results.csv.
  *
  * CLI:
  *   SecasyHashrate [seconds]          – measurement duration (default 2)
@@ -78,19 +79,19 @@ static double measure_hashrate(const uint8_t *data, size_t input_len,
 
     /* Measure */
     long count          = 0;
-    clock_t budget      = (clock_t)(target_seconds * (double)CLOCKS_PER_SEC);
-    clock_t start       = clock();
-    clock_t deadline    = start + budget;
+    double start        = wall_time_seconds();
+    double deadline     = start + target_seconds;
+    double now          = start;
 
-    while (clock() < deadline)
+    while (now < deadline)
     {
         char *h = compute_hash(data, input_len);
         free(h);
         count++;
+        now = wall_time_seconds();
     }
 
-    clock_t end      = clock();
-    double elapsed   = (double)(end - start) / (double)CLOCKS_PER_SEC;
+    double elapsed   = now - start;
     *elapsed_out     = elapsed;
     return (elapsed > 0.0) ? (double)count / elapsed : 0.0;
 }

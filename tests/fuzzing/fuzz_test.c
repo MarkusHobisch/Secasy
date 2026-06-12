@@ -17,8 +17,8 @@
  *
  * CONCLUSION:
  *   Zero sanitizer violations across 500k randomized inputs.
- *   The implementation is memory-safe and free of undefined behavior
- *   across the full parameter space.
+ *   No memory-safety violation or undefined behavior was observed across the
+ *   tested parameter space (sampled, not exhaustive).
  *
  * BUILD TARGET: SecasyFuzz
  * HASH SIZE:    All {64, 128, 256, 512}

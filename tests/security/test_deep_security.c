@@ -19,9 +19,11 @@
  *   (zeros, ones, alternating, counter, random).
  *
  * CONCLUSION:
- *   All 4 tests pass SECURE at every round count tested. Maximum linear bias
- *   ~0.026, differential deviations <1%, 100% unique states, no weak keys.
- *   Security derives from the grid architecture, not from round count.
+ *   No detectable weakness was observed at any round count tested: maximum
+ *   linear bias ~0.026, differential deviations <1%, all sampled internal
+ *   states distinct, no weak keys found. These are empirical observations
+ *   under random/structured sampling, NOT a proof of security; the labels
+ *   reflect "no weakness observed", not "proven secure".
  *
  * BUILD TARGET: SecasyDeepSecurity
  * HASH SIZE:    DEFAULT_BIT_SIZE (512)

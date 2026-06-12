@@ -86,7 +86,7 @@ static double benchmark_rounds(unsigned long rounds, int num_hashes)
         for (int j = 0; j < INPUT_LEN; j++)
             inputs[i][j] = (uint8_t)(rand() & 0xFF);
 
-    clock_t start = clock();
+    double start = wall_time_seconds();
 
     for (int i = 0; i < num_hashes; i++)
     {
@@ -94,10 +94,10 @@ static double benchmark_rounds(unsigned long rounds, int num_hashes)
         free(h);
     }
 
-    clock_t end = clock();
+    double end = wall_time_seconds();
     free(inputs);
 
-    return (double)(end - start) / CLOCKS_PER_SEC * 1000.0; /* ms */
+    return (end - start) * 1000.0; /* ms */
 }
 
 /* ══════════════════════════════════════════════════════════ */

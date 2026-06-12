@@ -230,7 +230,7 @@ static void run_phase4(const uint64_t V[FIELD_SIZE][FIELD_SIZE], uint64_t out[HA
                 uint64_t pos = (uint64_t)(x * FIELD_SIZE + y + 1)
                              + (uint64_t)b * GRID_CELLS;
                 uint64_t weight = 2u * pos + 1u; /* odd => unit, no dead bits */
-                acc ^= V[x][y] * weight;
+                acc += V[x][y] * weight; /* ADD (not XOR): carry-couples cells */
                 acc = (acc << EXTRACT_ROTATE) | (acc >> (64 - EXTRACT_ROTATE));
             }
         }

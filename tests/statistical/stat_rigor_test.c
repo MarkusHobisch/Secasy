@@ -20,9 +20,12 @@
  *   CLI-overridable hash size (default: DEFAULT_BIT_SIZE).
  *
  * CONCLUSION:
- *   All metrics fall within expected confidence intervals. Effect sizes are
- *   negligible (<0.01), confirming the hash behaves as an ideal random oracle
- *   even under high-power statistical scrutiny.
+ *   All metrics fall within expected confidence intervals and effect sizes are
+ *   negligible (<0.01). This is necessary but NOT sufficient evidence of
+ *   random-oracle behaviour: statistical tests can only detect first-order
+ *   deviations and cannot rule out algebraic or structural weaknesses. The
+ *   results are consistent with random behaviour under these tests; they do
+ *   not constitute a security proof.
  *
  * BUILD TARGET: SecasyStatRigor
  * HASH SIZE:    DEFAULT_BIT_SIZE (512), CLI-overridable

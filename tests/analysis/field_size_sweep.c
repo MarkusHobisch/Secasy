@@ -270,7 +270,7 @@ static uint64_t sweep_block(unsigned long b)
             uint64_t cell_pos = (uint64_t)(unsigned)(x * fs + y + 1);
             uint64_t block_off = (uint64_t)b * (uint64_t)(unsigned)(fs * fs);
             uint64_t w = cell_pos + block_off;
-            acc ^= g_field[x][y].value * w;
+            acc += g_field[x][y].value * w;
             acc = (acc << 7) | (acc >> 57);
         }
     }

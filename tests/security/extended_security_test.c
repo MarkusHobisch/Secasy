@@ -20,8 +20,10 @@
  *   correlation coefficients, and distribution metrics against ideal thresholds.
  *
  * CONCLUSION:
- *   All 5 tests pass. The hash shows no exploitable structure in its output
- *   under these targeted attack vectors.
+ *   All 5 tests pass: no exploitable structure was observed in the output under
+ *   these targeted vectors. This is an empirical, narrow result under sampling
+ *   — it does not rule out structure detectable by other (e.g. algebraic)
+ *   methods and is not a security proof.
  *
  * BUILD TARGET: SecasyExtendedSecurity
  * HASH SIZE:    DEFAULT_BIT_SIZE (512)

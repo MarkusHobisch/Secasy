@@ -20,8 +20,11 @@
  *   bitstream, then applies each test with standard statistical thresholds.
  *
  * CONCLUSION:
- *   All 7 tests pass. The hash output shows no detectable deviation from
- *   ideal random behavior in frequency, runs, entropy, or spectral domains.
+ *   All 7 tests pass: the hash output shows no detectable deviation from random
+ *   behaviour in frequency, runs, entropy, or spectral domains under these
+ *   tests. This is necessary but NOT sufficient evidence of cryptographic
+ *   randomness — passing statistical tests does not imply resistance to
+ *   algebraic or structural cryptanalysis.
  *
  * BUILD TARGET: SecasyStatisticalRandomness
  * HASH SIZE:    DEFAULT_BIT_SIZE (512)
@@ -81,9 +84,9 @@ void generate_bitstream(unsigned long rounds)
         processBuffer(input, 16);
         char *hash = calculateHashValue();
 
-        // Extract bits from hash
-        for (int i = 0; i < 32 && hash[i]; i++)
-        { // 32 hex chars = 128 bits
+        // Extract bits from the full hash width (BITS_PER_HASH / 4 hex chars)
+        for (int i = 0; i < BITS_PER_HASH / 4 && hash[i]; i++)
+        {
             int nibble = (hash[i] >= '0' && hash[i] <= '9')
                              ? (hash[i] - '0')
                              : (hash[i] - 'a' + 10);

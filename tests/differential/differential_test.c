@@ -21,7 +21,14 @@
  *
  * CONCLUSION:
  *   All differential distributions center tightly on the ideal 50% distance.
- *   No exploitable input-difference → output-difference correlations found.
+ *   No differential correlations were detected under random-difference sampling.
+ *   NOTE: This is a statistical diffusion test, not a constructed-characteristic
+ *   search. Averaging Hamming distances over random input differences cannot
+ *   reveal a targeted differential characteristic (a rare, deliberately built
+ *   input difference that propagates to a fixed output difference with
+ *   probability >> 2^-n). A "good" 50% average is therefore necessary but not
+ *   sufficient evidence of differential resistance; the absence of an
+ *   exploitable characteristic is NOT established by this suite.
  *
  * BUILD TARGET: SecasyDifferential
  * HASH SIZE:    DEFAULT_BIT_SIZE (512), CLI-overridable

@@ -24,8 +24,11 @@
  *   at both default (10) and reduced (8) rounds.
  *
  * CONCLUSION:
- *   All 10 tests pass at 10 and 8 rounds with 512-bit output. The hash exhibits
- *   ideal random behavior across all standard cryptographic security criteria.
+ *   All 10 tests pass at 10 and 8 rounds with 512-bit output: the empirical
+ *   behaviour is consistent with a random oracle across these 10 tests. Several
+ *   tests undersample (e.g. SAC over a subset of input bits), and passing them
+ *   is necessary but NOT sufficient for cryptographic security — it is not a
+ *   formal guarantee against algebraic or structural attacks.
  *
  * BUILD TARGET: SecasyComprehensiveSecurity
  * HASH SIZE:    DEFAULT_BIT_SIZE (512)

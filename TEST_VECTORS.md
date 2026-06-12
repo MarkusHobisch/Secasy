@@ -34,33 +34,33 @@ All 27 vectors must match exactly — any deviation indicates an implementation 
 
 | Bits | Input                                           | Hash (Secasy)                                                                                                                      |
 |-----:|-------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-|  512 | `""` *(empty)*                                  | `b7f8505682b46bb6f46b3c43f5e8007c31b7d5dae7564298c3e777ff6daa72f9c470ddc2392ece703cafdbbb1f5750c31d91b88f79d4bada4242d9eaeeac6bfe` |
-|  512 | `"a"`                                           | `291abc5b712cc388b5a1ea370365e216c6fbf9a6b07a37bc5cea23be0bfa26904ed1b454b764322fa241263da401375bed7f3722aa8ce2fa16e7dd1d6fe887cb` |
-|  512 | `"z"`                                           | `f3c68bf71e6584e3a6759768bcd38d81d40cab1f17cde779cb9cf82d17712003e550fa98205141060e5d6e4e4748e7b48ecb3f24e68d04eb626a9f8663df8039` |
-|  512 | `"0"`                                           | `cde76b0a6492506e6fc13da5d2d77f2b4ccb186598f7ff8cd2da97f218528c3cfe4bc89e120b7fdff3580f1b2e9b05ce83fc46de4dd2d3722624c5765bb45cc8` |
-|  512 | `"abc"`                                         | `d1197317b6f4c6adc516b29549dcb9d274abdb64022dba8a003e3a5dd998986c2f29c20fca7b57d01e5852bdbd264ad9ec46f85f346cb93e6ab49209736472d8` |
-|  512 | `"secasy"`                                      | `44cf221ec8fde8d06849176fdbe4709ce36c992019a690b5e356879b786cc3f2b9f63c883e89989e48666bbdacb739756e3d65d0b4acea70a703c575e7fe1a5a` |
-|  512 | `"1234567890"`                                  | `d235c8a13224ae64207796ffbb5f28bc92eacd8caadfb8f8527565166764de9d498ff04f78f7ed20ae1fb4b4eb454110a956da4fc24861796dd3b24b937d8edc` |
-|  512 | `"The quick brown fox jumps over the lazy dog"` | `73aed62572b95b33b1762710af4646e6aaf945bb1a835dbb19b5cb2603c49798b782a5571eb17d0b66fc3b418eeb3d0bbb589d68ca2b2b01dfc560664b648123` |
-|  512 | `"The quick brown fox jumps over the lazy cog"` | `b49d9d9ac37b75b6e7a43e8f455c57edd2361749e41edb6c7823ebd0d2eaced8e84b634b9c6240fd54451818f74da471c5b80638d9a243d1ebbfe2cd40ad56e3` |
-|  512 | `0x00` *(1 byte)*                               | `f7298e77c73b8ae638e86b1f8e6c761f6076b0a8d056a9a56a482644e00c97be149f38085369487e1c6a3165c06553260368ca2060a6aebeaeb54ed0446d904f` |
-|  512 | `0x01` *(1 byte)*                               | `4d1e47018e6b172210b0c342b0ac5610927064762034eb79771cf509b2b686336364728331af379528c58db8055d03938e2b3f4e13204b39825954047c052414` |
-|  512 | `0xFF` *(1 byte)*                               | `86e121ab1950265f39b0d32f9ca872b6adb42131efde18770c442e3222ce110342504c159a01e5e0871765b028e48e910a8252dd59e6f78351f046e657da075f` |
-|  512 | `0x80` *(1 byte)*                               | `923dfc8031b6d2ef6b48d44a49d78f6521fdb2bf1dd229ea74c0eaf43aa05a1fb060eb61a2e4256cf6a376b2ef912eb283afb68fb228daa156997639ff92856a` |
-|  512 | `0x00 × 8`                                      | `39cd2afff4c7cff4fd8c281a57c3ff330af4b0084249084d680c46d656ea49fea96bb058e022b6ddc6998790782b08cb3ebbb40167202b2ca1996a0f2f371133` |
-|  512 | `0x00 × 16`                                     | `aac4bf3fb25ffc63025def038f4b385c3d6568ce5222259fe64d8c0d178299efa36fe2fe35de2be93f18edb9039979973adbef8ca06613a12d696b8458e4f96e` |
-|  512 | `0x00 × 32`                                     | `579a76b2b0d4d715303ce08fbea37e8be05bbe45228f1e9ecd55a92c09851297aef64ace0248a961b603a3889de9cea375f57c29b01c0072a0efb143e4ae97a8` |
-|  512 | `0x00 × 64`                                     | `74cfef3d8c78dff43c65d959d191881e5a1adbee92e6a01d73d830dcd36ab9f9117a2450740f286407a4b3bb6c02357d9ebd5480683990e8b675b3b71df7fbc6` |
-|  512 | `0xFF × 8`                                      | `127c338fdfe68e2bf7e29a3ddd94e28781dc0d7345025e6187ba7432ae1a57102c56a3763faa77662da4340d7d6568de5f8824af034c853d3fbf191af2f24fe1` |
-|  512 | `0xFF × 64`                                     | `3f297f42161f33649a36b35b11210b7b3d0d272054a18e4665774dcf1b40600e82f8e52d19da1cf3ffc67b1a7febcb143591d606ba6b29cc70d41751ab1e0790` |
-|  512 | `0x00..0xFF` *(256 bytes)*                      | `f53ad8d99ac24d7051661eb63a797828566897b4ff81fe815a4fb8b02dbae6ba7be90935cfa23015b1bc5150a30c9d15f0e1b740560469da684af1bf7f302037` |
-|  512 | `"Markus"`                                      | `1b18d19d83393932d0ec6a496d297dd4d1fa53bb4cee8fe516e1956fb8ca7a9935ef0c957518ead12a17415394b4ac59aec39ae2e4d68210472a3081970465f9` |
-|  512 | `"Anna"`                                        | `bd3b6c745f38b580c83e60137a8b60f756b7ae02714bcfe358a77474830bbae24f4c48b58ae0b4b27b85ea99329333c720d0f9aaad32ecafc57711e995cb185d` |
-|  512 | `'a' × 55`                                      | `97758ff95317ce9f4935fa8989697a4ff4a9d5abadec73d55c697e045384567a746f31d140e665bae527f61c6aef1d7129c624a1f44937e9e134445f53a67fa7` |
-|  512 | `'a' × 56`                                      | `f36944042cae8140a6094b117a7e7fda09e389e8518530fdf23aa9f26d8731ad185d153afd2e436b520346e61c81cf4776f4c04650b0a7f0aa070c707b4df095` |
-|  512 | `'a' × 64`                                      | `28d0470e8ba7b6eecdcb1656d4ec5a28c3999963916ee7395959a3bbdf0cf9a5d904948c42370f319387cfc6fd8908309a2db113ec9cec7bfa72be56b40553cc` |
-|  512 | `0x00 × 1024`                                   | `f7a952f2c61b3d3184463a8ecc8a46f8feb6ef1423e7898927f0168b5a6164e88ea68c7920bfd5fb8d99f3d61d3a802af2a3ee21928b24df2d54258e71e49712` |
-|  512 | `0xAA55 × 512` *(1024 bytes)*                   | `67721ea2186928b93d7c2d4c439d83271cb8e926317a39b089e234b59fcea02fb993b638e17c8a8c9a71b50d0baa9d2f1805c5a91cf0fd616d44b0e7f65356ef` |
+|  512 | `""` *(empty)*                                  | `0223add84c1344216d1618cab705af13d80883bd21f81a0542faeeaf8cea84f8aded59a1f7dcefea18dfc49462cf5add83d22f86cdc1c5cfeec49a7938b430c1` |
+|  512 | `"a"`                                           | `55d3c40bef7b48854a3645bf74344fd23e98c772f8ed571f32fb49267da65e6c275dcada025f65b91bc04c8d87186d061022ce410bd1745304854ff4908a7ba0` |
+|  512 | `"z"`                                           | `9337bc9dff2a3b53d500650fa34d47fa16c90d81477054a25891b5f2eb9361499a5a5e648fb66df0dc2306d633d97a971debaf47d7fc873f5fb457b97c1f93e6` |
+|  512 | `"0"`                                           | `d02380dba32fff80466044eaede83133bc9d08fa38a062e532d9cd0983589498a9169118ce10c64a1f53552818c8f7fd95901937638129af0bccdd46ae395b62` |
+|  512 | `"abc"`                                         | `cbbd5e397871b0c4d686decf25866a6be1505f64d29b2412ec19dffa7fafddb9f6e360902cc4976001ace125d9d951080c7661bb86ee0aaf173fe2513402c456` |
+|  512 | `"secasy"`                                      | `2cd0dab047357f778d77c074c5018335ee1ea63942cd86f34ec58bfdc0998ab2af6c71c23e658e7010135786bc31922f70ba3d4b39fd95edd161230fb7c999ab` |
+|  512 | `"1234567890"`                                  | `3d1f134ab491d3157603c86d3da652e3aee87d8fc6bad2b1e7cd32b24fcf527f20b1e7d4d8e3d24e59969cf761f8521c927b5219eb0cd1eacb60073c742151b8` |
+|  512 | `"The quick brown fox jumps over the lazy dog"` | `504403abb1f3641b2f60a4846923b23690704070345e34ee6cedd844ed866b114b8d770736b49b5eca9a0feef7e6e8188959aac1b1110be6e9e8478c7a461e52` |
+|  512 | `"The quick brown fox jumps over the lazy cog"` | `bdb65ed6fbffe32d00d92b1206de53e5a093f7d00be7028fc7dbac52d720535f0a4791cc0c92a38fdebf5e2e8392f42e6e542a6bc32321fb3940772f43f39289` |
+|  512 | `0x00` *(1 byte)*                               | `96ee9ae4b56de493aac84bb77b5b7303bea1fc8a41490173d27bad5d07368fe3e6555e2fcd241e53fa2f0f029311acc30e08bfd558ff3b3421e270a81eecc9a4` |
+|  512 | `0x01` *(1 byte)*                               | `a16c91469e8355001cc4bda936bfec59981cea0bcefc83b11375166e67391b0a8ecd42d0ff75b2620a256f3397b249bb857d9b962feee11300d5c7f8c82b786c` |
+|  512 | `0xFF` *(1 byte)*                               | `6d320a4d99b92beb21fdac87b3dc9f2bd6c94ec1ce00126a8b94f0fbe82385aa406093360246f8eaf52c35701c6a6c29a9f7d7aa368ddf695ec379e450b152a9` |
+|  512 | `0x80` *(1 byte)*                               | `0f7c54d8114fcbf3f758447ae97e62d4df34341dc1acf9b6c71023c099db9098aeec1363720a277a96c803064a38be5c7ea3f2a92267553e667fe24bfa95ec20` |
+|  512 | `0x00 × 8`                                      | `d1de76cc9419fe2bdef0bdec2ade68abec03050bc1a2d32bf9154c2b58673dab0627934aef2ba82c1339da6a85f012ac204c218a1cb47d2c2d5e68a9b378e7ac` |
+|  512 | `0x00 × 16`                                     | `8ac44b90e0011334dcf74f98dfdfa0d99775547e4c663bbd9a4fb1f37b239770112b8ee051203b0534bd68012930d53ba6e6f7a2131218e75ba2b188f19ed3ca` |
+|  512 | `0x00 × 32`                                     | `e8b2cc38a22642f5e390a431029140d0de6e7c2962fc3eabd94c5421c3673c86d42a2c1a23d23a61cf080412843d383cc9e5dc0ae4a83617c4c3b403451333f2` |
+|  512 | `0x00 × 64`                                     | `cd3486996fec845b4aef64cb3395dc572af1e9e610371051829e9d979232a360c3cba4aa122e3330f46abc1fed04e20270cebabee6655b5522a37747f276001a` |
+|  512 | `0xFF × 8`                                      | `146e1c6bbcd1b9c835eaa0c9d9d9415e810d58fb89d9a35b4a806e2cf6f44d97dfba3d31745cb68eeb26cb2eefd02c845cb2e63da4f6271214b6e27130432636` |
+|  512 | `0xFF × 64`                                     | `2f53ca6e1f74e1c27ec3f950d93e9d4cce342833930858d61da457164cd214616d1485f9069bcfebbc84b4dbc0658b750bf4e3be7a2f47005b6512a133f9028a` |
+|  512 | `0x00..0xFF` *(256 bytes)*                      | `c6ebd8334d829a96ee96fb381734edcafa78e113b04124d71f7d7b48d5fa82fd1826059af09148fd278437ebea56b03cf9f7782f5cd22e59d0f25bad29146aa2` |
+|  512 | `"Markus"`                                      | `c38c743806b043e367b72411f32586ca0be1d3ebdf9ac9b1b00c83c5cc100c975437339fb8854f7ef861e379a4fa92649c8c9353916fd54b40b7432d7de51832` |
+|  512 | `"Anna"`                                        | `5fc38f965be81ec446d2af539f98253e2de1cf10e3482bb814f0eece26f83232fc000e8b6aa838abe30f2e48ae583f25ca1e4e05f208459fb12d6dc335b84c19` |
+|  512 | `'a' × 55`                                      | `d27e67570be770c1ca71606abb90475ac264597e6b391df3ba5752921ae1f48cb24a4ba5ca8acb25aa3d44b97a33a1bea2303dcd29dc78579a2336e0d9854ef0` |
+|  512 | `'a' × 56`                                      | `8ecec0f084075f029dd7bc946ebaba4413661235de722c6f9e1f06dad329a8f8b2bff27c41e114225d78dc21c19a778cbef248c31159e2bde1c31d67051165ff` |
+|  512 | `'a' × 64`                                      | `294cd2b86b80db61a44c5b57a4284c575287a031f5faf836c06f08f940807c4e5c4315ad6fff94b379bafe7cc00de2c788f287c30b5c0d175619506e423aedbc` |
+|  512 | `0x00 × 1024`                                   | `54a5812945342cdc72956ec6681f959189d8bb9133bbfcda5896e35536d40b2118e1f79049d4b37770e83934f90901bd602d1c69af4874dd1fdfbd40d8cc7d86` |
+|  512 | `0xAA55 × 512` *(1024 bytes)*                   | `9b5d656c8f73fee79e1a49ad1767cc491c62b8ba3e9d51bf25b5b3194574d679a6da747eb42b205f9abf703f636f6ac6b17a30af7c953172b4c7b2b08b8bbcab` |
 
 ---
 
@@ -68,12 +68,12 @@ All 27 vectors must match exactly — any deviation indicates an implementation 
 
 | Bits | Input                                           | Hash (Secasy)      |
 |-----:|-------------------------------------------------|--------------------|
-|   64 | `""` *(empty)*                                  | `b7f8505682b46bb6` |
-|   64 | `"a"`                                           | `291abc5b712cc388` |
-|   64 | `"abc"`                                         | `d1197317b6f4c6ad` |
-|   64 | `"secasy"`                                      | `44cf221ec8fde8d0` |
-|   64 | `"The quick brown fox jumps over the lazy dog"` | `73aed62572b95b33` |
-|   64 | `"The quick brown fox jumps over the lazy cog"` | `b49d9d9ac37b75b6` |
-|   64 | `"Markus"`                                      | `1b18d19d83393932` |
+|   64 | `""` *(empty)*                                  | `0223add84c134421` |
+|   64 | `"a"`                                           | `55d3c40bef7b4885` |
+|   64 | `"abc"`                                         | `cbbd5e397871b0c4` |
+|   64 | `"secasy"`                                      | `2cd0dab047357f77` |
+|   64 | `"The quick brown fox jumps over the lazy dog"` | `504403abb1f3641b` |
+|   64 | `"The quick brown fox jumps over the lazy cog"` | `bdb65ed6fbffe32d` |
+|   64 | `"Markus"`                                      | `c38c743806b043e3` |
 |   64 | `"Anna"`                                        | `bd3b6c745f38b580` |
 
