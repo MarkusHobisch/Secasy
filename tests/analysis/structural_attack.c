@@ -68,6 +68,7 @@ extern Tile field[FIELD_SIZE][FIELD_SIZE];
 #define ROTATE_LEFT_AMT   13u
 #define ROTATE_RIGHT_AMT  7u
 #define EXTRACT_ROTATE    7u
+#define ROUND_CONSTANT    0x9E3779B97F4A7C15ULL
 
 /* ------------------------- Grid state snapshot ------------------------- */
 
@@ -198,6 +199,7 @@ static void run_phase3(const GridState_t *st, unsigned long rounds,
 
     for (unsigned long r = 0; r < rounds; r++)
     {
+        const uint64_t round_key = ROUND_CONSTANT * (uint64_t)(r + 1u);
         for (uint32_t i = 0; i < FIELD_SIZE; i++)
         {
             for (uint32_t j = 0; j < FIELD_SIZE; j++)
@@ -205,6 +207,7 @@ static void run_phase3(const GridState_t *st, unsigned long rounds,
                 uint32_t ox = (pX + i) & FIELD_SIZE_MASK;
                 uint32_t oy = (pY + j) & FIELD_SIZE_MASK;
                 faithful_process_cell(st->color[ox][oy], i, j, V);
+                V[i][j] += round_key + (uint64_t)(i * FIELD_SIZE + j);
             }
         }
         if (++pX == FIELD_SIZE)
@@ -640,9 +643,9 @@ static void measure_affine_invertibility(size_t L)
     printf("  L=%zu  fully-affine (ADD/SUB-only) layout found and probed.\n", L);
     printf("    GF(2) rank of Phase-3 map (mod 2) = %d / 256\n", rank);
     if (rank == 256)
-        printf("    => det(M) is odd: Phase 3 is a BIJECTION on the 16384-bit state.\n"
-               "       Even the fully-affine instances introduce no internal collisions;\n"
-               "       all compression in the hash is confined to the Phase-4 extractor.\n");
+        printf("    => det(M) is odd: Phase 3 is a BIJECTION for this fixed schedule.\n"
+               "       It has no internal value collision within that schedule; this says\n"
+               "       nothing about different schedules or message-level collisions.\n");
     else
         printf("    => SINGULAR! kernel dimension = %d. The affine sub-cipher has\n"
                "       guaranteed internal collisions dV with M*dV = 0 (structural break).\n",
@@ -656,11 +659,12 @@ static void measure_affine_invertibility(size_t L)
  * and reading the 8 output blocks.
  *
  * Unfolding the accumulator (rotation after every XOR, and 7*256 = 0 mod 64):
- *     block_b = XOR_k  ROL( V_k * w_{k,b},  r_k ),   w_{k,b} = (k+1) + 256*b.
+ *     block_b = XOR_k ROL(V_k * w_{k,b}, r_k),
+ *     w_{k,b} = 2 * ((k+1) + 256*b) + 1.
  * Flipping bit i of V_k changes the product by +-2^i * w_{k,b} mod 2^64; if
  * that is zero the product is unchanged. Hence the top v2(w_{k,b}) bits of V_k
- * are DEAD. Because v2(w_{k,b}) is constant across the 8 blocks, those bits are
- * dead in the entire 512-bit output. Predicted dead-bit total = sum_k v2(k+1).
+ * would be dead. Production weights are always odd, so this predicts zero dead
+ * input bits for the entire 512-bit output.
  */
 static void set_field_values(const uint64_t V[FIELD_SIZE][FIELD_SIZE])
 {
@@ -750,19 +754,22 @@ static void measure_phase4_deadbits(void)
         extractor_output(V, base);
     }
 
-    printf("  predicted dead input bits (sum_k v2(k+1)) = %u / %d\n",
+    printf("  predicted dead input bits (min_b v2(weight)) = %u / %d\n",
            predicted_total, STATE_BITS);
     printf("  empirical dead input bits (per trial)     = %u / %d   [%d trials, state-independent: %s]\n",
            dead_total, STATE_BITS, trials, (mismatch_position == 0) ? "yes" : "NO");
-    printf("  all dead bits are the predicted high-order bits: %s\n",
+    printf("  predicted and empirical dead-bit sets match: %s\n",
            (mismatch_position == 0) ? "confirmed" : "VIOLATED");
-    printf("  => the Phase-4 extractor ignores %u of %d internal state bits (%.2f%%).\n",
-           predicted_total, STATE_BITS, 100.0 * predicted_total / STATE_BITS);
-    printf("     Its kernel has dimension >= %u: modifying any dead bit yields an\n",
-           predicted_total);
-    printf("     extractor collision (identical 512-bit output).\n");
+    printf("  => the Phase-4 extractor has %u individually dead state bits (%.2f%%).\n",
+           predicted_total, 100.0 * predicted_total / STATE_BITS);
 
-    /* Explicit collision: flip ALL predicted dead bits, expect identical hash. */
+    if (predicted_total == 0)
+    {
+        printf("     No extractor collision follows from a single dead-bit direction.\n");
+        return;
+    }
+
+    /* If a future weight definition introduces dead bits, verify them together. */
     for (uint32_t x = 0; x < FIELD_SIZE; x++)
         for (uint32_t y = 0; y < FIELD_SIZE; y++)
             V[x][y] = rng_u64();
@@ -783,10 +790,10 @@ static void measure_phase4_deadbits(void)
 
     int collide = (memcmp(outA, outB, sizeof outA) == 0);
     int differ  = (memcmp(V, V2, sizeof V) != 0);
-    printf("  explicit collision (flip all %u dead bits): states %s, hashes %s\n",
+    printf("  dead-bit check (flip all %u): states %s, hashes %s\n",
            predicted_total,
            differ ? "DIFFER" : "identical",
-           collide ? "COLLIDE (identical)" : "differ");
+           collide ? "identical" : "differ");
 
     /* restore a clean production field */
     extractor_output(V, outA);

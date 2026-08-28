@@ -1,7 +1,15 @@
 /*
  * algebraic_attack_n64.c
  *
- * Structural (non-brute-force) attack on the 64-bit Secasy output.
+ * Regression test for a retired structural attack on the 64-bit output.
+ *
+ * CURRENT STATUS
+ * --------------
+ * The derivation below describes the former XOR accumulator. Production now
+ * uses modular addition before each rotation. The mandatory model-vs-production
+ * check therefore fails and the legacy collision/preimage demonstration is
+ * skipped. Keeping the old construction behind that check guards against an
+ * accidental reintroduction of the separable XOR finalizer.
  *
  * THE STRUCTURAL OBSERVATION
  * --------------------------
@@ -235,7 +243,7 @@ int main(int argc, char **argv)
     rng_state = seed ? seed : 0x9E3779B97F4A7C15ULL;
 
     printf("============================================================\n");
-    printf(" Secasy n=64 STRUCTURAL ATTACK ON THE EXTRACTOR (no brute force)\n");
+    printf(" Secasy n=64 REGRESSION CHECK FOR RETIRED XOR ATTACK\n");
     printf("============================================================\n");
     printf("  output bits   : %u\n", OUT_BITS);
     printf("  grid cells    : %u\n", GRID_CELLS);

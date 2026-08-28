@@ -2,6 +2,12 @@
 
 # Secasy — Algorithm Description
 
+> **Security status (2026-08-27): broken.** A practical neutral Phase-2
+> prefix gives collisions and second preimages for the default configuration:
+> `H(M) = H(00^2,131,224 || M)` for the file interface. This document retains
+> earlier empirical results for research context; they must not be read as a
+> security claim.
+
 ## Table of Contents
 
 1. Motivation — Why a New Hash Algorithm?
@@ -260,20 +266,27 @@ reasons:
    Different cell values cause different subsequent jump distances,
    producing exponentially diverging trajectories.
 
-A collision would require that both paths leave identical (`value`,
-`primeIndex`, `colorIndex`) tuples in all 256 cells — despite writing
-different primes at each step and following different jump trajectories.
-Exhaustive testing of all 256 repeated single-byte inputs confirms that
-no such collisions exist. Among 50,000 random messages with single-bit
-flips (12,800,000 trials), no collisions were observed.
+An exact Phase-2 reconvergence would require that both paths leave identical
+collision-relevant states despite writing different primes at each step and
+following different jump trajectories. Equality of all cell `value` and
+`colorIndex` fields plus the final cursor position is sufficient for a digest
+collision, because these are the only Phase-2 outputs consumed downstream.
+Equality of `primeIndex` is additionally required only if the pair is to remain
+equivalent while processing a common suffix. Exhaustive testing of all 256
+repeated single-byte inputs confirms that no such reconvergence exists in that
+set. Among 50,000 random messages with single-bit flips (12,800,000 trials), no
+digest collisions were observed.
 
-### Collision Resistance Through Fingerprint Uniqueness
+### Phase-2 Reconvergence as a Collision Route
 
-Two inputs produce a collision only if they leave identical (`value`,
-`primeIndex`, `colorIndex`) tuples in **all 256 cells** after Phase 2 —
-despite different paths, different visit orders, and prime-driven jump
-distances. The combinatorial complexity of the state space
-($\approx 2^{16{,}384}$) makes this practically impossible.
+Two inputs that leave identical cell values, color indices, and cursor
+positions after Phase 2 necessarily produce the same digest. This is a
+particularly strong and useful collision condition, but it is **not
+necessary**: distinct Phase-2 states can still collide after the compressing
+Phase-4 extractor maps the 16,384-bit value state to a 512-bit digest.
+Consequently, the large Phase-2 state space by itself is not an argument for
+512-bit collision resistance. Both exact Phase-2 reconvergence and collisions
+between distinct reachable states at the Phase-4 output must be analysed.
 
 ### Worked Example: Hashing the Byte `0x4E`
 
@@ -500,11 +513,14 @@ not on formal security proofs.
 
 ### 8.1 Collision Resistance
 
-**Structural argument:** Two different inputs would need to leave identical
-states in all 256 cells after Phase 2. The state space encompasses
-$\approx 2^{16{,}384}$ possible configurations. For a collision, despite
-different prime-driven paths, all 256 cells
-must match exactly — a combinatorially extreme coincidence.
+**Structural observation:** Two different inputs that leave identical cell
+values, color indices, and cursor positions after Phase 2 form an immediate
+collision, because Phase 3 is then applied identically and deterministically.
+This exact reconvergence is sufficient but not necessary. Phase 4 compresses
+the 16,384-bit value state to 512 bits, so distinct reachable Phase-2 states
+may pass through Phase 3 and collide during extraction. Collision resistance
+therefore depends on both Phase-2 reachability and the full Phase-3/Phase-4
+composition; the size of the internal state alone provides no collision bound.
 
 **Empirical confirmation:** Zero collisions in 1,000,000 attempts with
 512-bit output. The birthday bound lies at $2^{256}$ [@menezes1997_hac] — a random test is
@@ -513,14 +529,14 @@ is confirmed.
 
 ### 8.2 Preimage Resistance (One-Way Property)
 
-**Structural argument:** An attacker who knows the 512-bit hash holds only
-3 % of the internal state (512 of 16,384 bits). The remaining 97 % (15,872
-bits) must be recovered. The processing phase mixes cells through
-rotation-based operations (RLX, RRA) whose carry propagation creates
-non-linear bit dependencies, and data-dependent traversal order prevents
-static algebraic modelling. Combined with the lossy multiply–add–rotate
-extraction (Section 7), no algebraic back-computation path from output to
-internal state is known.
+**Structural observation:** A preimage attacker does not need to recover the
+original 16,384-bit internal state; any message whose reachable state maps to
+the target digest is sufficient. For a fixed color schedule and cursor offset,
+Phase 3 is invertible, while Phase 4 has many unrestricted internal preimages
+because it compresses the state. The unresolved barrier is therefore
+*message reachability*: finding a Phase-2 message that produces a compatible
+schedule and one of the internal states satisfying the Phase-4 target. No
+substantially-better-than-generic solution to this composed problem is known.
 
 **Empirical confirmation:** No preimages found in 1,000,000 brute-force attempts.
 
@@ -669,8 +685,8 @@ be cryptographically worthless.
 |-------------------------------------------|---------------|----------------------------------------------------|
 | Does the output look random?              | **Very high** | $N = 10^6$, statistical power $> 99.9\,\%$         |
 | No exact collisions for inputs $L \le 3$? | **High**      | Exhaustive enumeration, $N \approx 1.68 \times 10^7$ |
-| Is the function cryptographically secure? | **Unknown**   | Requires targeted differential / algebraic analysis |
-| Are there obvious design defects?         | **Unknown**   | No defect detected, but Phase 3 linearity is an open structural concern |
+| Is the function cryptographically secure? | **No**        | Collision and second-preimage resistance are broken |
+| Are there obvious design defects?         | **Yes**       | Practical neutral Phase-2 prefix cycle             |
 | Production-ready?                         | **No**        | No peer review, no formal proofs                   |
 | Interesting research contribution?        | **Yes**       | Novel construction principle, extensive empirical evaluation |
 

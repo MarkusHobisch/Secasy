@@ -5,20 +5,20 @@
  *
  * MOTIVATION
  * ----------
- * The white-box structural attack (SecasyStructuralAttack) established that
- * Phase 3 (the mixing rounds) is a GF(2) bijection of rank 256/256, and the
- * extractor (Phase 4, hashValue) is a deterministic function of the final cell
- * values. Consequently EVERY full-hash collision must already be present as a
- * collision in the *collision-relevant Phase-2 state* that Phase 3 consumes.
+ * For a fixed schedule Phase 3 is bijective on the cell values, while the
+ * extractor is a compressing deterministic function of the final values. A
+ * collision in the *collision-relevant Phase-2 state* is therefore sufficient
+ * for a full-hash collision, but it is not necessary: distinct reachable
+ * states may collide during extraction.
  *
  * That state is exactly:
  *     - field[x][y].value      for all 256 cells   (read by Phase 3 and 4)
  *     - field[x][y].colorIndex for all 256 cells   (read by Phase 3)
  *     - the cursor position (pos.x, pos.y)          (Phase-3 traversal offset)
  * The per-tile primeIndex is NOT read after Phase 2, so it is deliberately
- * EXCLUDED from the fingerprint. Ignoring it makes this scan strictly more
- * sensitive than any output-level scan: two inputs that agree on
- * (value, colorIndex, cursor) but differ in primeIndex still collide.
+ * EXCLUDED from the collision fingerprint. The machine-readable oracle mode
+ * still emits it so external models can validate the complete continuation
+ * state as well as the downstream collision-relevant state.
  *
  * WHY COLLISIONS ARE PLAUSIBLE HERE
  * ---------------------------------
@@ -33,9 +33,10 @@
  * ---------------
  * Phase 3 and Phase 4 are deterministic, so a single confirmed Phase-2 state
  * collision (X != Y with identical state) immediately yields a *full hash
- * collision* hash(X) == hash(Y) -- and, by appending any common suffix S,
- * an infinite family hash(X.S) == hash(Y.S). Experiment 3 demonstrates this
- * amplification with real hash outputs.
+ * collision* hash(X) == hash(Y). Appending a common suffix S preserves the
+ * collision only when the complete continuation state, including every
+ * primeIndex, is also equal. Experiment 3 probes this stronger property with
+ * real hash outputs; a mismatch means only the terminal collision was shown.
  *
  * EXPERIMENTS
  * -----------
@@ -54,8 +55,8 @@
  *   confirmed collisions == 0  ->  Phase 2 is injective on the scanned inputs;
  *                                  strong empirical evidence that the lossy walk
  *                                  does not create short-input collisions.
- *   confirmed collisions  > 0  ->  a concrete structural collision (and an
- *                                  infinite family) has been found.
+ *   confirmed collisions  > 0  ->  a concrete terminal structural collision
+ *                                  has been found; E3 tests amplification.
  *
  * This is an internal analysis tool, not a formal proof.
  */
@@ -63,6 +64,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <time.h>
 #include "Defines.h"
 #include "InitializationPhase.h"
@@ -74,6 +76,103 @@ int hashLengthInBits = DEFAULT_BIT_SIZE;
 
 extern Tile field[FIELD_SIZE][FIELD_SIZE];
 extern Position pos;
+
+static int hex_nibble(const char c)
+{
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F')
+        return c - 'A' + 10;
+    return -1;
+}
+
+static int hash_values_hex(const char *hex)
+{
+    const size_t expected_len = (size_t)FIELD_SIZE * FIELD_SIZE * 16U;
+    if (strlen(hex) != expected_len)
+    {
+        fprintf(stderr, "state hex must contain exactly %zu hexadecimal digits\n",
+                expected_len);
+        return 2;
+    }
+
+    initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
+    for (size_t cell = 0; cell < (size_t)FIELD_SIZE * FIELD_SIZE; cell++)
+    {
+        uint64_t value = 0;
+        for (size_t digit = 0; digit < 16U; digit++)
+        {
+            const int nibble = hex_nibble(hex[cell * 16U + digit]);
+            if (nibble < 0)
+            {
+                fprintf(stderr, "invalid state hex\n");
+                return 2;
+            }
+            value = (value << 4U) | (uint64_t)nibble;
+        }
+        field[cell / FIELD_SIZE][cell % FIELD_SIZE].value = value;
+    }
+
+    printf("hash ");
+    for (unsigned long block = 0; block < 8UL; block++)
+        printf("%016" PRIx64, hashValue(block));
+    putchar('\n');
+    return 0;
+}
+
+static int dump_hex_state(const char *hex, const int include_phase3)
+{
+    const int empty = strcmp(hex, "-") == 0;
+    const size_t hex_len = empty ? 0U : strlen(hex);
+    if ((hex_len & 1U) != 0U)
+    {
+        fprintf(stderr, "hex input must contain complete bytes\n");
+        return 2;
+    }
+
+    const size_t data_len = hex_len / 2U;
+    unsigned char *data = data_len == 0U ? NULL : malloc(data_len);
+    if (data_len != 0U && data == NULL)
+    {
+        fprintf(stderr, "out of memory\n");
+        return 2;
+    }
+
+    for (size_t i = 0; i < data_len; i++)
+    {
+        const int hi = hex_nibble(hex[2U * i]);
+        const int lo = hex_nibble(hex[2U * i + 1U]);
+        if (hi < 0 || lo < 0)
+        {
+            fprintf(stderr, "invalid hex input\n");
+            free(data);
+            return 2;
+        }
+        data[i] = (unsigned char)((hi << 4) | lo);
+    }
+
+    initFieldWithDefaultNumbers(DEFAULT_MAX_PRIME_INDEX);
+    processBuffer(data, data_len);
+    char *hash = include_phase3 ? calculateHashValue() : NULL;
+    if (hash != NULL)
+        printf("hash %s\n", hash);
+    printf("cursor %u %u\n", pos.x, pos.y);
+    for (uint32_t x = 0; x < FIELD_SIZE; x++)
+    {
+        for (uint32_t y = 0; y < FIELD_SIZE; y++)
+        {
+            const Tile *tile = &field[x][y];
+            printf("cell %u %u %llu %u %u\n", x, y,
+                   (unsigned long long)tile->value, tile->primeIndex,
+                   (unsigned)tile->colorIndex);
+        }
+    }
+    free(hash);
+    free(data);
+    return 0;
+}
 
 /* ── Collision-relevant Phase-2 state snapshot ─────────────────────────
  * Layout (host endianness; only ever compared on the same machine):
@@ -326,11 +425,18 @@ static void demonstrate_amplification(const CollisionRecord *rec)
     }
     printf("  => %s\n", all_match
                             ? "every X.S / Y.S pair collides (infinite family confirmed)"
-                            : "amplification broke (would contradict determinism)");
+                            : "common-suffix amplification not established");
 }
 
 int main(int argc, char **argv)
 {
+    if (argc == 3 && strcmp(argv[1], "--dump-hex") == 0)
+        return dump_hex_state(argv[2], 0);
+    if (argc == 3 && strcmp(argv[1], "--dump-final-hex") == 0)
+        return dump_hex_state(argv[2], 1);
+    if (argc == 3 && strcmp(argv[1], "--hash-values-hex") == 0)
+        return hash_values_hex(argv[2]);
+
     int with_3byte = 0;
     for (int i = 1; i < argc; i++)
         if (strcmp(argv[i], "--with-3byte") == 0)

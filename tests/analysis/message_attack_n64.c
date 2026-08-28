@@ -1,7 +1,12 @@
 /*
  * message_attack_n64.c
  *
- * Can the Phase-4 extractor break be reached from Phase 1 (messages only)?
+ * Message-level diffusion diagnostic for the 64-bit configuration.
+ *
+ * The XOR-extractor break discussed below is historical: production now uses
+ * modular addition and is not separable into independent XOR terms. These
+ * measurements remain useful as diffusion observations, but they neither test
+ * the current carry-aware MAR attack nor prove a birthday lower bound.
  *
  * The extractor weakness (see algebraic_attack_n64.c) is:
  *      digest = g_0(v_0) XOR g_1(v_1) XOR ... XOR g_255(v_255)
@@ -179,16 +184,16 @@ int main(int argc, char **argv)
     rng_state = seed ? seed : 1;
 
     printf("============================================================\n");
-    printf(" Secasy n=64 : is the extractor break reachable FROM PHASE 1?\n");
+    printf(" Secasy n=64 : MESSAGE-LEVEL DIFFUSION DIAGNOSTIC\n");
     printf("============================================================\n");
     printf("  output bits   : 64\n");
     printf("  grid cells    : %u\n", GRID_CELLS);
     printf("  message length: %zu bytes\n", msgLen);
     printf("  trials        : %u\n", trials);
     printf("  RNG seed      : 0x%" PRIx64 "\n", seed);
-    printf("\n  Extractor 2-cell collision needs two post-Phase-3 states that\n");
-    printf("  differ in only 2 cells. We measure how many cells actually change\n");
-    printf("  when the MESSAGE changes.\n");
+    printf("\n  The old XOR extractor had a two-cell cancellation. Production now\n");
+    printf("  uses carry-coupled modular addition; this run only measures how\n");
+    printf("  broadly message changes spread through the current pipeline.\n");
 
     unsigned char *base = (unsigned char *)malloc(msgLen);
     for (size_t i = 0; i < msgLen; i++)
@@ -203,7 +208,7 @@ int main(int argc, char **argv)
             globalMin = m;
     }
     printf("    => best case over all trials: a message change altered at least\n");
-    printf("       %u of 256 post-Phase-3 cells. The extractor exploit needs 2.\n",
+    printf("       %u of 256 post-Phase-3 cells (the retired XOR attack used 2).\n",
            globalMin);
 
     printf("\n[C] Round gradient (min cells changed, single-bit flips):\n");
@@ -230,20 +235,17 @@ int main(int argc, char **argv)
         free(m);
         printf("    rounds=%2lu : min cells changed = %3u / 256   %s\n",
                numberOfRounds, minCells,
-               minCells <= 2 ? "<-- extractor 2-cell collision POSSIBLE here"
-                             : "(shielded: cannot set up 2-cell cancellation)");
+               minCells <= 2 ? "<-- unusually sparse observed difference"
+                             : "(more than two changed cells observed)");
     }
     numberOfRounds = savedRounds;
 
-    printf("\n[VERDICT]\n");
-    printf("  At full rounds, a single message change diffuses to essentially\n");
-    printf("  ALL 256 post-Phase-3 cells. The extractor's 2-cell cancellation\n");
-    printf("  (and any low-weight kernel exploit) therefore cannot be assembled\n");
-    printf("  from Phase 1: every reachable colliding pair differs in ~all cells,\n");
-    printf("  so finding one is back to the generic 2^32 birthday search.\n");
-    printf("  CONCLUSION: the extractor break is a COMPRESSION-FUNCTION result;\n");
-    printf("  Phase 2 (lossy prime walk) + Phase 3 (full diffusion) shield it at\n");
-    printf("  the message level for the default round count.\n");
+    printf("\n[OBSERVATION]\n");
+    printf("  In this bounded sample, message changes usually affected most or\n");
+    printf("  all post-Phase-3 cells and about half of the 64 output bits.\n");
+    printf("  This is evidence of broad diffusion only. It is not a collision-\n");
+    printf("  resistance proof and does not establish a 2^32 attack cost. The\n");
+    printf("  current MAR extractor must be analyzed with carries included.\n");
 
     free(base);
     return 0;

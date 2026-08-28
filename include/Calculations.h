@@ -3,6 +3,6 @@
 
 #include <stdint.h>
 
-uint64_t hashValue(unsigned long blockIndex);
+uint64_t hashValue(uint64_t blockIndex);
 
 #endif

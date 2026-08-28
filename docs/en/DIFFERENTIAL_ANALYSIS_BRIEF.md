@@ -181,8 +181,31 @@ proof of differential resistance.
   message flip reaches min 219 / mean 256 of the 256 post-Phase-3 cells at
   $r = 10$ (round gradient: 25 → 51 → 72 → 108 → 152 → 219 over rounds
   1, 2, 3, 4, 6, 10). Minimum avalanche over 1.15M flips is 38.9 %, matching
-  the expected order statistic for 256-bit outputs — no anomalously low-weight
+  the expected order statistic for 512-bit outputs — no anomalously low-weight
   differential was found *by random search*.
+- **Adversarial equal-schedule trail (2026-07-14).** An exact bit-vector model
+  found three-byte message pairs with the same complete color map and final
+  cursor but only two different Phase-2 values. Exhaustively scanning all
+  $2^{23}$ unique pairs for the fixed input difference `8002a0` found 192 equal
+  schedules and 18 trails with only five active cells after all ten rounds.
+  The best C-verified pair, `42f360` / `c2f1c0`, has only 13 differing internal
+  bits after round 10. Its 512-bit outputs still differ in 223 bits because the
+  MAR extractor provides strong output diffusion. This is not a collision, but
+  it demonstrates concretely that random avalanche tests can miss sparse
+  message-reachable Phase-3 trails and makes the five-cell extractor image a
+  priority target.
+- **No individually dead extractor bits (2026-07-14).** The MAR weights are all
+  odd. A production-oracle census over all 16,384 state bits and three random
+  base states confirmed that flipping every individual bit changes at least one
+  output block. Consequently, the earlier dead-bit construction yields no
+  extractor collision; multi-cell cancellation remains the relevant target.
+- **Prime-constrained MAR composition (2026-07-14).** On a closed affine
+  ten-cell Phase-3 tail, an exact model selected values from the production
+  prime table while enforcing the local Phase-2 visit/color/index relation. A
+  C-verified pair matches 24 pre-rotation bits of the first MAR block. Exact
+  Phase-2 reachability proves its left state unreachable at both feasible
+  message lengths; the right state remains unresolved. This is a reduced-output
+  intermediate, not a full collision.
 - **Extractor break and fix (A1/A3).** The *original* XOR-accumulator finalizer
   was shown to factor into a XOR of 256 independent per-cell bijections,
   yielding an $O(1)$ collision in the **compression domain** (direct grid

@@ -4,6 +4,13 @@
 
 ## Abstract
 
+> **Security status (2026-08-27): broken.** The default configuration has a
+> practical Phase-2 cycle. Prepending 2,131,224 bytes of `00` leaves the
+> file-hashing state unchanged, so `H(M) = H(00^2131224 || M)` for every file
+> input `M`. The construction therefore does not provide collision or
+> second-preimage resistance and must not be used for security. See
+> Section 4.10 and `scripts/python/secasy_second_preimage.py`.
+
 Secasy is an experimental cryptographic hash function based on a two-dimensional 16×16 field (256 cells, 16,384 bits
 of internal state) as its core data structure. In contrast to Merkle–Damgård constructions [1], [2], the algorithm
 combines an input-driven traversal phase with a per-cell mixing phase, with the intention of distributing input
@@ -24,9 +31,11 @@ thus rests primarily on the input-integration phase (Section 2.2) and on the fin
 not on iteration count. This is explicitly **different in character** from designs such as AES [3] or Keccak [4],
 where the round count is a primary security parameter.
 
-This construction has not received peer review, and the standard professional cryptanalytic techniques (differential,
-algebraic, meet-in-the-middle, rebound, cube, SAT-based) have not yet been applied. The contribution of this report is
-therefore methodological and empirical, not a claim of cryptographic security.
+This construction has not received peer review. Targeted differential,
+algebraic and SAT-based analysis was subsequently added to the original
+statistical evaluation and exposed the practical Phase-2 cycle above. The
+contribution of this report is therefore methodological and empirical, not a
+claim of cryptographic security.
 
 **Keywords:** Cryptographic hash function, grid-based state, spatial diffusion, avalanche effect, empirical
 evaluation, brute-force collision enumeration.
@@ -80,8 +89,9 @@ state.
 
 ### 2.2 Phase 2 — Input Integration (fingerprint formation)
 
-This phase consumes the input byte-by-byte and writes a unique state pattern into the grid. It is the **primary source
-of collision resistance**.
+This phase consumes the input byte-by-byte and writes a message-dependent state pattern into the grid. Exact
+reconvergence of two different messages at this boundary is one important collision route, but Phase 2 has not been
+proved injective and is not the only source of collision resistance.
 
 Each input byte (8 bits) is decomposed into four 2-bit direction codes (bits 0–1, 2–3, 4–5, 6–7), each encoding one of
 four directions: UP (0), RIGHT (1), LEFT (2), DOWN (3). For each direction code, two operations are performed at the
@@ -109,13 +119,14 @@ Two complementary mechanisms prevent collisions between inputs that produce the 
   jump distances from that cell change, causing paths to diverge exponentially. This provides **delayed but amplifying**
   divergence upon cell revisits.
 
-Together with the prime-number-driven jump distances, these mechanisms ensure that different byte sequences follow
-different paths through the grid, write different values into visited cells, and leave a unique state pattern
-(fingerprint) before any processing round executes.
+Together with the prime-number-driven jump distances, these mechanisms cause typical byte differences to follow
+different paths through the grid and write different values into visited cells. Empirical tests show rapid divergence,
+but do not establish that the resulting Phase-2 mapping is injective.
 
-For two inputs to produce a collision, they would need to leave identical value, prime index, and color index tuples
-across all 256 cells — despite different prime-driven paths and direction-dependent cell values. This is the structural
-basis for collision resistance.
+Two inputs that leave identical cell values, color indices, and final cursor positions after Phase 2 necessarily collide
+in the final digest. This condition is sufficient, not necessary: distinct reachable states may also collide when the
+16,384-bit value state is compressed to 512 bits in Phase 4. Collision resistance must therefore be analysed across the
+full Phase-2/Phase-3/Phase-4 composition.
 
 #### Worked Example: Hashing the Byte `0x4E`
 
@@ -871,7 +882,7 @@ for a co-author with symmetric-cryptanalysis expertise.
 |-------------------------|-------------|--------------------------------------------------------|
 | Avalanche Effect        | ✅ Ideal     | 50.0007% (N=1M, p=0.756 vs 50%)                        |
 | Bit Distribution        | ✅ Excellent | Max bias 0.149% (0/512 bits >1%)                       |
-| Collision Resistance    | ✅ Empirical | 0 collisions in 1M samples (limited by birthday bound) |
+| Collision Resistance    | ❌ Broken    | Deterministic Phase-2 cycle gives full 512-bit collisions |
 | Sequential Independence | ✅ Ideal     | 49.999% (p=0.927 vs 50%)                               |
 | NIST Randomness         | ✅ Pass      | 10/10 tests (50k hashes, 6.4M bits)                    |
 | Differential Resistance | ✅ Pass      | 5/5 tests (10k samples)                                |
@@ -886,7 +897,7 @@ for a co-author with symmetric-cryptanalysis expertise.
 | Phase-4 Dead State Bits | ✅ Fixed     | Original design ignored 255/16384 internal state bits; odd-weight extractor now leaves 0 dead bits, full width preserved (Section 4.8.6) |
 | Algebraic Degree Growth | ⚠️ Mixed     | Reduced model: max degree exponential, but laggard min degree, persistent low-deg cubes, surviving linear bias (Section 4.8.7) |
 | Round Invariance        | ✅ Confirmed | No degradation from 100 to 1 round                     |
-| Practical Exploits      | ✅ None      | 4/4 exploit attempts failed                            |
+| Practical Exploits      | ❌ Confirmed | Neutral-prefix second preimage, verified against production C |
 | Formal Proofs           | ❌ None      | Not formally analyzed                                  |
 | Peer Review             | ❌ None      | Awaiting review                                        |
 
@@ -896,9 +907,11 @@ The following assessment provides an honest evaluation of what the empirical res
 
 #### What the results strongly support
 
-**No trivial construction flaws.** Over 2.5 million hashes across 30+ independent tests produced zero anomalies: no
-predictable bits, no repeatable patterns, no input class that produces weak outputs. While this sounds obvious, many
-ad-hoc hash function designs fail this bar.
+**Statistical tests did not expose the structural flaw.** Over 2.5 million
+hashes across 30+ independent tests produced no output anomaly. The later
+deterministic cycle attack nevertheless breaks collision and second-preimage
+resistance. This is a concrete example of why good avalanche and randomness
+statistics are not security evidence on their own.
 
 **Statistical indistinguishability from ideal randomness.** At N=1,000,000, the `SecasyStatRigor` test has the
 statistical power to detect a deviation of 0.004% from the ideal 50% avalanche rate. The measured deviation is 0.0007% —
@@ -920,6 +933,15 @@ ideal birthday expectation $32{,}768$, a deviation of $-0.72\,\sigma$. Within th
 enumeration, the construction is empirically indistinguishable from an ideal random function on this metric.
 
 #### What the results do not prove
+
+**Collision and second-preimage resistance are broken.** An all-zero byte
+encodes four `UP` moves and confines Phase 2 to one 16-cell column. The complete
+cursor, prime-index and colour state returns to its initial value after
+2,131,224 bytes. Consequently, prepending that byte sequence to any file
+preserves the complete continuation state and final digest. The production C
+implementation also verifies the equal-length collision
+`00^2131224` / `aa^2131224`. These attacks require only a few megabytes of
+chosen input and linear-time hashing; they are not birthday searches.
 
 **Algebraic structure remains a known weakness.** As discussed in Section 2.3, the round function is $\mathrm{GF}(2)$-
 linear except for the carry propagation in modular addition, and contains no S-box. The extraction function
@@ -956,23 +978,23 @@ this test. True collision resistance requires algebraic analysis or infeasibly l
 | Meet-in-the-middle | Splitting the computation into two halves      | Not tested |
 | Rebound attacks    | Weaknesses in the diffusion layer              | Not tested |
 | Cube attacks       | Low-degree approximations of the output        | Partial — reduced model only (Section 4.8.7) |
-| SAT-solver attacks | Constraint-based preimage search               | Not tested |
+| SAT-solver attacks | Constraint-based preimage search               | Implemented for bounded Phase-2 and composed Phase-3/4 models |
 
 #### Honest assessment
 
 | Question                                  | Confidence                         | Basis                                              |
 |-------------------------------------------|------------------------------------|----------------------------------------------------|
 | Does the output look random?              | **Very high** (N=1M, power >99.9%) | Exceeds most published hash evaluations            |
-| Is the function cryptographically secure? | **Unknown**                        | Requires formal analysis + peer review             |
-| Are there design-level flaws?             | **Probably not**                   | 30+ tests, 2.5M+ hashes, 0 anomalies               |
+| Is the function cryptographically secure? | **No**                             | Collision and second-preimage resistance are broken |
+| Are there design-level flaws?             | **Yes**                            | Practical neutral-prefix cycle                     |
 | Is it production-ready?                   | **No**                             | No peer review, no formal proofs                   |
 | Is this a credible research contribution? | **Yes**                            | Empirical evaluation exceeds many published papers |
 
-In summary: within the bounds of what black-box empirical evaluation can establish, the present construction behaves
-in the way an ideal random function would, on the statistical metrics tested. This is a *necessary but not sufficient*
-condition for cryptographic security in the formal sense. The natural next steps are (i) targeted differential
-analysis of the Phase-2 input integration, (ii) algebraic analysis of the Phase-3 round function and the Phase-4
-extractor under the linearisation discussed in Sections 2.3 and 2.4, and (iii) independent peer review.
+In summary: the construction looks random under the reported black-box metrics
+but is cryptographically broken by a deterministic Phase-2 cycle. Any successor
+must bind message length and position into the absorbed state, eliminate neutral
+prefix cycles, regenerate all test vectors, and repeat the structural analysis
+before statistical measurements are interpreted.
 
 ## 5. Test Suites
 

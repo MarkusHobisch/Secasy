@@ -202,14 +202,14 @@ enumeration was carried out directly on the internal state after the input-absor
 (`tests/analysis/phase2_collision_scan.c`).
 
 **Motivation.** The construction comprises four phases: (1) state initialisation, (2) a lossy input-driven cursor walk,
-(3) a round-based mixing permutation, and (4) digest extraction. Phase 3 was independently shown to be a bijection on
-the cell-value state (rank $256/256$ over the visited-cell transformation; see Section on structural analysis), and
-Phase 4 reads only the cell values. Consequently, any collision in the full digest must already be present as a
-collision in the *collision-relevant Phase-2 state*. Phase 2 is the natural suspect because the previous cell value
-enters the cursor update only through a reduction modulo 16 — discarding the upper 60 bits of a 64-bit word — before
-being overwritten by the next prime. This information loss admits, in principle, *neutral blocks* (an input whose
-Phase-2 state equals the canonical initial state, hence colliding with the empty input) or *path cycles* (two distinct
-inputs converging to the same internal state).
+(3) a round-based mixing permutation, and (4) digest extraction. Phase 3 is a bijection on the cell-value state for a
+fixed schedule, while Phase 4 compresses that state to the digest. A collision in the collision-relevant Phase-2 state
+is therefore sufficient for a full digest collision, but it is not necessary: distinct reachable states can also
+collide during extraction. Phase 2 remains a natural first target because the previous cell value enters the cursor
+update only through a reduction modulo 16 — discarding the upper 60 bits of a 64-bit word — before being overwritten by
+the next prime. This information loss admits, in principle, *neutral blocks* (an input whose Phase-2 state equals the
+canonical initial state, hence colliding with the empty input) or *path cycles* (two distinct inputs converging to the
+same internal state). The enumeration below tests this sufficient collision route, not all possible digest collisions.
 
 **Method.** For each input, the collision-relevant Phase-2 state was fingerprinted as the concatenation of all 256 cell
 values ($256 \times 8$ bytes), all 256 colour indices ($256 \times 1$ byte) and the cursor coordinates ($2 \times 4$
@@ -240,6 +240,35 @@ trivial neutral-block or path-collision attack exists in this range. It is **not
 enumerable domain ($L \le 3$) is negligible against the full message space, and the test does not rule out internal
 collisions for longer inputs, which would require differential or meet-in-the-middle techniques
 [@biham1991_differential; @aoki2009_mitm].
+
+## 9c. Practical Phase-2 Cycle and Second-Preimage Break
+
+The short-input result above does not extend to long structured messages. On
+2026-08-27, an exact cycle search found that 2,131,224 repetitions of byte
+`00` return the complete pre-finalisation Phase-2 state to its canonical
+initial value under the default configuration. A zero byte encodes four `UP`
+directions, confines the cursor to one 16-cell column, and increments the local
+prime and colour counters uniformly. Tracking each counter modulo
+`lcm(88,801, 6) = 532,806` is sufficient to represent the full continuation
+state; Brent cycle detection finds the zero-preperiod byte cycle of length
+2,131,224.
+
+This gives the neutral-prefix identity
+
+`H(M) = H(00^2,131,224 || M)`
+
+for the file-hashing interface and arbitrary suffix `M`. It is a practical
+second-preimage attack requiring only a roughly 2 MiB prefix. The production C
+implementation verified both this construction and the equal-length collision
+`00^2,131,224` / `aa^2,131,224` at ten rounds and 512 output bits. Because the
+complete continuation state repeats before the suffix, additional mixing rounds
+or changes to Phase 4 cannot repair the flaw.
+
+The reproducer is `scripts/python/up_rotor_cycle_search.py`; the user-facing
+second-preimage generator is `scripts/python/secasy_second_preimage.py`. The
+current construction must not be used as a cryptographic hash. A successor must
+at minimum bind length and position into Phase 2 and demonstrate that structured
+uniform-direction cycles cannot form neutral prefixes.
 
 ## 10. Formal Security (Open Questions)
 

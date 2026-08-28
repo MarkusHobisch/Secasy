@@ -45,8 +45,8 @@ char *calculateHashValue()
         blocksNeeded = 1;
 
     /* Ensure we have enough rounds to collect all blocks */
-    unsigned long minRounds = (unsigned long)blocksNeeded;
-    unsigned long actualRounds = numberOfRounds < minRounds ? minRounds : numberOfRounds;
+    uint64_t minRounds = (uint64_t)blocksNeeded;
+    uint64_t actualRounds = numberOfRounds < minRounds ? minRounds : numberOfRounds;
 
     char *hashBuffer = (char *)malloc(blocksNeeded * HASH_HEX_CHARS_PER_BLOCK + 1);
     if (!hashBuffer)
@@ -58,7 +58,7 @@ char *calculateHashValue()
 
     /* Phase 3: Run all mixing rounds (pure diffusion, no extraction) */
 
-    for (unsigned long roundCounter = 0; roundCounter < actualRounds; roundCounter++)
+    for (uint64_t roundCounter = 0; roundCounter < actualRounds; roundCounter++)
     {
         /* Per-round key: distinct for every round, so no two rounds share the
          * same mapping (defeats slide/self-similarity attacks). */
@@ -88,7 +88,7 @@ char *calculateHashValue()
     /* Phase 4: Extract all blocks from the final grid state */
     for (size_t b = 0; b < blocksNeeded; b++)
     {
-        uint64_t hash = hashValue((unsigned long)b);
+        uint64_t hash = hashValue((uint64_t)b);
         snprintf(hashBuffer + writePos, HASH_HEX_CHARS_PER_BLOCK + 1, "%016" PRIx64, hash);
         writePos += HASH_HEX_CHARS_PER_BLOCK;
     }

@@ -30,6 +30,8 @@
 
 // Hash extraction constants
 #define HASH_HEX_CHARS_PER_BLOCK 16 // hex chars per 64-bit block
+#define HASH_POSITION_WEIGHT_SCALE 2U
+#define HASH_EXTRACTION_ROTATION_BITS 7U
 
 typedef struct
 {

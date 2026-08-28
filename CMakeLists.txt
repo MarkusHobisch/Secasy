@@ -108,9 +108,9 @@ add_secasy_test(SecasyDifferentialReplay      tests/analysis/differential_replay
 add_secasy_test(SecasyStructuralAttack        tests/analysis/structural_attack.c)
 # ── Algebraic analysis (degree growth / cube / linear, reduced model) ─
 add_secasy_test(SecasyAlgebraicAnalysis       tests/analysis/algebraic_analysis.c)
-# ── Algebraic attack on n=64 (extractor XOR-sum collision + preimage) ─
+# ── Regression check for the retired n=64 XOR-extractor attack ─
 add_secasy_test(SecasyAlgebraicAttackN64      tests/analysis/algebraic_attack_n64.c)
-# ── Message-level reachability of the extractor break (from Phase 1) ─
+# ── Message-level diffusion diagnostic for n=64 ─
 add_secasy_test(SecasyMessageAttackN64        tests/analysis/message_attack_n64.c)
 # Collect all test target names for bulk property assignment
 # (populated automatically by add_secasy_test, so it never drifts out of sync)
